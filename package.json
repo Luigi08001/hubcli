@@ -1,0 +1,39 @@
+{
+  "name": "hubcli",
+  "version": "0.1.0",
+  "description": "Production-grade HubSpot CLI foundation",
+  "type": "module",
+  "bin": {
+    "hubcli": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev": "tsx src/cli.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:contract": "HUBCLI_ENABLE_SANDBOX_CONTRACT=1 vitest run tests/contract.sandbox.test.ts",
+    "release:checksums": "node scripts/release-checksums.mjs",
+    "release:verify": "npm run typecheck && npm test && npm run build && npm run release:checksums && shasum -a 256 -c release/checksums.sha256"
+  },
+  "keywords": [
+    "hubspot",
+    "cli",
+    "crm"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "commander": "^12.1.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^4.0.18"
+  }
+}
