@@ -43,6 +43,25 @@ hs account auth --pak="<personal-access-key>"
 
 Both CLIs can coexist. hubcli uses `~/.hubcli/` for config; hs uses `~/.hscli/`.
 
+### Documentation-First Rule
+Before creating or modifying any HubSpot resource (API calls, UI extensions, CRM cards, forms, properties, workflows), **always consult the official HubSpot developer documentation first**. Never assume API formats, field names, required parameters, or configuration structures from memory. Check:
+- [HubSpot Developer Docs](https://developers.hubspot.com/docs)
+- [HubSpot API Reference](https://developers.hubspot.com/docs/reference/api)
+- [UI Extensions SDK](https://developers.hubspot.com/docs/platform/ui-extensions-sdk)
+- [HubSpot GitHub Examples](https://github.com/HubSpot/ui-extensions-examples)
+
+This avoids wasted deploys from incorrect formats, undocumented required fields, or hublet-specific issues.
+
+### Portal Location Rule (Hublet-Aware API)
+Always use the portal's **hublet-specific API endpoint**. Never hardcode `api.hubapi.com` — it defaults to US and will fail for EU portals with "unknown to this Hublet" errors.
+
+| Hublet | API Base URL | UI Domain |
+|--------|-------------|-----------|
+| US | `https://api.hubapi.com` | `app.hubspot.com` |
+| EU1 | `https://api-eu1.hubapi.com` | `app-eu1.hubspot.com` |
+
+The current portal (**147975758**) is on **EU1**. All API calls, `hubspot.fetch()` calls in UI extensions, and `permittedUrls` must use `api-eu1.hubapi.com`.
+
 ## Build & Test
 - Build: `npm run build` (TypeScript → dist/)
 - Run CLI: `node --input-type=module -e "import { createProgram } from './dist/cli.js'; ..."`
