@@ -190,10 +190,9 @@ maybeDescribe("sandbox contract (opt-in)", () => {
  * Works for both JSON and non-JSON modes.
  */
 function capturePrintResult() {
-  let captured: string[] = [];
+  const captured: string[] = [];
 
   const originalLog = console.log;
-  const originalWrite = process.stdout.write.bind(process.stdout);
 
   console.log = (...args: any[]) => {
     captured.push(args.map(String).join(" "));

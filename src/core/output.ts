@@ -78,17 +78,21 @@ export function printResult(ctx: CliContext, data: unknown): void {
   const selectedFormat = ctx.json ? "json" : (ctx.format ?? "table");
 
   if (selectedFormat === "json") {
+    // eslint-disable-next-line no-console
     console.log(JSON.stringify({ ok: true, data: safeData }, null, 2));
     return;
   }
   if (selectedFormat === "csv") {
+    // eslint-disable-next-line no-console
     console.log(toCsv(safeData));
     return;
   }
   if (selectedFormat === "yaml") {
+    // eslint-disable-next-line no-console
     console.log(toYaml(safeData));
     return;
   }
+  // eslint-disable-next-line no-console
   console.log(toTable(safeData));
 }
 

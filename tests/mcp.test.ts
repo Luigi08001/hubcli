@@ -127,7 +127,7 @@ describe("mcp server", () => {
     registerHubSpotTools(mock as any);
     const fetchSpy = mockFetchOk({ results: [{ id: "99" }], total: 1 });
 
-    const result = await mock.tools.get("crm_deals_search")!({ query: "big deal", limit: 5 });
+    await mock.tools.get("crm_deals_search")!({ query: "big deal", limit: 5 });
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     const [url, opts] = fetchSpy.mock.calls[0] as [string, any];
@@ -153,7 +153,7 @@ describe("mcp server", () => {
     registerHubSpotTools(mock as any);
     const fetchSpy = mockFetchOk({ results: [{ userId: 1 }] });
 
-    const result = await mock.tools.get("crm_owners_list")!({ limit: 10 });
+    await mock.tools.get("crm_owners_list")!({ limit: 10 });
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     const [url] = fetchSpy.mock.calls[0] as [string];
@@ -166,7 +166,7 @@ describe("mcp server", () => {
     registerHubSpotTools(mock as any);
     const fetchSpy = mockFetchOk({ results: [{ id: "p1", label: "Sales" }] });
 
-    const result = await mock.tools.get("crm_pipelines_list")!({ objectType: "deals" });
+    await mock.tools.get("crm_pipelines_list")!({ objectType: "deals" });
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     const [url] = fetchSpy.mock.calls[0] as [string];
@@ -179,7 +179,7 @@ describe("mcp server", () => {
     registerHubSpotTools(mock as any);
     const fetchSpy = mockFetchOk({ results: [{ name: "email", label: "Email" }] });
 
-    const result = await mock.tools.get("crm_properties_list")!({ objectType: "contacts" });
+    await mock.tools.get("crm_properties_list")!({ objectType: "contacts" });
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     const [url] = fetchSpy.mock.calls[0] as [string];
@@ -192,7 +192,7 @@ describe("mcp server", () => {
     registerHubSpotTools(mock as any);
     const fetchSpy = mockFetchOk({ results: [{ toObjectId: "5" }] });
 
-    const result = await mock.tools.get("crm_associations_list")!({
+    await mock.tools.get("crm_associations_list")!({
       fromObjectType: "contacts",
       fromObjectId: "1",
       toObjectType: "companies",
@@ -507,7 +507,7 @@ describe("mcp server", () => {
     registerHubSpotTools(mock as any);
     const fetchSpy = mockFetchOk({ results: [] });
 
-    const result = await mock.tools.get("crm_custom_schemas_list")!({});
+    await mock.tools.get("crm_custom_schemas_list")!({});
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     const [url] = fetchSpy.mock.calls[0] as [string];

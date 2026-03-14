@@ -440,6 +440,7 @@ function writeSchemaCache(cache: SchemaCacheFile): void {
   }
 }
 
+// eslint-disable-next-line no-control-regex
 const CONTROL_CHAR_PATTERN = /[\x00-\x1f\x7f]/;
 
 function encodePathSegment(raw: string, segmentName: string): string {

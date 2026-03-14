@@ -23,7 +23,6 @@ import {
   enrichRecordUrl,
   enrichCustomListResponse,
   enrichCustomRecordUrl,
-  type PortalContext,
 } from "../core/urls.js";
 
 interface McpBaseArgs {

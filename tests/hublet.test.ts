@@ -182,7 +182,7 @@ describe("hublet detection and routing", () => {
       apiDomain: "api-eu1.hubapi.com",
     });
 
-    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    vi.spyOn(console, "log").mockImplementation(() => {});
     const fetchSpy = vi.spyOn(global, "fetch" as never).mockResolvedValue({
       ok: true,
       status: 200,

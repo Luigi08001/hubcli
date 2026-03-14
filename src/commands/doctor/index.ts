@@ -112,7 +112,7 @@ export function registerDoctor(program: Command, getCtx: () => CliContext): void
   doctor
     .command("hublet-check")
     .description("Verify hublet configuration consistency between hubcli and @hubspot/cli")
-    .action(async (opts) => {
+    .action(async (_opts) => {
       const ctx = getCtx();
       const profile = ctx.profile;
       const checks: Array<{ check: string; status: "ok" | "warning" | "error"; detail: string }> = [];
@@ -155,7 +155,7 @@ export function registerDoctor(program: Command, getCtx: () => CliContext): void
             detail: `No apiDomain saved in profile. Resolved dynamically: ${resolved}. Re-run 'hubcli auth login' to persist.`,
           });
         }
-      } catch (err: any) {
+      } catch {
         checks.push({
           check: "hubcli_profile",
           status: "error",

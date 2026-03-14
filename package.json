@@ -13,8 +13,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:contract": "HUBCLI_ENABLE_SANDBOX_CONTRACT=1 vitest run tests/contract.sandbox.test.ts",
+    "lint": "eslint src/ tests/",
+    "lint:fix": "eslint src/ tests/ --fix",
     "release:checksums": "node scripts/release-checksums.mjs",
-    "release:verify": "npm run typecheck && npm test && npm run build && npm run release:checksums && shasum -a 256 -c release/checksums.sha256"
+    "release:verify": "npm run typecheck && npm run lint && npm test && npm run build && npm run release:checksums && shasum -a 256 -c release/checksums.sha256"
   },
   "keywords": [
     "hubspot",
@@ -31,10 +33,13 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@hubspot/cli": "^8.1.0",
     "@types/node": "^22.10.2",
+    "eslint": "^10.0.3",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
+    "typescript-eslint": "^8.57.0",
     "vitest": "^4.0.18"
   }
 }

@@ -85,11 +85,11 @@ export async function run(argv = process.argv): Promise<void> {
     await program.parseAsync(argv);
   } catch (err) {
     const opts = program.opts();
-    let format: "json" | "table" | "csv" | "yaml" = "table";
+    let format: "json" | "table" | "csv" | "yaml";
     try {
       format = resolveOutputFormat(opts.format, Boolean(opts.json));
     } catch {
-      format = Boolean(opts.json) ? "json" : "table";
+      format = opts.json ? "json" : "table";
     }
     const ctx: CliContext = {
       profile: opts.profile ?? "default",

@@ -1,6 +1,5 @@
 import { Command } from "commander";
-import { getToken } from "../../core/auth.js";
-import { HubSpotClient, createClient } from "../../core/http.js";
+import { createClient } from "../../core/http.js";
 import type { CliContext } from "../../core/output.js";
 import { CliError, printResult } from "../../core/output.js";
 import { maybeWrite, parseJsonPayload } from "../crm/shared.js";

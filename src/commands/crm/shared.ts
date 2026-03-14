@@ -1,10 +1,9 @@
 import { Command } from "commander";
-import { getToken } from "../../core/auth.js";
-import { HubSpotClient, createClient } from "../../core/http.js";
+import { createClient, HubSpotClient } from "../../core/http.js";
 import { enforceWritePolicy } from "../../core/policy.js";
 import type { CliContext } from "../../core/output.js";
 import { CliError, printResult } from "../../core/output.js";
-import { resolvePortalContext, enrichListResponse, enrichRecordUrl, type PortalContext } from "../../core/urls.js";
+import { resolvePortalContext, enrichListResponse, enrichRecordUrl } from "../../core/urls.js";
 
 const OBJECT_COMMAND_TYPES = ["contacts", "companies", "deals", "tickets"] as const;
 const PROPERTY_OBJECT_TYPES = ["contacts", "companies", "deals", "tickets"] as const;
@@ -34,6 +33,7 @@ function parseBooleanFlag(raw: string, flagName: string): boolean {
   throw new CliError("INVALID_FLAG", `${flagName} must be true or false`);
 }
 
+// eslint-disable-next-line no-control-regex
 const CONTROL_CHAR_PATTERN = /[\x00-\x1f\x7f]/;
 
 function encodePathSegment(raw: string, segmentName: string): string {
