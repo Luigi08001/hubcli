@@ -16,7 +16,8 @@
     "lint": "eslint src/ tests/",
     "lint:fix": "eslint src/ tests/ --fix",
     "release:checksums": "node scripts/release-checksums.mjs",
-    "release:verify": "npm run typecheck && npm run lint && npm test && npm run build && npm run release:checksums && shasum -a 256 -c release/checksums.sha256"
+    "audit": "npm audit --audit-level=moderate",
+    "release:verify": "npm run typecheck && npm run lint && npm test && npm run audit && npm run build && npm run release:checksums && shasum -a 256 -c release/checksums.sha256"
   },
   "keywords": [
     "hubspot",

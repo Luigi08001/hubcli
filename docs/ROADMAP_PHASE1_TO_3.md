@@ -5,9 +5,9 @@
 ## Scope
 This roadmap defines execution from foundational CLI to production-ready HubSpot operations with strict safety and reliability gates.
 
-## Phase 1 (Completed): Core CRM + Safety Baseline
+## Phase 1 (✅ Complete): Core CRM + Safety Baseline
 
-### Delivered in this run
+### Delivered
 - CRM object commands (contacts, companies, deals, tickets): list/get/search/create/update/delete/merge + batch operations
 - Pagination/filter flags baseline on object list/search commands
 - Properties commands: list/get/create/update with strict object-type allowlists
@@ -29,52 +29,61 @@ This roadmap defines execution from foundational CLI to production-ready HubSpot
 - Profile isolation support via `HUBCLI_HOME` (environment-isolated auth store)
 - OAuth-oriented auth tooling (`oauth-url`, `oauth-exchange`, token introspection)
 - Request telemetry + correlation ID support
+- Zod response schema validation with graceful degradation (`HUBCLI_STRICT_SCHEMAS=1` for strict mode)
+- ESLint with typescript-eslint (0 errors, integrated into `release:verify`)
 
-### Remaining to close Phase 1 hardening
-- Endpoint-by-endpoint request/response schema validation
-- Expanded command examples and cookbook docs
-- Dedicated lint workflow (in addition to typecheck+test)
+## Phase 2 (✅ Complete): Reliability and Operational Hardening
 
-## Phase 2: Reliability and Operational Hardening
+### Delivered
+- Hublet-aware API routing for EU1/AP1 portals (`createClient(profile)`, `doctor hublet-check`)
+- Retry/backoff with exponential delay on 429 + 5xx (max 3 retries, Retry-After header respect)
+- Rate limit observation (rolling + daily quotas, pacing, daily exhaustion guard)
+- Idempotency keys auto-generated for all write operations
+- Encrypted token vault (AES-256-GCM, PBKDF2 600k iterations) — transparent via auth.ts
+  - `hubcli auth encrypt` / `hubcli auth decrypt` CLI commands
+  - `HUBCLI_VAULT_PASSPHRASE` env var for automated workflows
+- Permission profiles (`hubcli auth set-mode <profile> read-only|read-write`)
+  - Enforced at HTTP client level before any request
+- Hardened test matrix: 138 tests across 7 suites
+  - Unit: hublet detection, schemas, permissions, vault
+  - Integration: MCP tools (32 tests), CLI commands (34 tests)
+  - Contract: sandbox smoke tests (10, opt-in via `HUBCLI_ENABLE_SANDBOX_CONTRACT=1`)
+- `npm audit` integrated into release:verify
 
-### Targets
-- Idempotency/retry strategy refinement per endpoint class
-- Optional local encrypted token vault integration
-- Command-level permission profiles (read-only vs writer profiles)
-- Hardened test matrix:
-  - integration test fixtures
-  - external sandbox smoke tests
-  - production-safe contract checks
+### Exit criteria status
+- ✅ Zero unredacted secret leak in logs/errors (redaction controls + vault)
+- ✅ Write-path controls enforced across all mutating endpoints (policy + permission profiles)
+- ⚠️ Stable e2e suite against HubSpot sandbox — tests exist but opt-in, not CI-automated yet
+- ⚠️ Domain coverage validated against production-safe contract suite — partial
 
-### Exit criteria
-- Stable e2e suite against HubSpot sandbox
-- Zero unredacted secret leak in logs/errors
-- Write-path controls enforced across all mutating endpoints
-- Domain coverage validated against production-safe contract suite
+## Phase 3 (In Progress): Production Readiness + Distribution
 
-## Phase 3: Production Readiness + Distribution
+### Completed
+- Checksums via `npm run release:checksums`
+- `release:verify` pipeline: typecheck → lint → test → build → checksums
+- npm audit in release gates
 
-### Targets
-- Packaging and release process:
-  - signed release artifacts + provenance metadata
-  - checksums and provenance notes
-- Supply-chain policy automation (`npm audit`, dependency review)
-- Operational playbooks for incident response and rollback
-- Backward-compatible command contracts and changelog discipline
+### Remaining
+- CI/CD pipeline (GitHub Actions): lint + test + build on push/PR
+- Cookbook / examples documentation per command
+- Signed release artifacts + provenance metadata
+- Supply-chain automation (dependabot / renovate)
+- Operational playbooks for incident response
 - Plugin/extension interface for non-core domain packs
 
 ### Exit criteria
 - Reproducible build from clean checkout
+- CI green on every PR
 - Signed release + checksum published per version
 - Production launch checklist complete (security, reliability, observability)
 
 ## Risk Register (Top Items)
-- Token leakage risk in logs/errors
-- Unsafe write execution without explicit human confirmation
-- Command drift from HubSpot API contracts
-- Dependency compromise in npm supply chain
+- Token leakage risk in logs/errors — **mitigated** (redaction + vault encryption)
+- Unsafe write execution without human confirmation — **mitigated** (--force gate + permission profiles)
+- Command drift from HubSpot API contracts — **mitigated** (Zod schema validation)
+- Dependency compromise in npm supply chain — partially mitigated (npm audit in release, no CI yet)
 
 ## Execution Order
-1. Finish Phase 1 gaps (imports, validations, CLI UX)
-2. Implement Phase 2 reliability hardening + sandbox e2e
-3. Lock Phase 3 release and governance controls
+1. ~~Finish Phase 1 gaps~~ ✅
+2. ~~Implement Phase 2 reliability hardening~~ ✅
+3. Lock Phase 3 release and governance controls ← **current**

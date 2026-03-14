@@ -2,6 +2,7 @@ import { mkdirSync, readFileSync, writeFileSync, existsSync, chmodSync } from "n
 import { join } from "node:path";
 import { homedir } from "node:os";
 import { CliError } from "./output.js";
+import { isVaultEncrypted, readVaultData, writeVaultData, getVaultPassphrase } from "./vault.js";
 
 export interface AuthProfile {
   token: string;
@@ -74,6 +75,15 @@ function authPaths(): { dir: string; file: string } {
 }
 
 function readAuthFile(): AuthFile {
+  const { dir } = authPaths();
+  // If vault is encrypted, read through vault
+  if (isVaultEncrypted(dir)) {
+    const passphrase = getVaultPassphrase();
+    if (passphrase) {
+      return readVaultData(dir, passphrase) as AuthFile;
+    }
+    // Encrypted but no passphrase — fall through to plain file
+  }
   const { file } = authPaths();
   if (!existsSync(file)) return { profiles: {} };
   return JSON.parse(readFileSync(file, "utf8")) as AuthFile;
@@ -84,6 +94,14 @@ function writeAuthFile(data: AuthFile): void {
   mkdirSync(dir, { recursive: true, mode: 0o700 });
   if (process.platform !== "win32") {
     chmodSync(dir, 0o700);
+  }
+  // If vault is encrypted, write through vault
+  if (isVaultEncrypted(dir)) {
+    const passphrase = getVaultPassphrase();
+    if (passphrase) {
+      writeVaultData(dir, data, passphrase);
+      return;
+    }
   }
   writeFileSync(file, JSON.stringify(data, null, 2), { mode: 0o600 });
   if (process.platform !== "win32") {
