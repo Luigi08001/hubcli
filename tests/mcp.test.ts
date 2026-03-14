@@ -32,10 +32,12 @@ function setupHomeWithToken(
 }
 
 function mockFetchOk(data: unknown = { results: [] }) {
+  const body = JSON.stringify(data);
   return vi.spyOn(global, "fetch" as never).mockResolvedValue({
     ok: true,
     status: 200,
     json: async () => data,
+    text: async () => body,
     headers: new Headers(),
   } as never);
 }

@@ -44,8 +44,9 @@ This roadmap defines execution from foundational CLI to production-ready HubSpot
   - `HUBCLI_VAULT_PASSPHRASE` env var for automated workflows
 - Permission profiles (`hubcli auth set-mode <profile> read-only|read-write`)
   - Enforced at HTTP client level before any request
-- Hardened test matrix: 138 tests across 7 suites
+- Hardened test matrix: 149 tests across 8 suites
   - Unit: hublet detection, schemas, permissions, vault
+  - Bugfix regression: vault bypass, 404 remap, safeJson, sync state
   - Integration: MCP tools (32 tests), CLI commands (34 tests)
   - Contract: sandbox smoke tests (10, opt-in via `HUBCLI_ENABLE_SANDBOX_CONTRACT=1`)
 - `npm audit` integrated into release:verify
@@ -62,12 +63,13 @@ This roadmap defines execution from foundational CLI to production-ready HubSpot
 - Checksums via `npm run release:checksums`
 - `release:verify` pipeline: typecheck → lint → test → build → checksums
 - npm audit in release gates
+- CI/CD pipeline (GitHub Actions): lint + test + build on push/PR (Node 20+22 matrix)
+- Cookbook / examples documentation per command (`docs/COOKBOOK.md`)
+- Signed release artifacts + provenance attestation (GitHub Actions release workflow)
+- Supply-chain automation (Dependabot: npm weekly + GitHub Actions weekly)
+- P1/P2 bug fixes: vault bypass enforcement, 404 record-vs-endpoint disambiguation, safeJson body handling, sync cursor/mode isolation
 
 ### Remaining
-- CI/CD pipeline (GitHub Actions): lint + test + build on push/PR
-- Cookbook / examples documentation per command
-- Signed release artifacts + provenance metadata
-- Supply-chain automation (dependabot / renovate)
 - Operational playbooks for incident response
 - Plugin/extension interface for non-core domain packs
 
@@ -81,9 +83,10 @@ This roadmap defines execution from foundational CLI to production-ready HubSpot
 - Token leakage risk in logs/errors — **mitigated** (redaction + vault encryption)
 - Unsafe write execution without human confirmation — **mitigated** (--force gate + permission profiles)
 - Command drift from HubSpot API contracts — **mitigated** (Zod schema validation)
-- Dependency compromise in npm supply chain — partially mitigated (npm audit in release, no CI yet)
+- Dependency compromise in npm supply chain — **mitigated** (npm audit in CI + Dependabot weekly)
 
 ## Execution Order
 1. ~~Finish Phase 1 gaps~~ ✅
 2. ~~Implement Phase 2 reliability hardening~~ ✅
-3. Lock Phase 3 release and governance controls ← **current**
+3. ~~Lock Phase 3 release and governance controls~~ ✅ (core items)
+4. Operational playbooks + plugin interface ← **remaining**

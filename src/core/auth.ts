@@ -76,13 +76,16 @@ function authPaths(): { dir: string; file: string } {
 
 function readAuthFile(): AuthFile {
   const { dir } = authPaths();
-  // If vault is encrypted, read through vault
+  // If vault is encrypted, require passphrase — never silently fall back to plaintext
   if (isVaultEncrypted(dir)) {
     const passphrase = getVaultPassphrase();
-    if (passphrase) {
-      return readVaultData(dir, passphrase) as AuthFile;
+    if (!passphrase) {
+      throw new CliError(
+        "VAULT_PASSPHRASE_REQUIRED",
+        "Vault is encrypted (auth.enc exists) but HUBCLI_VAULT_PASSPHRASE is not set. Set the env var or run 'hubcli auth decrypt' first.",
+      );
     }
-    // Encrypted but no passphrase — fall through to plain file
+    return readVaultData(dir, passphrase) as AuthFile;
   }
   const { file } = authPaths();
   if (!existsSync(file)) return { profiles: {} };
@@ -95,13 +98,17 @@ function writeAuthFile(data: AuthFile): void {
   if (process.platform !== "win32") {
     chmodSync(dir, 0o700);
   }
-  // If vault is encrypted, write through vault
+  // If vault is encrypted, require passphrase — never create plaintext alongside auth.enc
   if (isVaultEncrypted(dir)) {
     const passphrase = getVaultPassphrase();
-    if (passphrase) {
-      writeVaultData(dir, data, passphrase);
-      return;
+    if (!passphrase) {
+      throw new CliError(
+        "VAULT_PASSPHRASE_REQUIRED",
+        "Vault is encrypted (auth.enc exists) but HUBCLI_VAULT_PASSPHRASE is not set. Set the env var or run 'hubcli auth decrypt' first.",
+      );
     }
+    writeVaultData(dir, data, passphrase);
+    return;
   }
   writeFileSync(file, JSON.stringify(data, null, 2), { mode: 0o600 });
   if (process.platform !== "win32") {

@@ -265,10 +265,16 @@ function asRecord(value: unknown): Record<string, unknown> {
 }
 
 async function safeJson(response: Response): Promise<unknown> {
+  let text: string;
   try {
-    return await response.json();
+    text = await response.text();
   } catch {
-    return { message: await response.text() };
+    try { return await response.json(); } catch { return {}; }
+  }
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { message: text };
   }
 }
 
@@ -521,6 +527,22 @@ export function preflightEndpointCapability(options: {
   }
 }
 
+/**
+ * Check whether a request path targets a specific record (e.g. /crm/v3/objects/contacts/123)
+ * vs a collection endpoint (e.g. /crm/v3/objects/contacts or /crm/v3/objects/contacts/search).
+ * Record-level 404s are normal "not found" responses, not capability/tier issues.
+ */
+function isRecordLevelPath(pathPrefix: string, requestPath: string): boolean {
+  const rest = requestPath.slice(pathPrefix.length).split("?")[0];
+  const segments = rest.split("/").filter(Boolean);
+  // e.g. pathPrefix="/crm/v3/objects", path="/crm/v3/objects/contacts/123"
+  // segments = ["contacts", "123"] — 2+ segments where last is not a known sub-resource
+  if (segments.length < 2) return false;
+  const lastSegment = segments[segments.length - 1];
+  const knownSubResources = new Set(["search", "batch", "merge", "gdpr-delete", "associations"]);
+  return !knownSubResources.has(lastSegment);
+}
+
 export function mapEndpointAvailabilityError(options: {
   profile: string;
   path: string;
@@ -530,6 +552,12 @@ export function mapEndpointAvailabilityError(options: {
   if (options.statusCode !== 403 && options.statusCode !== 404) return undefined;
   const definition = resolveCapability(options.path);
   if (!definition) return undefined;
+
+  // A 404 on a specific record (e.g. /crm/v3/objects/contacts/123) is "record not found",
+  // not "endpoint unavailable". Only remap 404 for collection/endpoint-level paths.
+  if (options.statusCode === 404 && isRecordLevelPath(definition.pathPrefix, options.path)) {
+    return undefined;
+  }
 
   recordCapability(options.profile, definition.id, options.statusCode, "runtime-http-status");
 

@@ -7,6 +7,7 @@ import { encodePathSegment, parseNumberFlag } from "./shared.js";
 
 interface SyncState {
   after?: string;
+  mode?: "list" | "since";
   lastRunAt?: string;
   lastSince?: string;
 }
@@ -44,11 +45,33 @@ export function registerSync(crm: Command, getCtx: () => CliContext): void {
       const stateFile = opts.stateFile ? String(opts.stateFile) : `.hubcli-sync-${objectTypeSegment}.json`;
       const state = readState(stateFile);
 
+      // Determine sync mode for this run
+      const currentMode: "list" | "since" = opts.since ? "since" : "list";
+
+      // Only restore cursor if the previous run used the same mode.
+      // This prevents a --since cursor from leaking into the list branch (or vice versa).
+      let after: string | undefined;
+      if (currentMode === "list") {
+        // If previous list run completed all pages, auto-switch to --since with lastRunAt
+        if (state.mode === "list" && !state.after && state.lastRunAt) {
+          // Previous run consumed all pages — use timestamp-based incremental sync
+          opts.since = state.lastRunAt;
+        } else if (state.mode === "list") {
+          after = state.after;
+        }
+      } else {
+        // --since mode: only restore cursor from a previous --since run
+        after = state.mode === "since" ? state.after : undefined;
+      }
+
+      // Re-evaluate mode after potential auto-switch above
+      const effectiveMode: "list" | "since" = opts.since ? "since" : "list";
+
       const results: unknown[] = [];
       let pages = 0;
-      let after: string | undefined = opts.since ? undefined : state.after;
 
       while (pages < maxPages) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let response: any;
         if (opts.since) {
           const sinceDate = new Date(String(opts.since));
@@ -94,8 +117,10 @@ export function registerSync(crm: Command, getCtx: () => CliContext): void {
         writeFileSync(String(opts.outFile), JSON.stringify(output, null, 2) + "\n", "utf8");
       }
 
+      // Persist state with mode tag — after is only set if there are more pages
       writeState(stateFile, {
         after,
+        mode: effectiveMode,
         lastRunAt: new Date().toISOString(),
         lastSince: opts.since ? String(opts.since) : state.lastSince,
       });

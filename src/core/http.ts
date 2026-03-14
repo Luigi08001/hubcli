@@ -337,10 +337,19 @@ function isEnvTrue(value: string | undefined): boolean {
 }
 
 async function safeJson(response: Response): Promise<unknown> {
+  // Read body as text first, then JSON.parse, to avoid "Body is unusable"
+  // error when response.json() consumes the stream and fails on non-JSON.
+  let text: string;
   try {
-    return await response.json();
+    text = await response.text();
   } catch {
-    return { message: await response.text() };
+    // Fallback if text() is unavailable (shouldn't happen with real fetch)
+    try { return await response.json(); } catch { return {}; }
+  }
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { message: text };
   }
 }
 
