@@ -1,5 +1,7 @@
 # MCP Support (`hubcli mcp`)
 
+> See also: [[ARCHITECTURE]] · [[SAFETY_MODEL]] · [[COMMAND_TREE]] · [[tooling]]
+
 `hubcli` now exposes a Model Context Protocol (MCP) server over **stdio**.
 
 ## Run

@@ -1,5 +1,7 @@
 # ARCHITECTURE
 
+> See also: [[SAFETY_MODEL]] · [[COMMAND_TREE]] · [[MCP]] · [[TESTING_PLAN]] · [[WHY_HOW_WHAT]]
+
 `hubcli` is built as a layered TypeScript CLI:
 
 ## Layers

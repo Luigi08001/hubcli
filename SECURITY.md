@@ -1,5 +1,7 @@
 # SECURITY
 
+> See also: [[SAFETY_MODEL]] · [[RELEASE_GOVERNANCE]] · [[hubspot-rules]]
+
 ## Security Objectives
 - Prevent credential exposure
 - Prevent unintended or unsafe CRM mutations

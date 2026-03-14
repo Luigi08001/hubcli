@@ -1,5 +1,7 @@
 # hubcli
 
+> See also: [[WHY_HOW_WHAT]] · [[ARCHITECTURE]] · [[COMMAND_TREE]] · [[SAFETY_MODEL]] · [[hubspot-rules]]
+
 Production-grade HubSpot CLI in TypeScript, focused on safe operations, automation, and release workflows.
 
 ## What It Covers

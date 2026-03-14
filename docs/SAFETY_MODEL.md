@@ -1,5 +1,7 @@
 # SAFETY_MODEL
 
+> See also: [[ARCHITECTURE]] · [[COMMAND_COMPATIBILITY]] · [[hubspot-rules]] · [[TESTING_PLAN]]
+
 ## Principles
 1. **No silent mutation**: write commands require explicit invocation and can be simulated via `--dry-run`.
 2. **Deterministic output**: `--json` mode emits structured envelopes for CI/automation.

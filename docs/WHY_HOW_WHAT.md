@@ -1,5 +1,7 @@
 # WHY / HOW / WHAT
 
+> See also: [[ARCHITECTURE]] · [[SAFETY_MODEL]] · [[ROADMAP_PHASE1_TO_3]]
+
 ## WHY this CLI exists
 `hubcli` exists to give operators a safe, automatable, production-grade command interface to HubSpot APIs without needing to write code each time. It solves three operational problems:
 - **Speed:** repetitive CRM operations become scriptable and repeatable.

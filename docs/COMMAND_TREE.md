@@ -1,5 +1,7 @@
 # COMMAND_TREE
 
+> See also: [[COMMAND_COMPATIBILITY]] · [[ARCHITECTURE]] · [[MCP]]
+
 ## Global
 - `hubcli --profile <name>`: Select auth profile (default: `default`)
 - `hubcli --json`: JSON-only output for automation

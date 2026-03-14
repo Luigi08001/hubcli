@@ -1,5 +1,7 @@
 # ROADMAP: Phase 1 to Phase 3
 
+> See also: [[ARCHITECTURE]] · [[SAFETY_MODEL]] · [[RELEASE_GOVERNANCE]] · [[WHY_HOW_WHAT]]
+
 ## Scope
 This roadmap defines execution from foundational CLI to production-ready HubSpot operations with strict safety and reliability gates.
 

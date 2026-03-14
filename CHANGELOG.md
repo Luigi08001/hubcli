@@ -1,5 +1,7 @@
 # Changelog
 
+> See also: [[ROADMAP_PHASE1_TO_3]] · [[RELEASE_GOVERNANCE]]
+
 ## 0.2.0 - 2026-03-05
 - Added CRM tickets command family.
 - Added strict allowlists for objectType inputs with domain-specific scope.

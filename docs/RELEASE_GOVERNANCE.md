@@ -1,5 +1,7 @@
 # RELEASE GOVERNANCE
 
+> See also: [[TESTING_PLAN]] · [[COMMAND_COMPATIBILITY]] · [[SECURITY]] · [[ROADMAP_PHASE1_TO_3]]
+
 ## Versioning & Compatibility
 - Use semantic versioning.
 - Do not remove or rename commands without a major version bump.

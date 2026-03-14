@@ -1,5 +1,7 @@
 # COMMAND COMPATIBILITY
 
+> See also: [[COMMAND_TREE]] · [[SAFETY_MODEL]] · [[RELEASE_GOVERNANCE]]
+
 ## Stability Promise
 - Existing command names and argument shapes are considered stable in minor/patch versions.
 - New command groups may be added in minor versions.

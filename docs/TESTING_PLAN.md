@@ -1,5 +1,7 @@
 # TESTING PLAN
 
+> See also: [[ARCHITECTURE]] · [[SAFETY_MODEL]] · [[RELEASE_GOVERNANCE]]
+
 ## Strategy Overview
 
 ### Unit tests
