@@ -14,9 +14,10 @@ import { registerWorkflows } from "./commands/workflows/index.js";
 import { registerService } from "./commands/service/index.js";
 import { registerWebhooks } from "./commands/webhooks/index.js";
 import { CliError, type CliContext, printError } from "./core/output.js";
+import { loadPlugins } from "./core/plugins.js";
 import pkg from "../package.json" with { type: "json" };
 
-export function createProgram(): Command {
+export function createProgram(): { program: Command; getCtx: () => CliContext } {
   const program = new Command();
   let ctx: CliContext = { profile: "default", json: false, dryRun: false, force: false, strictCapabilities: false, format: "table" };
   const runId = randomUUID();
@@ -76,11 +77,12 @@ export function createProgram(): Command {
     },
   });
 
-  return program;
+  return { program, getCtx: () => ctx };
 }
 
 export async function run(argv = process.argv): Promise<void> {
-  const program = createProgram();
+  const { program, getCtx } = createProgram();
+  await loadPlugins(program, getCtx);
   try {
     await program.parseAsync(argv);
   } catch (err) {

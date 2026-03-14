@@ -44,7 +44,7 @@ This roadmap defines execution from foundational CLI to production-ready HubSpot
   - `HUBCLI_VAULT_PASSPHRASE` env var for automated workflows
 - Permission profiles (`hubcli auth set-mode <profile> read-only|read-write`)
   - Enforced at HTTP client level before any request
-- Hardened test matrix: 149 tests across 8 suites
+- Hardened test matrix: 155 tests across 9 suites
   - Unit: hublet detection, schemas, permissions, vault
   - Bugfix regression: vault bypass, 404 remap, safeJson, sync state
   - Integration: MCP tools (32 tests), CLI commands (34 tests)
@@ -57,7 +57,7 @@ This roadmap defines execution from foundational CLI to production-ready HubSpot
 - ⚠️ Stable e2e suite against HubSpot sandbox — tests exist but opt-in, not CI-automated yet
 - ⚠️ Domain coverage validated against production-safe contract suite — partial
 
-## Phase 3 (In Progress): Production Readiness + Distribution
+## Phase 3 (✅ Complete): Production Readiness + Distribution
 
 ### Completed
 - Checksums via `npm run release:checksums`
@@ -68,10 +68,14 @@ This roadmap defines execution from foundational CLI to production-ready HubSpot
 - Signed release artifacts + provenance attestation (GitHub Actions release workflow)
 - Supply-chain automation (Dependabot: npm weekly + GitHub Actions weekly)
 - P1/P2 bug fixes: vault bypass enforcement, 404 record-vs-endpoint disambiguation, safeJson body handling, sync cursor/mode isolation
+- Plugin/extension interface (`src/core/plugins.ts`, `docs/PLUGIN_GUIDE.md`)
+  - HUBCLI_PLUGINS env var + node_modules keyword discovery
+  - PluginContext exposes createClient, maybeWrite, printResult, CliError
+  - Safety gates (dry-run/force/policy) enforced for plugin writes
+- Operational playbooks for incident response (`docs/OPERATIONAL_PLAYBOOKS.md`)
 
 ### Remaining
-- Operational playbooks for incident response
-- Plugin/extension interface for non-core domain packs
+- (none — Phase 3 complete)
 
 ### Exit criteria
 - Reproducible build from clean checkout
@@ -89,4 +93,4 @@ This roadmap defines execution from foundational CLI to production-ready HubSpot
 1. ~~Finish Phase 1 gaps~~ ✅
 2. ~~Implement Phase 2 reliability hardening~~ ✅
 3. ~~Lock Phase 3 release and governance controls~~ ✅ (core items)
-4. Operational playbooks + plugin interface ← **remaining**
+4. ~~Operational playbooks + plugin interface~~ ✅

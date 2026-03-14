@@ -25,6 +25,12 @@
     "crm"
   ],
   "license": "MIT",
+  "exports": {
+    ".": "./dist/cli.js",
+    "./plugins": "./dist/core/plugins.js",
+    "./http": "./dist/core/http.js",
+    "./output": "./dist/core/output.js"
+  },
   "engines": {
     "node": ">=20"
   },
