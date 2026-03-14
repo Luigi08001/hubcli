@@ -12,6 +12,7 @@ export interface AuthProfile {
   uiDomain?: string;
   apiDomain?: string;
   hublet?: string;
+  mode?: "read-only" | "read-write";
 }
 
 /**

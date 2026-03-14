@@ -4,6 +4,8 @@ import { HubSpotClient } from "../../core/http.js";
 import { getProfile, getToken, hasProfile, listProfiles, removeToken, saveProfile, saveToken, detectHublet, resolveApiDomain } from "../../core/auth.js";
 import type { CliContext } from "../../core/output.js";
 import { CliError, printResult } from "../../core/output.js";
+import { encryptExistingVault, decryptExistingVault, getVaultPassphrase, isVaultEncrypted } from "../../core/vault.js";
+import { resolve } from "node:path";
 
 async function fetchPortalDetails(token: string): Promise<{ portalId?: string; uiDomain?: string }> {
   const result: { portalId?: string; uiDomain?: string } = {};
@@ -128,6 +130,22 @@ export function registerAuth(program: Command, getCtx: () => CliContext): void {
     printResult(ctx, { profile, data });
   });
 
+  auth.command("set-mode")
+    .argument("<profile>", "Profile name")
+    .argument("<mode>", "Permission mode: read-only or read-write")
+    .description("Set permission mode on a profile (read-only blocks all writes)")
+    .action((profileArg, modeArg) => {
+      const ctx = getCtx();
+      const mode = String(modeArg).trim();
+      if (mode !== "read-only" && mode !== "read-write") {
+        throw new CliError("INVALID_MODE", `Mode must be 'read-only' or 'read-write', got '${mode}'`);
+      }
+      const profile = String(profileArg).trim();
+      const data = getProfile(profile);
+      saveProfile(profile, { ...data, mode });
+      printResult(ctx, { profile, mode, message: `Profile '${profile}' set to ${mode}` });
+    });
+
   auth.command("oauth-url")
     .requiredOption("--client-id <id>", "OAuth app client id")
     .requiredOption("--redirect-uri <uri>", "OAuth redirect URI")
@@ -198,5 +216,34 @@ export function registerAuth(program: Command, getCtx: () => CliContext): void {
         expiresAt,
         scopes,
       });
+    });
+
+  auth.command("encrypt")
+    .description("Encrypt auth.json with AES-256-GCM (passphrase from HUBCLI_VAULT_PASSPHRASE)")
+    .action(() => {
+      const ctx = getCtx();
+      const passphrase = getVaultPassphrase();
+      if (!passphrase) {
+        throw new CliError("VAULT_NO_PASSPHRASE", "Set HUBCLI_VAULT_PASSPHRASE env var before encrypting.");
+      }
+      const hubcliHome = process.env.HUBCLI_HOME || resolve(process.env.HOME || "", ".hubcli");
+      encryptExistingVault(hubcliHome, passphrase);
+      printResult(ctx, { encrypted: true, message: "auth.json encrypted to auth.enc and removed." });
+    });
+
+  auth.command("decrypt")
+    .description("Decrypt auth.enc back to auth.json (passphrase from HUBCLI_VAULT_PASSPHRASE)")
+    .action(() => {
+      const ctx = getCtx();
+      const passphrase = getVaultPassphrase();
+      if (!passphrase) {
+        throw new CliError("VAULT_NO_PASSPHRASE", "Set HUBCLI_VAULT_PASSPHRASE env var before decrypting.");
+      }
+      const hubcliHome = process.env.HUBCLI_HOME || resolve(process.env.HOME || "", ".hubcli");
+      if (!isVaultEncrypted(hubcliHome)) {
+        throw new CliError("VAULT_NOT_ENCRYPTED", "No auth.enc found — vault is not encrypted.");
+      }
+      decryptExistingVault(hubcliHome, passphrase);
+      printResult(ctx, { decrypted: true, message: "auth.enc decrypted to auth.json and removed." });
     });
 }

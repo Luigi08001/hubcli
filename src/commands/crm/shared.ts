@@ -4,6 +4,7 @@ import { enforceWritePolicy } from "../../core/policy.js";
 import type { CliContext } from "../../core/output.js";
 import { CliError, printResult } from "../../core/output.js";
 import { resolvePortalContext, enrichListResponse, enrichRecordUrl } from "../../core/urls.js";
+import { parseResponse, HubSpotListResponse, HubSpotSearchResponse, HubSpotRecord } from "../../core/schemas.js";
 
 const OBJECT_COMMAND_TYPES = ["contacts", "companies", "deals", "tickets"] as const;
 const PROPERTY_OBJECT_TYPES = ["contacts", "companies", "deals", "tickets"] as const;
@@ -112,6 +113,7 @@ export function registerObjectCommands(parent: Command, objectType: string, getC
       }
       appendOptional(params, "properties", opts.properties);
       const res = await client.request(`/crm/v3/objects/${objectType}?${params.toString()}`);
+      parseResponse(HubSpotListResponse, res, `${objectType} list`);
       enrichListResponse(res, portal, objectType);
       printResult(ctx, res);
     });
@@ -123,6 +125,7 @@ export function registerObjectCommands(parent: Command, objectType: string, getC
     const idSegment = encodePathSegment(id, "id");
     const suffix = opts.properties ? `?properties=${encodeURIComponent(opts.properties)}` : "";
     const res = await client.request(`/crm/v3/objects/${objectType}/${idSegment}${suffix}`);
+    parseResponse(HubSpotRecord, res, `${objectType} get`);
     if (res && typeof res === "object") enrichRecordUrl(res as Record<string, unknown>, portal, objectType);
     printResult(ctx, res);
   });
@@ -139,6 +142,7 @@ export function registerObjectCommands(parent: Command, objectType: string, getC
       method: "POST",
       body,
     });
+    parseResponse(HubSpotSearchResponse, res, `${objectType} search`);
     enrichListResponse(res, portal, objectType);
     printResult(ctx, res);
   });

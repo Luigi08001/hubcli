@@ -3,6 +3,7 @@ import { appendFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { mapEndpointAvailabilityError, preflightEndpointCapability, recordEndpointSuccess } from "./capabilities.js";
 import { getToken, getApiBaseUrl } from "./auth.js";
+import { enforcePermissionProfile } from "./permissions.js";
 
 /**
  * Create a HubSpotClient that is hublet-aware.
@@ -89,6 +90,7 @@ export class HubSpotClient {
 
   async request(path: string, options: RequestOptions = {}, attempt = 0): Promise<unknown> {
     const method = options.method ?? "GET";
+    enforcePermissionProfile(this.profile, method);
     const url = this.resolveUrl(path);
     const pathname = new URL(url).pathname;
     const idempotencyKey = resolveIdempotencyKey(method, options.idempotencyKey);
