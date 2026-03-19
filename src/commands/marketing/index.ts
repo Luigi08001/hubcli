@@ -8,6 +8,7 @@ import { registerLandingPages } from "./landing-pages.js";
 import { registerTransactional } from "./transactional.js";
 import { registerSubscriptions } from "./subscriptions.js";
 import { registerMarketingEvents } from "./events.js";
+import { registerBehavioralEvents } from "./behavioral-events.js";
 
 export function registerMarketing(program: Command, getCtx: () => CliContext): void {
   const marketing = program.command("marketing").description("HubSpot Marketing APIs");
@@ -37,4 +38,5 @@ export function registerMarketing(program: Command, getCtx: () => CliContext): v
   registerTransactional(marketing, getCtx);
   registerSubscriptions(marketing, getCtx);
   registerMarketingEvents(marketing, getCtx);
+  registerBehavioralEvents(marketing, getCtx);
 }
