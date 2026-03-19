@@ -1,0 +1,24 @@
+{
+  "defaults": {
+    "allowWrite": true,
+    "allowDelete": false,
+    "requireChangeTicket": false
+  },
+  "profiles": {
+    "prod": {
+      "allowWrite": true,
+      "allowDelete": false,
+      "requireChangeTicket": true
+    },
+    "sandbox": {
+      "allowWrite": true,
+      "allowDelete": true,
+      "requireChangeTicket": false
+    }
+  },
+  "blockedMethodPathPrefixes": {
+    "DELETE": [
+      "/crm/v3/schemas"
+    ]
+  }
+}

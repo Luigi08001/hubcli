@@ -1,0 +1,52 @@
+{
+  "name": "hubcli",
+  "version": "0.1.0",
+  "description": "Production-grade HubSpot CLI foundation",
+  "type": "module",
+  "bin": {
+    "hubcli": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev": "tsx src/cli.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:contract": "HUBCLI_ENABLE_SANDBOX_CONTRACT=1 vitest run tests/contract.sandbox.test.ts",
+    "lint": "eslint src/ tests/",
+    "lint:fix": "eslint src/ tests/ --fix",
+    "release:checksums": "node scripts/release-checksums.mjs",
+    "audit": "npm audit --audit-level=moderate",
+    "release:verify": "npm run typecheck && npm run lint && npm test && npm run audit && npm run build && npm run release:checksums && shasum -a 256 -c release/checksums.sha256"
+  },
+  "keywords": [
+    "hubspot",
+    "cli",
+    "crm"
+  ],
+  "license": "MIT",
+  "exports": {
+    ".": "./dist/cli.js",
+    "./plugins": "./dist/core/plugins.js",
+    "./http": "./dist/core/http.js",
+    "./output": "./dist/core/output.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "commander": "^12.1.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@hubspot/cli": "^8.1.0",
+    "@types/node": "^22.10.2",
+    "eslint": "^10.0.3",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.57.0",
+    "vitest": "^4.0.18"
+  }
+}

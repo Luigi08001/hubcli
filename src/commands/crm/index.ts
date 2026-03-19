@@ -1,0 +1,32 @@
+import { Command } from "commander";
+import type { CliContext } from "../../core/output.js";
+import { registerContacts } from "./contacts.js";
+import { registerCompanies } from "./companies.js";
+import { registerDeals } from "./deals.js";
+import { registerProperties } from "./properties.js";
+import { registerAssociations } from "./associations.js";
+import { registerOwners } from "./owners.js";
+import { registerPipelines } from "./pipelines.js";
+import { registerImports } from "./imports.js";
+import { registerTickets } from "./tickets.js";
+import { registerCustomObjects } from "./custom-objects.js";
+import { registerEngagements } from "./engagements.js";
+import { registerSync } from "./sync.js";
+import { registerDescribe } from "./describe.js";
+
+export function registerCrm(program: Command, getCtx: () => CliContext): void {
+  const crm = program.command("crm").description("HubSpot CRM objects");
+  registerContacts(crm, getCtx);
+  registerCompanies(crm, getCtx);
+  registerDeals(crm, getCtx);
+  registerTickets(crm, getCtx);
+  registerProperties(crm, getCtx);
+  registerAssociations(crm, getCtx);
+  registerOwners(crm, getCtx);
+  registerPipelines(crm, getCtx);
+  registerImports(crm, getCtx);
+  registerCustomObjects(crm, getCtx);
+  registerEngagements(crm, getCtx);
+  registerSync(crm, getCtx);
+  registerDescribe(crm, getCtx);
+}
