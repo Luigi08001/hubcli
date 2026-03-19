@@ -14,6 +14,10 @@ import { registerWorkflows } from "./commands/workflows/index.js";
 import { registerService } from "./commands/service/index.js";
 import { registerWebhooks } from "./commands/webhooks/index.js";
 import { registerSeed } from "./commands/seed.js";
+import { registerLists } from "./commands/lists/index.js";
+import { registerSales } from "./commands/sales/index.js";
+import { registerReporting } from "./commands/reporting/index.js";
+import { registerExports } from "./commands/exports/index.js";
 import { CliError, type CliContext, printError } from "./core/output.js";
 import { loadPlugins } from "./core/plugins.js";
 import pkg from "../package.json" with { type: "json" };
@@ -69,6 +73,10 @@ export function createProgram(): { program: Command; getCtx: () => CliContext } 
   registerWebhooks(program, () => ctx);
   registerApi(program, () => ctx);
   registerSeed(program, () => ctx);
+  registerLists(program, () => ctx);
+  registerSales(program, () => ctx);
+  registerReporting(program, () => ctx);
+  registerExports(program, () => ctx);
   registerMcp(program);
 
   program.configureOutput({
