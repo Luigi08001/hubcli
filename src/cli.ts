@@ -18,6 +18,11 @@ import { registerLists } from "./commands/lists/index.js";
 import { registerSales } from "./commands/sales/index.js";
 import { registerReporting } from "./commands/reporting/index.js";
 import { registerExports } from "./commands/exports/index.js";
+import { registerSiteSearch } from "./commands/site-search/index.js";
+import { registerTimeline } from "./commands/timeline/index.js";
+import { registerConversations } from "./commands/conversations/index.js";
+import { registerAutomation } from "./commands/automation/index.js";
+import { registerSettings } from "./commands/settings/index.js";
 import { CliError, type CliContext, printError } from "./core/output.js";
 import { loadPlugins } from "./core/plugins.js";
 import pkg from "../package.json" with { type: "json" };
@@ -77,6 +82,11 @@ export function createProgram(): { program: Command; getCtx: () => CliContext } 
   registerSales(program, () => ctx);
   registerReporting(program, () => ctx);
   registerExports(program, () => ctx);
+  registerSiteSearch(program, () => ctx);
+  registerTimeline(program, () => ctx);
+  registerConversations(program, () => ctx);
+  registerAutomation(program, () => ctx);
+  registerSettings(program, () => ctx);
   registerMcp(program);
 
   program.configureOutput({

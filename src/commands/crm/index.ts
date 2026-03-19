@@ -13,6 +13,10 @@ import { registerCustomObjects } from "./custom-objects.js";
 import { registerEngagements } from "./engagements.js";
 import { registerSync } from "./sync.js";
 import { registerDescribe } from "./describe.js";
+import { registerQuotes } from "./quotes.js";
+import { registerProducts } from "./products.js";
+import { registerLineItems } from "./line-items.js";
+import { registerGoals } from "./goals.js";
 
 export function registerCrm(program: Command, getCtx: () => CliContext): void {
   const crm = program.command("crm").description("HubSpot CRM objects");
@@ -29,4 +33,8 @@ export function registerCrm(program: Command, getCtx: () => CliContext): void {
   registerEngagements(crm, getCtx);
   registerSync(crm, getCtx);
   registerDescribe(crm, getCtx);
+  registerQuotes(crm, getCtx);
+  registerProducts(crm, getCtx);
+  registerLineItems(crm, getCtx);
+  registerGoals(crm, getCtx);
 }

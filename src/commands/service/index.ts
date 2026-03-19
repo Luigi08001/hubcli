@@ -1,6 +1,9 @@
 import { Command } from "commander";
 import type { CliContext } from "../../core/output.js";
 import { registerResource } from "../domains/shared.js";
+import { registerChatflows } from "./chatflows.js";
+import { registerTicketPipelines } from "./pipelines.js";
+import { registerKnowledgeBase } from "./knowledge-base.js";
 
 export function registerService(program: Command, getCtx: () => CliContext): void {
   const service = program.command("service").description("HubSpot Service APIs");
@@ -20,4 +23,8 @@ export function registerService(program: Command, getCtx: () => CliContext): voi
     createPath: "/crm/v3/objects/feedback_submissions",
     updatePath: (id) => `/crm/v3/objects/feedback_submissions/${id}`,
   });
+
+  registerChatflows(service, getCtx);
+  registerTicketPipelines(service, getCtx);
+  registerKnowledgeBase(service, getCtx);
 }

@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import type { CliContext } from "../../core/output.js";
 import { registerResource } from "../domains/shared.js";
+import { registerHubdb } from "./hubdb.js";
 
 export function registerCms(program: Command, getCtx: () => CliContext): void {
   const cms = program.command("cms").description("HubSpot CMS APIs");
@@ -24,4 +25,15 @@ export function registerCms(program: Command, getCtx: () => CliContext): void {
     updatePath: (id) => `/cms/v3/blogs/posts/${id}`,
     deletePath: (id) => `/cms/v3/blogs/posts/${id}`,
   });
+
+  registerResource(cms, getCtx, {
+    name: "redirects",
+    description: "URL redirects",
+    listPath: "/cms/v3/url-redirects",
+    itemPath: (id) => `/cms/v3/url-redirects/${id}`,
+    createPath: "/cms/v3/url-redirects",
+    deletePath: (id) => `/cms/v3/url-redirects/${id}`,
+  });
+
+  registerHubdb(cms, getCtx);
 }
