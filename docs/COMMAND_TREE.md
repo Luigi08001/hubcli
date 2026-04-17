@@ -1,104 +1,183 @@
 # COMMAND_TREE
 
-> See also: [[COMMAND_COMPATIBILITY]] · [[ARCHITECTURE]] · [[MCP]]
+> Updated: 2026-04-17 for 0.3.0
+> See also: [COMMAND_COMPATIBILITY.md](COMMAND_COMPATIBILITY.md) · [ARCHITECTURE.md](ARCHITECTURE.md) · [MCP.md](MCP.md)
 
-## Global
-- `hubcli --profile <name>`: Select auth profile (default: `default`)
-- `hubcli --json`: JSON-only output for automation
-- `hubcli --format <mode>`: Output mode `json|table|csv|yaml` (default: `table`)
-- `hubcli --dry-run`: Simulate write operations without mutating HubSpot
-- `hubcli --force`: Required to execute live writes
-- `hubcli --strict-capabilities`: Fail fast when capability status is unknown for the active portal
-- `hubcli --policy-file <path>`: Policy controls for write/delete behavior
-- `hubcli --change-ticket <id>`: Required when policy mandates ticketed writes
-- `hubcli --telemetry-file <path>`: Request telemetry JSONL output
+High-level map of every hubcli command. For detailed args and examples per command, run `hubcli <domain> <cmd> --help`.
+
+## Global flags (apply to every command)
+
+- `--profile <name>` — Auth profile (default: `default`)
+- `--json` / `--format <table|csv|yaml|json>` — Output format
+- `--dry-run` — Simulate without mutating
+- `--force` — Required for live writes / deletes
+- `--policy-file <path>` — Load write/delete policy
+- `--change-ticket <id>` — Change-ticket enforcement (when policy demands it)
+- `--strict-capabilities` — Fail fast on unsupported endpoints
+- `--telemetry-file <path>` — JSONL request audit trail
+- `--verbose` — Print request/response details
 
 ## Auth
-- `hubcli auth login --token <private-app-token> [--profile <name>]`
-- `hubcli auth login --token-stdin [--profile <name>]` (recommended for shell history safety)
-- `hubcli auth whoami [--profile <name>]`
-- `hubcli auth profiles`
-- `hubcli auth profile-show [--profile <name>]`
+
+- `hubcli auth login --token-stdin` | `--token <token>`
 - `hubcli auth logout [--profile <name>]`
-- `hubcli auth token-info [--profile <name>]`
-- `hubcli auth oauth-url --client-id <id> --redirect-uri <uri> [--scopes <csv>] [--state <value>]`
-- `hubcli auth oauth-exchange --client-id <id> --client-secret <secret> --code <code> --redirect-uri <uri> [--profile <name>]`
+- `hubcli auth profiles` — list profiles
+- `hubcli auth profile-show [--profile <name>]`
+- `hubcli auth token-info`
+- `hubcli auth oauth-url --client-id <id> --redirect-uri <uri> --scope <scopes>`
+- `hubcli auth oauth-exchange --client-id <id> --client-secret <secret> --redirect-uri <uri> --code <code>`
+- `hubcli auth vault-encrypt` | `vault-decrypt` | `vault-rotate` — encrypted token vault
 
 ## Doctor
-- `hubcli doctor capabilities [--refresh] [--ttl-hours <n>]`
 
-## CRM
-### Core Objects (`contacts`, `companies`, `deals`, `tickets`)
-- `<object> list|get|search|create|update|delete`
-- `<object> merge --data '<payload>'`
-- `<object> batch-read --data '<payload>'`
-- `<object> batch-upsert --data '<payload>'`
-- `<object> batch-archive --data '<payload>'`
+- `hubcli doctor capabilities [--refresh]` — probe portal tier + scopes
+- `hubcli doctor permissions` — introspect current token scopes
 
-### Schemas / Meta
-- `hubcli crm properties list|get|create|update <objectType> ...`
-- `hubcli crm associations list|create|remove <fromType> <fromId> <toType> [<toId>]`
-- `hubcli crm owners list [--limit <n>] [--after <cursor>] [--email <email>]`
-- `hubcli crm pipelines list|get <objectType> [pipelineId]`
+## CRM (22 sub-command files)
 
-### Imports
-- `hubcli crm imports create --data '<payload>' [--dry-run] [--force]`
-- `hubcli crm imports list [--limit <n>] [--after <cursor>]`
-- `hubcli crm imports get <importId>`
-- `hubcli crm imports errors <importId>`
+Objects:
+- `hubcli crm contacts|companies|deals|tickets list|get|search|create|update|delete [...]`
+- `hubcli crm quotes|products|line-items|goals list|get|search|create|update|delete [...]`
+- `hubcli crm payments|invoices|subscriptions list|get [...]` — commerce
+- `hubcli crm custom-objects schemas list|get|create|update|delete`
+- `hubcli crm custom-objects records list|get|search|create|update|delete`
+- `hubcli crm engagements (notes|calls|tasks|emails|meetings) list|get|create|update|delete`
 
-### Custom Objects
-- `hubcli crm custom-objects schemas list|get|create|update ...`
-- `hubcli crm custom-objects records list|get|search|create|update|delete ...`
+Properties + pipelines + associations:
+- `hubcli crm properties list|get|create|update|delete` + `hubcli crm properties groups list|create|update|delete`
+- `hubcli crm pipelines list|get|create|update|delete` + `hubcli crm pipelines stages create|update|delete`
+- `hubcli crm associations list|get|create|delete`
+- `hubcli crm owners list|get`
 
-### Engagements
-- `hubcli crm engagements notes|calls|tasks|emails|meetings <object-command>`
+Imports + sync + introspection:
+- `hubcli crm imports list|get|create`
+- `hubcli crm sync pull --object <type>` — incremental sync
+- `hubcli crm describe <object> [--refresh-cache] [--offline]` — schema introspection
+- `hubcli crm validate <object> --data '<payload>' [--offline]` — client-side validation
 
-### Sync
-- `hubcli crm sync pull <objectType> [--since <iso>] [--state-file <path>] [--out-file <path>] [--limit <n>] [--max-pages <n>]`
+## Marketing (9 files)
 
-### Introspection / Validation
-- `hubcli crm describe <objectType> [--offline] [--refresh-cache] [--ttl-hours <n>]`
-- `hubcli crm validate <objectType> --data '<payload>' [--offline] [--refresh-cache] [--ttl-hours <n>]`
+- `hubcli marketing emails list|get|create|update|delete`
+- `hubcli marketing emails stats <emailId>` — **per-email engagement metrics**
+- `hubcli marketing campaigns list|get|create|update|delete`
+- `hubcli marketing ads accounts|campaigns list|get`
+- `hubcli marketing social accounts|posts list|get`
+- `hubcli marketing seo recommendations|topics list|get`
+- `hubcli marketing landing-pages list|get|create|update|delete`
+- `hubcli marketing transactional send|smtp-tokens`
+- `hubcli marketing subscriptions list|get` — subscription types
+- `hubcli marketing events list|get|create|update|delete`
+- `hubcli marketing behavioral-events list|get|create|update`
 
-## Marketing
-- `hubcli marketing emails list|get|create|update`
-- `hubcli marketing campaigns list|get|create|update`
+## Sales (4 files)
 
-## Forms
-- `hubcli forms list|get|create|update`
+- `hubcli sales sequences list|get|enrollments`
+- `hubcli sales meetings list|get|create|update`
+- `hubcli sales calling list|get`
+- `hubcli sales goals list|get`
 
-## Files
-- `hubcli files assets list|get|update|delete`
+## Service (4 files)
+
+- `hubcli service conversations list|get|send-message`
+- `hubcli service feedback list|get`
+- `hubcli service chatflows list|get|create|update|delete`
+- `hubcli service knowledge-base articles list|get|create|update|delete`
+- `hubcli service pipelines list|get|create|update`
 
 ## CMS
-- `hubcli cms pages list|get|create|update|delete`
-- `hubcli cms blogs list|get|create|update|delete`
+
+- `hubcli cms hubdb tables list|get|rows list|create|update|delete`
+- `hubcli cms redirects list|get|create|update|delete`
+- `hubcli cms landing-pages list|get`
+- `hubcli cms domains list|get`
+
+## Lists (standalone top-level)
+
+- `hubcli lists list|get|create|update|delete`
+- `hubcli lists search --query <term>`
+- `hubcli lists add-members --list-id <id> --object-ids <ids>`
+- `hubcli lists remove-members --list-id <id> --object-ids <ids>`
+
+## Reporting
+
+- `hubcli reporting dashboards list|get`
+- `hubcli reporting reports list|get`
+
+## Exports
+
+- `hubcli exports create --data '<payload>'`
+- `hubcli exports list|get|status <id>`
+
+## Settings
+
+- `hubcli settings users list|get|create|update|delete` + `roles list`
+- `hubcli settings teams list`
+- `hubcli settings business-units list`
+- `hubcli settings currencies list`
+- `hubcli settings gdpr delete-contact <id>`
+- `hubcli settings audit-logs list [--filters]`
+
+## Account
+
+- `hubcli account info`
+- `hubcli account audit-logs list [--filters]`
+- `hubcli account private-apps` — **list private apps installed (integration audit)**
+- `hubcli account api-usage` — daily API usage totals
+
+## Communication preferences
+
+- `hubcli communication-preferences status|definitions|update`
+
+## Conversations
+
+- `hubcli conversations list|get|send-message`
+
+## Events
+
+- `hubcli events list|get|create`
+
+## Automation
+
+- `hubcli automation flows list|get` + `actions list|get`
 
 ## Workflows
-- `hubcli workflows flows list|get|create|update`
 
-## Service
-- `hubcli service conversations list|get`
-- `hubcli service feedback list|get|create|update`
+- `hubcli workflows flows list|get` + `actions list|get` + `sequences list|get`
+
+## Files + Forms + Domains + Site-search + Timeline
+
+- `hubcli files list|get|upload|delete`
+- `hubcli forms list|get|submissions list|create`
+- `hubcli domains list|get`
+- `hubcli site-search list --type <type>`
+- `hubcli timeline events list|create`
 
 ## Webhooks
+
 - `hubcli webhooks list --app-id <id>`
-- `hubcli webhooks subscribe --app-id <id> --data '<payload>' [--dry-run|--force]`
-- `hubcli webhooks delete --app-id <id> --subscription-id <id> [--dry-run|--force]`
+- `hubcli webhooks subscribe --app-id <id> --data '<payload>'`
+- `hubcli webhooks delete --app-id <id> --subscription-id <id>`
 
 ## Raw API
-- `hubcli api request --path <path> [--method <method>] [--data '<payload>']`
+
+- `hubcli api request --path <path> [--method GET|POST|PATCH|PUT|DELETE] [--data '<payload>']`
+- Path is validated against the allowed API scopes — SSRF and traversal attempts are rejected at transport.
+
+## MCP server
+
+- `hubcli mcp` — start MCP server over stdio. ~125 tools across the full surface. Profile-isolated via `HUBCLI_MCP_PROFILE`.
+
+Full tool catalog and Claude Desktop / Cursor config in [MCP.md](MCP.md).
+
+## Seed (dev + testing)
+
+- `hubcli seed --all [--dry-run]` — seed a test portal with the 48-asset baseline
 
 ## Notes
-- All live writes require `--force` unless run in `--dry-run`.
-- Write/batch requests include an `Idempotency-Key` header for replay safety.
-- Transport tracks HubSpot rate-limit headers and throttles proactively before quota exhaustion.
+
+- All live writes require `--force` (or `--dry-run` to simulate).
+- Write and batch requests include an `Idempotency-Key` header for replay safety.
+- Transport tracks HubSpot rate-limit headers and throttles proactively.
 - Policy checks apply to writes/deletes when `--policy-file` is provided.
-- Capability cache is keyed by portal + token scopes and used for endpoint preflight.
-- `--strict-capabilities` requires a supported cached capability status (`hubcli doctor capabilities --refresh`).
-- Schema cache stores properties, pipelines and association labels for `crm describe/validate` and offline usage.
-- Strict allowlists:
-- Object commands: `contacts`, `companies`, `deals`, `tickets`
-- Properties/associations object types: `contacts`, `companies`, `deals`, `tickets`
-- Pipeline object types: `deals`, `tickets`
+- Capability cache is keyed by portal + token scopes; `--strict-capabilities` forces cached-state preflight.
+- Schema cache (`crm describe` / `crm validate`) supports an `--offline` mode after first fetch.

@@ -42,4 +42,24 @@ export function registerAccount(program: Command, getCtx: () => CliContext): voi
       const res = await client.request(`/account-info/v3/activity/audit-logs/list?${params.toString()}`);
       printResult(ctx, res);
     });
+
+  account
+    .command("private-apps")
+    .description("List private apps installed in the portal (integration audit proxy)")
+    .action(async () => {
+      const ctx = getCtx();
+      const client = new HubSpotClient(getToken(ctx.profile));
+      const res = await client.request("/account-info/v3/api-usage/daily/private-apps");
+      printResult(ctx, res);
+    });
+
+  account
+    .command("api-usage")
+    .description("Daily API usage totals (portal-wide)")
+    .action(async () => {
+      const ctx = getCtx();
+      const client = new HubSpotClient(getToken(ctx.profile));
+      const res = await client.request("/account-info/v3/api-usage/daily");
+      printResult(ctx, res);
+    });
 }
