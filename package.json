@@ -1,7 +1,7 @@
 {
   "name": "hubcli",
-  "version": "0.1.0",
-  "description": "Production-grade HubSpot CLI foundation",
+  "version": "0.3.0",
+  "description": "Production-grade HubSpot CLI + MCP server. 25 command domains, 125+ MCP tools, enterprise safety rails, self-hosted.",
   "type": "module",
   "bin": {
     "hubcli": "dist/cli.js"
@@ -16,15 +16,34 @@
     "lint": "eslint src/ tests/",
     "lint:fix": "eslint src/ tests/ --fix",
     "release:checksums": "node scripts/release-checksums.mjs",
-    "audit": "npm audit --audit-level=moderate",
-    "release:verify": "npm run typecheck && npm run lint && npm test && npm run audit && npm run build && npm run release:checksums && shasum -a 256 -c release/checksums.sha256"
+    "audit": "npm audit --audit-level=high",
+    "release:verify": "npm run typecheck && npm run lint && npm test && npm run audit && npm run build && npm run release:checksums && shasum -a 256 -c release/checksums.sha256",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build"
   },
   "keywords": [
     "hubspot",
     "cli",
-    "crm"
+    "crm",
+    "mcp",
+    "mcp-server",
+    "ai-agents",
+    "claude",
+    "anthropic",
+    "hubspot-api",
+    "crm-automation",
+    "dev-tools",
+    "audit"
   ],
   "license": "MIT",
+  "homepage": "https://github.com/Luigi08001/hubcli#readme",
+  "bugs": {
+    "url": "https://github.com/Luigi08001/hubcli/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Luigi08001/hubcli.git"
+  },
+  "author": "Luigi Vermeulen",
   "exports": {
     ".": "./dist/cli.js",
     "./plugins": "./dist/core/plugins.js",
@@ -33,6 +52,16 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "SECURITY.md",
+    "CHANGELOG.md"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",

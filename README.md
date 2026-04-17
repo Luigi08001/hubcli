@@ -1,173 +1,235 @@
 # hubcli
 
-> See also: [[WHY_HOW_WHAT]] · [[ARCHITECTURE]] · [[COMMAND_TREE]] · [[SAFETY_MODEL]] · [[hubspot-rules]]
+[![CI](https://github.com/Luigi08001/hubcli/actions/workflows/ci.yml/badge.svg)](https://github.com/Luigi08001/hubcli/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/hubcli.svg)](https://www.npmjs.com/package/hubcli)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Node: >=20](https://img.shields.io/badge/Node-%3E%3D20-brightgreen)](package.json)
+[![HubSpot API coverage: 95%+](https://img.shields.io/badge/HubSpot%20API-95%25%2B-7c3aed)](docs/COMMAND_TREE.md)
 
-Production-grade HubSpot CLI in TypeScript, focused on safe operations, automation, and release workflows.
+**A production-grade HubSpot CLI + MCP server — 25 command domains, 125+ MCP tools, enterprise safety rails, self-hosted.**
 
-## What It Covers
-- Auth profiles (`--profile`) with local secure token store
-- Safety gates for mutations (`--dry-run`, `--force`, policy file, change ticket)
-- Capability-aware endpoint preflight (`doctor capabilities`, `--strict-capabilities`)
-- Proactive rate-limit control (rolling window + daily pacing from HubSpot headers)
-- Idempotency-Key on write and batch calls
-- CRM coverage:
-  - Objects: `contacts`, `companies`, `deals`, `tickets`
-  - Properties, associations, owners, pipelines, imports
-  - Custom objects (schemas + records)
-  - Engagement objects (`notes`, `calls`, `tasks`, `emails`, `meetings`)
-  - Incremental sync (`crm sync pull`)
-  - Schema introspection and validation (`crm describe`, `crm validate`)
-- Domain coverage: marketing, forms, files, cms, workflows, service
-- Webhooks management (`webhooks list|subscribe|delete`)
-- Raw API command (`api request`) with path scope controls
-- MCP server over stdio (`hubcli mcp`)
-- Output modes: `--format table|csv|yaml|json` (+ `--json`)
-- Request telemetry (`--telemetry-file`)
+hubcli gives you one TypeScript binary that covers ~95% of HubSpot's public API surface:
 
-## Install / Build
+- **Full CRM** — contacts, companies, deals, tickets, quotes, products, line items, goals, payments, invoices, subscriptions, custom objects, properties, pipelines, associations, owners, imports, engagements, sync, describe/validate
+- **Marketing** — emails (with per-email stats), campaigns, ads, social, SEO, landing pages, transactional, subscriptions, events, behavioral events
+- **Sales** — sequences, meetings, calling, goals
+- **Service** — conversations, feedback, chatflows, knowledge-base, pipelines, automation, tickets
+- **CMS** — HubDB, redirects, site-search, landing pages, domains
+- **Settings** — users, teams, business units, currencies, GDPR, audit-logs
+- **Account** — info, audit-logs, private-apps, API usage
+- **Operations** — lists, reporting, exports, workflows, automation, webhooks, timeline
+- **Communication preferences**, **conversations**, **events**, **site-search**, **domains**
+- **Raw API** command with path-scope controls
+- **Built-in MCP server** over stdio (125+ tools) for Claude Desktop, Cursor, Claude Code, any MCP client
+
+Enterprise-grade from day one: `--dry-run`, `--force`, policy files, change tickets, capability probing, rate-limit intelligence, token redaction, path scope allowlisting, idempotency keys.
+
+## How it compares
+
+The HubSpot CLI + MCP space is crowded:
+
+- **[HubSpot's official CLI](https://github.com/HubSpot/hubspot-cli)** (`@hubspot/cli`, `hs`) — scoped to CMS authoring (themes, serverless, HubDB sync). Complementary, not competing.
+- **[HubSpot's official MCP server](https://github.com/hubspot/mcp-server)** — public repo exists but empty as of writing. Remote MCP service announced.
+- **[Composio](https://composio.dev/toolkits/hubspot)** — hosted SaaS MCP at `connect.composio.dev/mcp`, part of their 850-app adapter platform. Proprietary, they hold your token on their infra (SOC 2 Type 2).
+- **Community OSS MCP servers** — [peakmojo/mcp-hubspot](https://github.com/peakmojo/mcp-hubspot), [lkm1developer/hubspot-mcp-server](https://github.com/lkm1developer/hubspot-mcp-server), [shinzo-labs/hubspot-mcp](https://github.com/shinzo-labs/hubspot-mcp), [CData's hubspot-mcp-server](https://github.com/CDataSoftware/hubspot-mcp-server-by-cdata), and ~15 others on GitHub.
+
+hubcli's emphasis:
+
+1. **CLI-first with MCP as a peer surface.** Every MCP tool has a matching `hubcli` command — same write gates, same redaction, same capability probing in both.
+2. **Self-hosted and token-sovereign.** Your HubSpot private app token never leaves your machine. Contrast with Composio.
+3. **Enterprise safety gates.** `--dry-run`, `--force`, policy files, change tickets, path scope allowlisting, idempotency keys. Most community MCP servers don't have these.
+4. **HubSpot-native engineering.** Reads HubSpot's `X-HubSpot-RateLimit-*` headers, proactive throttling, capability probing by `portalId + scopes`, offline schema validation, idempotency-key on every write.
+5. **Used in production.** Powers [CRMforge](https://crmforge.ai), the AI HubSpot consultant.
+
+Full landscape: [docs/LAUNCH/COMPETITIVE-LANDSCAPE.md](docs/LAUNCH/COMPETITIVE-LANDSCAPE.md).
+
+## Install
+
+From npm (once published):
+
 ```bash
+npm install -g hubcli
+```
+
+From source:
+
+```bash
+git clone https://github.com/Luigi08001/hubcli.git
+cd hubcli
 npm install
 npm run build
 ```
 
 ## Quickstart
-Save token (recommended):
+
+Save a token (recommended — avoids shell history):
+
 ```bash
-printf '%s' '<HUBSPOT_PRIVATE_APP_TOKEN>' | node dist/cli.js auth login --token-stdin
+printf '%s' '<HUBSPOT_PRIVATE_APP_TOKEN>' | hubcli auth login --token-stdin
 ```
 
-Inline token (supported):
+Inline token (also supported):
+
 ```bash
-node dist/cli.js auth login --token <HUBSPOT_PRIVATE_APP_TOKEN>
+hubcli auth login --token <HUBSPOT_PRIVATE_APP_TOKEN>
 ```
 
-Read flow:
+Read:
+
 ```bash
-node dist/cli.js crm contacts list --limit 5
+hubcli crm contacts list --limit 5
+hubcli marketing emails stats 123456
+hubcli sales sequences list
+hubcli reporting dashboards list
+hubcli settings teams list
 ```
 
 Dry-run write:
+
 ```bash
-node dist/cli.js --dry-run crm contacts create --data '{"properties":{"email":"test@example.com"}}'
+hubcli --dry-run crm contacts create --data '{"properties":{"email":"test@example.com"}}'
 ```
 
 Live write (explicit):
+
 ```bash
-node dist/cli.js --force crm contacts create --data '{"properties":{"email":"test@example.com"}}'
+hubcli --force crm contacts create --data '{"properties":{"email":"test@example.com"}}'
 ```
 
-Policy-guarded delete:
+Policy-guarded delete with change ticket:
+
 ```bash
-node dist/cli.js --force --policy-file docs/POLICY_EXAMPLE.json --change-ticket CHG-123 crm contacts delete 123
+hubcli --force --policy-file docs/POLICY_EXAMPLE.json --change-ticket CHG-123 \
+  crm contacts delete 123
 ```
 
-## Output Modes
-Default output is `table`.
+## Output modes
 
-JSON envelope:
 ```bash
-node dist/cli.js --json crm companies list --limit 3
+hubcli --json crm companies list --limit 3           # JSON envelope
+hubcli --format csv crm contacts list --limit 5      # CSV
+hubcli --format yaml crm deals get 123               # YAML
 ```
 
-CSV:
+## MCP: AI agents as first-class consumers
+
+hubcli ships a built-in MCP server over stdio with ~125 tools exposing the full surface:
+
 ```bash
-node dist/cli.js --format csv crm contacts list --limit 5
+hubcli mcp
 ```
 
-YAML:
-```bash
-node dist/cli.js --format yaml crm deals get 123
+For Claude Desktop, add to `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "hubcli": {
+      "command": "hubcli",
+      "args": ["mcp"],
+      "env": {
+        "HUBCLI_MCP_PROFILE": "default"
+      }
+    }
+  }
+}
 ```
 
-Notes:
-- `--json` implies JSON output and cannot be combined with `--format` non-json.
-- `--format json` is also supported.
+Restart Claude. Now Claude can list contacts, search deals, inspect workflows, and — with `--force` passed at tool-call time — perform safe writes. All CLI safety rails apply to MCP calls. Secrets are redacted from every tool response. `HUBCLI_MCP_PROFILE` locks the stdio server to one auth profile to prevent cross-tenant access.
 
-## Capability / Tier Awareness
+See [docs/MCP.md](docs/MCP.md) for the full tool catalog.
+
+## Capability / tier awareness
+
 Probe portal capabilities and cache them by `portalId + scopes`:
+
 ```bash
-node dist/cli.js doctor capabilities --refresh
+hubcli doctor capabilities --refresh
 ```
 
-Fail fast when capability status is unknown/unsupported:
+Fail fast when a command hits an unsupported endpoint:
+
 ```bash
-node dist/cli.js --strict-capabilities marketing emails list
+hubcli --strict-capabilities marketing emails list
 ```
 
-## Schema Introspection + Validation
-Describe CRM schema (properties, enums, required, pipelines, association labels):
+## Schema introspection + offline validation
+
 ```bash
-node dist/cli.js crm describe contacts --refresh-cache
+hubcli crm describe contacts --refresh-cache
+hubcli crm validate contacts --offline --data '{"properties":{"email":"x@example.com"}}'
 ```
 
-Validate payload client-side before write:
-```bash
-node dist/cli.js crm validate contacts --data '{"properties":{"email":"x@example.com"}}'
-```
+Local schema cache means you can validate payloads without hitting HubSpot.
 
-Offline mode (uses local schema cache):
-```bash
-node dist/cli.js crm describe contacts --offline
-node dist/cli.js crm validate contacts --offline --data '{"properties":{"email":"x@example.com"}}'
-```
+## Runtime safety model
 
-## Webhooks
-List subscriptions:
-```bash
-node dist/cli.js webhooks list --app-id 12345
-```
+- Mutations are **blocked** unless `--force` is passed (or intercepted by `--dry-run`)
+- Write/delete can be constrained by policy (`--policy-file`) and change-ticket enforcement
+- Requests are origin-locked to `https://api.hubapi.com` and restricted to approved API path roots
+- Path segments are hardened against traversal / control characters
+- Output and error payloads are redacted for secrets and token-like strings
+- Transport retries transient failures with exponential backoff
+- Rate-limit controller reads `X-HubSpot-RateLimit-*` headers and throttles proactively
+- All write / batch methods include `Idempotency-Key` for replay-safe retries
 
-Create subscription (dry-run first):
-```bash
-node dist/cli.js --dry-run webhooks subscribe --app-id 12345 --data '{"eventType":"contact.creation","active":true}'
-```
-
-Delete subscription:
-```bash
-node dist/cli.js --force webhooks delete --app-id 12345 --subscription-id 999
-```
-
-## Runtime Safety Model
-- Mutations are blocked unless `--force` (or intercepted by `--dry-run`).
-- Write/delete can be constrained by policy (`--policy-file`) and change-ticket enforcement.
-- Requests are origin-locked to `https://api.hubapi.com` and restricted to approved API path roots.
-- Path segments are hardened against traversal/control chars.
-- Output/error payloads are redacted for secrets and token-like strings.
-- Transport retries transient failures, then fails with structured error codes.
-- Rate-limit controller reads `X-HubSpot-RateLimit-*` headers and throttles proactively.
-- All write/batch methods include `Idempotency-Key` for replay-safe retries.
+Full threat model: [SECURITY.md](SECURITY.md).
 
 ## Caches
+
 Under `HUBCLI_HOME` (default: `~/.hubcli`):
-- `auth.json`: profile tokens/metadata
-- `capabilities.json`: portal/tier capability cache
-- `schema-cache.json`: CRM schema cache for describe/validate
 
-## Commands Surface (High Level)
-- `auth`: login/logout/profile/token/OAuth helpers
-- `doctor`: capability probe/cache
-- `crm`: objects + schemas + imports + owners + pipelines + custom objects + engagements + sync + describe/validate
-- `marketing`, `forms`, `files`, `cms`, `workflows`, `service`
-- `webhooks`
-- `api request`
-- `mcp`
+- `auth.json` — profile tokens (0600 permissions, 0700 directory)
+- `capabilities.json` — portal/tier capability cache
+- `schema-cache.json` — CRM schema cache for describe/validate
+- `auth.enc` — optional encrypted vault (when passphrase is set)
 
-Full command tree: `docs/COMMAND_TREE.md`
+## Documentation
+
+- [docs/COMMAND_TREE.md](docs/COMMAND_TREE.md) — full command surface
+- [docs/WHY_HOW_WHAT.md](docs/WHY_HOW_WHAT.md) — design philosophy
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- [docs/SAFETY_MODEL.md](docs/SAFETY_MODEL.md)
+- [docs/MCP.md](docs/MCP.md) — MCP server tool catalog
+- [docs/TESTING_PLAN.md](docs/TESTING_PLAN.md)
+- [docs/RELEASE_GOVERNANCE.md](docs/RELEASE_GOVERNANCE.md)
+- [docs/PLUGIN_GUIDE.md](docs/PLUGIN_GUIDE.md) — writing plugins
+- [docs/OPERATIONAL_PLAYBOOKS.md](docs/OPERATIONAL_PLAYBOOKS.md)
+- [docs/COOKBOOK.md](docs/COOKBOOK.md) — common recipes
+- [CONTRIBUTING.md](CONTRIBUTING.md)
+- [SECURITY.md](SECURITY.md)
+- [CHANGELOG.md](CHANGELOG.md)
+
+### Domain setup guides
+
+- [docs/PORTAL_SETUP.md](docs/PORTAL_SETUP.md)
+- [docs/CMS_SETUP.md](docs/CMS_SETUP.md)
+- [docs/COMMERCE_SETUP.md](docs/COMMERCE_SETUP.md)
+- [docs/MARKETING_SETUP.md](docs/MARKETING_SETUP.md)
+- [docs/SALES_SETUP.md](docs/SALES_SETUP.md)
+- [docs/SERVICE_SETUP.md](docs/SERVICE_SETUP.md)
+- [docs/OPERATIONS_SETUP.md](docs/OPERATIONS_SETUP.md)
+- [docs/REPORTING_SETUP.md](docs/REPORTING_SETUP.md)
+- [docs/INTEGRATIONS_NOTIFICATIONS_SETUP.md](docs/INTEGRATIONS_NOTIFICATIONS_SETUP.md)
 
 ## Verification
-Release check:
+
+Full release check:
+
 ```bash
 npm run release:verify
 ```
-This runs typecheck, tests, build, and checksum verification.
 
-## Documentation
-- `docs/COMMAND_TREE.md`
-- `docs/ARCHITECTURE.md`
-- `docs/SAFETY_MODEL.md`
-- `docs/TESTING_PLAN.md`
-- `docs/MCP.md`
-- `docs/RELEASE_GOVERNANCE.md`
-- `docs/COMMAND_COMPATIBILITY.md`
-- `SECURITY.md`
-- `CHANGELOG.md`
+Runs typecheck + lint + tests + audit + build + SHA256 checksum verification.
+
+## Contributing
+
+Issues and PRs welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow, coding standards, and how to run contract tests against a sandbox portal.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
+
+---
+
+**Built as the foundation for [CRMforge](https://crmforge.ai)**, the AI HubSpot consultant. hubcli is open source so the ecosystem can build on it.
