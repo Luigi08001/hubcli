@@ -89,7 +89,14 @@ function textResult(data: unknown): { content: Array<{ type: "text"; text: strin
   };
 }
 
-async function executeTool(args: McpBaseArgs, fn: (ctx: CliContext, client: HubSpotClient) => Promise<unknown>) {
+async function executeTool(args: McpBaseArgs, fn: (ctx: CliContext, client: HubSpotClient) => Promise<unknown>, toolName?: string) {
+  // Tag every request made during this tool call with the MCP tool name, so
+  // trace files produced by `HUBCLI_TELEMETRY_FILE` show up in
+  // `hubcli trace stats --byToolName`. We use an env var rather than
+  // threading through the request options because fn() may construct
+  // arbitrary client.request() chains and we want all of them tagged.
+  const previousToolName = process.env.HUBCLI_MCP_TOOL_NAME;
+  if (toolName) process.env.HUBCLI_MCP_TOOL_NAME = toolName;
   try {
     const ctx = mcpContext(args);
     const client = new HubSpotClient(getToken(ctx.profile), {
@@ -112,6 +119,11 @@ async function executeTool(args: McpBaseArgs, fn: (ctx: CliContext, client: HubS
         details: err.details,
       }),
     };
+  } finally {
+    if (toolName) {
+      if (previousToolName === undefined) delete process.env.HUBCLI_MCP_TOOL_NAME;
+      else process.env.HUBCLI_MCP_TOOL_NAME = previousToolName;
+    }
   }
 }
 

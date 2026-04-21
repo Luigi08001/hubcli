@@ -229,12 +229,21 @@ export class HubSpotClient {
     durationMs: number;
     attempt: number;
     error?: string;
+    requestBody?: unknown;
+    responseBody?: unknown;
+    requestBytes?: number;
+    responseBytes?: number;
   }): void {
     if (!this.telemetryFile) return;
     try {
+      // Baseline event: always includes ts + requestId + profile. toolName
+      // is set from HUBCLI_MCP_TOOL_NAME so MCP tool invocations show up
+      // distinctly in `hubcli trace stats` (byToolName breakdown).
       appendFileSync(this.telemetryFile, JSON.stringify({
         ts: new Date().toISOString(),
         requestId: this.requestId,
+        profile: this.profile,
+        toolName: process.env.HUBCLI_MCP_TOOL_NAME?.trim() || undefined,
         ...event,
       }) + "\n", "utf8");
     } catch {
