@@ -66,7 +66,22 @@ interface AuthFile {
 }
 
 export function getHubcliHomeDir(): string {
-  return process.env.HSCLI_HOME?.trim() || join(homedir(), ".hscli");
+  // New primary location: ~/.revfleet/ (avoids colliding with @hubspot/cli's
+  // own ~/.hscli/ config dir). If a legacy ~/.hubcli/ install exists and
+  // the new location is empty, fall back to the legacy so users who
+  // upgrade from pre-0.5.4 hubcli/hscli don't silently lose their auth.
+  // We don't auto-migrate (write to new location) on read — that'd be a
+  // destructive side-effect from a read call. `hscli auth login` will
+  // write to the new location going forward.
+  const explicit = process.env.HSCLI_HOME?.trim();
+  if (explicit) return explicit;
+  const primary = join(homedir(), ".revfleet");
+  // If the new primary has an auth.json, always use it.
+  if (existsSync(join(primary, "auth.json"))) return primary;
+  // Fallback to legacy ~/.hubcli if it still has the only auth.json.
+  const legacy = join(homedir(), ".hubcli");
+  if (existsSync(join(legacy, "auth.json"))) return legacy;
+  return primary;
 }
 
 function authPaths(): { dir: string; file: string } {

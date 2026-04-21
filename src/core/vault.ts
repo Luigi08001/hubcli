@@ -1,5 +1,5 @@
 /**
- * Optional encrypted token vault for ~/.hscli/auth.json.
+ * Optional encrypted token vault for ~/.revfleet/auth.json.
  *
  * Uses AES-256-GCM with PBKDF2 key derivation — Node.js built-in crypto only.
  * Passphrase is read from HSCLI_VAULT_PASSPHRASE env var.

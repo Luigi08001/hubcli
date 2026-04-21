@@ -42,7 +42,7 @@ export function registerSync(crm: Command, getCtx: () => CliContext): void {
       const objectTypeSegment = encodePathSegment(objectType, "objectType");
       const limit = parseNumberFlag(opts.limit, "--limit");
       const maxPages = parseNumberFlag(opts.maxPages, "--max-pages");
-      const stateFile = opts.stateFile ? String(opts.stateFile) : `.hscli-sync-${objectTypeSegment}.json`;
+      const stateFile = opts.stateFile ? String(opts.stateFile) : `.revfleet-sync-${objectTypeSegment}.json`;
       const state = readState(stateFile);
 
       // Determine sync mode for this run
