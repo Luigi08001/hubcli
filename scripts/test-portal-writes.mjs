@@ -320,6 +320,28 @@ function shouldSkip(ep) {
   return false;
 }
 
+async function hitOnce(method, url, body) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+  try {
+    const init = {
+      method,
+      signal: ctrl.signal,
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    };
+    if (method !== "DELETE" && method !== "GET" && body !== undefined) init.body = JSON.stringify(body);
+    const r = await fetch(url, init);
+    clearTimeout(timer);
+    const text = await r.text().catch(() => "");
+    // Parse Allow header on 405 to retry with the correct verb
+    const allow = r.headers.get("allow") || r.headers.get("Allow") || "";
+    return { status: r.status, text, allow };
+  } catch (e) {
+    clearTimeout(timer);
+    return { status: 0, text: e.name === "AbortError" ? "timeout" : e.message, allow: "" };
+  }
+}
+
 async function probeWrite(ep) {
   if (shouldSkip(ep)) return { category: "SKIP-UNSAFE", status: 0, note: "skipped for safety", ep };
 
@@ -330,25 +352,36 @@ async function probeWrite(ep) {
   }
 
   const url = `${API_BASE}${resolvedPath}`;
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
-  try {
-    const init = {
-      method: ep.method,
-      signal: ctrl.signal,
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    };
-    if (ep.method !== "DELETE" && ep.method !== "GET") {
-      init.body = JSON.stringify(generateBody(ep));
+  const body = generateBody(ep);
+  let first = await hitOnce(ep.method, url, body);
+
+  // Auto-retry on 405: try the Allow header's first write-like verb if present,
+  // otherwise cycle through {POST, PATCH, PUT, DELETE} except the one we tried.
+  let retried = false;
+  let actualMethod = ep.method;
+  if (first.status === 405) {
+    const candidates = first.allow
+      ? first.allow.split(",").map(s => s.trim().toUpperCase()).filter(m => m && m !== ep.method && m !== "OPTIONS" && m !== "HEAD")
+      : ["POST", "PATCH", "PUT", "DELETE"].filter(m => m !== ep.method);
+    for (const m of candidates) {
+      const r = await hitOnce(m, url, body);
+      if (r.status !== 405) {
+        first = r;
+        actualMethod = m;
+        retried = true;
+        break;
+      }
     }
-    const r = await fetch(url, init);
-    clearTimeout(timer);
-    const bodyText = await r.text().catch(() => "");
-    return { category: classify(r.status, bodyText), status: r.status, note: bodyText.slice(0, 180).replace(/\s+/g, " "), ep };
-  } catch (e) {
-    clearTimeout(timer);
-    return { category: "ERROR", status: 0, note: e.name === "AbortError" ? "timeout" : e.message, ep };
   }
+
+  const category = classify(first.status, first.text);
+  const note = first.text.slice(0, 180).replace(/\s+/g, " ");
+  return {
+    category,
+    status: first.status,
+    note: retried ? `[auto-retried as ${actualMethod}] ${note}` : note,
+    ep: retried ? { ...ep, method: `${ep.method}→${actualMethod}` } : ep,
+  };
 }
 
 // ──────────────────────────────────────────────────────────────────────────
