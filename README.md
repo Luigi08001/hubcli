@@ -1,6 +1,6 @@
 # hubcli
 
-[![CI](https://github.com/Luigi08001/hscli/actions/workflows/ci.yml/badge.svg)](https://github.com/Luigi08001/hscli/actions/workflows/ci.yml)
+[![CI](https://github.com/revfleet/hscli/actions/workflows/ci.yml/badge.svg)](https://github.com/revfleet/hscli/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/@revfleet/hscli.svg)](https://www.npmjs.com/package/@revfleet/hscli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node: >=20](https://img.shields.io/badge/Node-%3E%3D20-brightgreen)](package.json)
@@ -93,7 +93,7 @@ It does **not** mean every endpoint returns 2xx on your portal — HubSpot tier-
 
 See [docs/TIERS.md](docs/TIERS.md) for the exact endpoint → tier mapping.
 
-**If an endpoint your portal should access doesn't work**, open an [endpoint issue](https://github.com/Luigi08001/hscli/issues/new?template=endpoint_not_working.md) — we triage these fast.
+**If an endpoint your portal should access doesn't work**, open an [endpoint issue](https://github.com/revfleet/hscli/issues/new?template=endpoint_not_working.md) — we triage these fast.
 
 ## Install
 
@@ -106,7 +106,7 @@ npm install -g @revfleet/hscli
 From source:
 
 ```bash
-git clone https://github.com/Luigi08001/hscli.git
+git clone https://github.com/revfleet/hscli.git
 cd hubcli
 npm install
 npm run build

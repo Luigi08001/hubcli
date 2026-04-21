@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.5.4 - 2026-04-21
+
+**GitHub repo transferred to `revfleet` organization.** All URLs
+(`github.com/Luigi08001/hscli/*`) now redirect to
+`github.com/revfleet/hscli/*`. The `@revfleet/hscli` npm package and
+the `revfleet` GitHub org are now fully aligned under the same brand.
+
+### Fixed
+
+- `hscli --help` now correctly shows `Usage: hscli [options] [command]`
+  (was showing `Usage: hubcli ...` cosmetically — the program.name()
+  was left at "hubcli" during the 0.5.2 rename).
+- CLI program description updated from "HubSpot CLI" to "Headless
+  HubSpot CLI + MCP server" for consistency with the tagline.
+
+### Updated
+
+- `package.json`: homepage, bugs.url, repository.url → revfleet/hscli
+- README + CHANGELOG + CONTRIBUTING + docs/TIERS.md: all github.com
+  URLs point at the new canonical location.
+
+### No behavior change
+
+162 tests pass, 0 vulns. Old `github.com/Luigi08001/hscli` URLs
+automatically 301-redirect (GitHub handles this indefinitely).
+
+---
+
 ## 0.5.3 - 2026-04-21
 
 **npm package scoped to `@revfleet/hscli`.** After npm's anti-typosquat

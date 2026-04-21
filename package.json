@@ -1,6 +1,6 @@
 {
   "name": "@revfleet/hscli",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "description": "Headless HubSpot CLI + MCP server. 100% public API coverage (1180 endpoints, 55+ command domains) — full portal, no UI dependency. Enterprise safety rails, self-hosted.",
   "type": "module",
   "bin": {
@@ -36,15 +36,15 @@
     "audit"
   ],
   "license": "MIT",
-  "homepage": "https://github.com/Luigi08001/hscli#readme",
+  "homepage": "https://github.com/revfleet/hscli#readme",
   "bugs": {
-    "url": "https://github.com/Luigi08001/hscli/issues"
+    "url": "https://github.com/revfleet/hscli/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Luigi08001/hscli.git"
+    "url": "git+https://github.com/revfleet/hscli.git"
   },
-  "author": "Luigi Vermeulen",
+  "author": "Luigi Vermeulen (revfleet)",
   "exports": {
     ".": "./dist/cli.js",
     "./plugins": "./dist/core/plugins.js",
