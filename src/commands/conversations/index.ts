@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { createClient } from "../../core/http.js";
 import type { CliContext } from "../../core/output.js";
 import { printResult } from "../../core/output.js";
-import { appendOptional, encodePathSegment, parseNumberFlag } from "../crm/shared.js";
+import { appendOptional, encodePathSegment, maybeWrite, parseJsonPayload, parseNumberFlag } from "../crm/shared.js";
 
 export function registerConversations(program: Command, getCtx: () => CliContext): void {
   const conversations = program.command("conversations").description("HubSpot Conversations APIs (threads & messages)");
@@ -157,6 +157,93 @@ export function registerConversations(program: Command, getCtx: () => CliContext
         method: "POST",
         body: { inputs: ids.map((id) => ({ id })) },
       });
+      printResult(ctx, res);
+    });
+
+  // Custom Channels — app-dev defined channels (SMS/Slack/custom integrations)
+  const customChannels = conversations.command("custom-channels").description("Custom conversation channels (app-dev defined integrations)");
+  customChannels.command("list").option("--limit <n>", "Max records", "50").option("--after <cursor>", "Paging cursor").action(async (opts) => {
+    const ctx = getCtx();
+    const client = createClient(ctx.profile);
+    const params = new URLSearchParams();
+    params.set("limit", String(parseNumberFlag(opts.limit, "--limit")));
+    appendOptional(params, "after", opts.after);
+    const res = await client.request(`/conversations/v3/custom-channels?${params.toString()}`);
+    printResult(ctx, res);
+  });
+  customChannels.command("get").argument("<channelId>").action(async (channelId) => {
+    const ctx = getCtx();
+    const client = createClient(ctx.profile);
+    const seg = encodePathSegment(channelId, "channelId");
+    const res = await client.request(`/conversations/v3/custom-channels/${seg}`);
+    printResult(ctx, res);
+  });
+  customChannels.command("create").requiredOption("--data <payload>", "Custom channel payload JSON").action(async (o) => {
+    const ctx = getCtx();
+    const client = createClient(ctx.profile);
+    const res = await maybeWrite(ctx, client, "POST", `/conversations/v3/custom-channels`, parseJsonPayload(o.data));
+    printResult(ctx, res);
+  });
+  customChannels.command("update").argument("<channelId>").requiredOption("--data <payload>", "Custom channel patch JSON").action(async (channelId, o) => {
+    const ctx = getCtx();
+    const client = createClient(ctx.profile);
+    const seg = encodePathSegment(channelId, "channelId");
+    const res = await maybeWrite(ctx, client, "PATCH", `/conversations/v3/custom-channels/${seg}`, parseJsonPayload(o.data));
+    printResult(ctx, res);
+  });
+  customChannels.command("delete").argument("<channelId>").action(async (channelId) => {
+    const ctx = getCtx();
+    const client = createClient(ctx.profile);
+    const seg = encodePathSegment(channelId, "channelId");
+    const res = await maybeWrite(ctx, client, "DELETE", `/conversations/v3/custom-channels/${seg}`);
+    printResult(ctx, res);
+  });
+
+  // Custom channels: channel-accounts subresource
+  const customAccounts = customChannels.command("channel-accounts").description("Channel accounts associated with a custom channel");
+  customAccounts.command("list").argument("<channelId>").option("--limit <n>", "Max records", "50").action(async (channelId, opts) => {
+    const ctx = getCtx();
+    const client = createClient(ctx.profile);
+    const seg = encodePathSegment(channelId, "channelId");
+    const params = new URLSearchParams();
+    params.set("limit", String(parseNumberFlag(opts.limit, "--limit")));
+    const res = await client.request(`/conversations/v3/custom-channels/${seg}/channel-accounts?${params.toString()}`);
+    printResult(ctx, res);
+  });
+  customAccounts.command("create").argument("<channelId>").requiredOption("--data <payload>", "Channel account payload JSON").action(async (channelId, o) => {
+    const ctx = getCtx();
+    const client = createClient(ctx.profile);
+    const seg = encodePathSegment(channelId, "channelId");
+    const res = await maybeWrite(ctx, client, "POST", `/conversations/v3/custom-channels/${seg}/channel-accounts`, parseJsonPayload(o.data));
+    printResult(ctx, res);
+  });
+  customAccounts.command("update").argument("<channelId>").argument("<channelAccountId>").requiredOption("--data <payload>", "Channel account patch JSON").action(async (channelId, channelAccountId, o) => {
+    const ctx = getCtx();
+    const client = createClient(ctx.profile);
+    const seg = encodePathSegment(channelId, "channelId");
+    const accSeg = encodePathSegment(channelAccountId, "channelAccountId");
+    const res = await maybeWrite(ctx, client, "PATCH", `/conversations/v3/custom-channels/${seg}/channel-accounts/${accSeg}`, parseJsonPayload(o.data));
+    printResult(ctx, res);
+  });
+  customAccounts.command("delete").argument("<channelId>").argument("<channelAccountId>").action(async (channelId, channelAccountId) => {
+    const ctx = getCtx();
+    const client = createClient(ctx.profile);
+    const seg = encodePathSegment(channelId, "channelId");
+    const accSeg = encodePathSegment(channelAccountId, "channelAccountId");
+    const res = await maybeWrite(ctx, client, "DELETE", `/conversations/v3/custom-channels/${seg}/channel-accounts/${accSeg}`);
+    printResult(ctx, res);
+  });
+
+  // Messages: send a new inbound/outbound message on an existing thread
+  messages.command("send")
+    .argument("<threadId>")
+    .description("Send a message into an existing thread (inbound/outbound)")
+    .requiredOption("--data <payload>", "Message payload JSON")
+    .action(async (threadId, o) => {
+      const ctx = getCtx();
+      const client = createClient(ctx.profile);
+      const id = encodePathSegment(threadId, "threadId");
+      const res = await maybeWrite(ctx, client, "POST", `/conversations/v3/conversations/threads/${id}/messages`, parseJsonPayload(o.data));
       printResult(ctx, res);
     });
 }

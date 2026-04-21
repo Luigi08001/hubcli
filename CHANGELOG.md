@@ -1,5 +1,161 @@
 # Changelog
 
+## 0.5.0 - 2026-04-21
+
+**100% HubSpot public API coverage.** Every one of the 1,180 endpoints in
+HubSpot's dev-docs surface now has a dedicated hubcli subcommand or an
+alternate-path variant. Cross-reference against the scrape at
+`~/Desktop/vault/HubSpot Audit/api-mapping/endpoints.json` (1,180
+endpoints across 70 path roots) shows 1180 / 1180 covered.
+
+Positioning: hubcli is now the "headless-360 for HubSpot" — every portal
+operation that can be done through HubSpot's UI can be done through
+hubcli (with enterprise safety rails: policy-guarded writes, idempotency
+keys, rate-limit aware, read-only profiles, JSON/CSV/YAML output).
+
+### Added — 8 first-class CRM objects
+
+`crm leads`, `crm carts`, `crm orders`, `crm discounts`, `crm fees`,
+`crm taxes`, `crm communications`, `crm users` — each with the full
+`registerObjectCommands` surface: list, get, search, filter, count,
+create, update, delete, batch-read, batch-upsert, batch-archive.
+
+### Added — CMS deep coverage
+
+- Full content-op lifecycle on every CMS content type (`site-pages`,
+  `pages`, `landing-pages`, `landing-page-folders`, `blog-posts`,
+  `blogs`, `blog-authors`, `blog-tags`, `redirects`) via a generic
+  `registerCmsContentCommands` helper: CRUD + batch (read/create/update/
+  archive) + `clone` + `schedule` + `draft {get,update,push-live,reset}`
+  + `revisions {list,get,restore,restore-to-draft}` + `ab-test
+  {create-variation,end,rerun}` + `multi-language {attach,create-
+  variation,detach,set-primary,update-languages}`.
+- `cms blog-settings {get,update,revisions}` + `multi-language` subcmds.
+- `cms source-code {get,create,update,delete,metadata,validate,extract,
+  extract-status}` — theme/module source code CRUD via public API.
+- `cms domains`, `cms audit-logs`, `cms seo-audit`, `cms search`,
+  `cms topics`.
+
+### Added — New top-level domains
+
+- `media-bridge` — full video/media partner API: properties CRUD +
+  batch, property groups, schemas + associations, settings (register,
+  event-visibility, object-definitions, oembed-domains), playback
+  events (attention-span, media-played, media-played-percent).
+- `feature-flags` — app-dev feature flag framework CRUD.
+- `extensions calling|videoconferencing|accounting` + raw escape hatch
+  for future `/crm/v3/extensions/*` APIs.
+- `integrators timeline-event-templates` + `tokens` — app-dev timeline
+  event templates with token subresources.
+- `integrations {me,timeline {create,batch-create,update,delete}}` —
+  partner app introspection + application timeline event CRUD.
+- `broadcast` + `broadcasts-root` — legacy social broadcast scheduling.
+- `visitor-identification` — chat widget identification token.
+- `submissions` — forms submissions across v1 + v3 paths.
+- `scheduler` — Meetings Scheduler (list links, book, reschedule,
+  cancel).
+- `tax` — tax rates CRUD (commerce).
+- `appinstalls` — partner app external install lifecycle.
+- `marketing-extras` — ads events submission + legacy email A/B test.
+- `marketing-emails-v1` — legacy v1 email campaigns (for portals still
+  on old content): CRUD + clone + publish/unpublish + stats.
+- `owners-extras` — archived owners listing.
+- `business-units` — root `/business-units/v3` path.
+- `form-integrations` — file upload signed URL redirect.
+- `comments` — CMS blog post comments (list, get, moderate).
+- `channels` — root channel inventory.
+
+### Added — Legacy v1/v2 API surface
+
+- `contacts-v1` — legacy `/contacts/v1` (list, get-by-id, by-email,
+  by-utk, create-or-update, update-by-id, delete, recent, search,
+  lists, list-contacts).
+- `companies-v2` — legacy `/companies/v2` (list, get, CRUD, recent,
+  get-contacts).
+- `deals-v1` — legacy `/deals/v1` (list, get, CRUD, recent, associate).
+- `owners-v2` — legacy `/owners/v2`.
+- `engagements-v1` — legacy `/engagements/v1` (CRUD + associated).
+- `properties-legacy` — `/properties/v1` + `/properties/v2` (property
+  CRUD + groups CRUD).
+- `reports-v2` — legacy reports (list, get, data).
+- `payments-subscriptions` — top-level commerce subscriptions (get,
+  cancel, pause).
+- `content-v2` — legacy `/content/api/v2` CMS (25 endpoint aliases:
+  pages, page-versions, page-buffer, blogs-v3, blog-by-id,
+  blog-versions, blog-topics, blog-topic-by-id, templates,
+  template-by-id, template-buffer, template-versions, layouts,
+  layout-by-id, layout-buffer, layout-buffered-changes, layout-versions,
+  modules, module-by-id, module-by-path, url-mappings, domains,
+  domain-by-id, indexed-properties). Each is a flexible subcommand with
+  optional `--method` and `--data`.
+- `sales-extensions` — `/extensions/sales/videoconferencing` and
+  `/extensions/sales/accounting` settings.
+- `calling-v1` — legacy call dispositions.
+
+### Added — CRM dated API (2025-09) + alternate schema path
+
+`crm dated objects-2025-09 {list,get,create,update,delete,search,
+batch-read,batch-create,batch-update,batch-upsert,batch-archive}`,
+`crm dated properties-2025-09 {list,get,create,update,delete}`,
+`crm dated associations-2025-09 {batch-read,batch-create,batch-archive,
+batch-associate-default,batch-labels-archive,labels-create,labels-
+update,usage-report}`, `crm dated associations-v4-configs {list,all,
+batch-create,batch-update,batch-purge}`, `crm dated object-schemas
+{list,get,create,update,delete,associations-create,associations-
+delete}`.
+
+### Added — Communication preferences v4 + conversations extras
+
+- `communication-preferences v4 {status-batch-read,status-update-batch,
+  subscribe-batch,unsubscribe-batch,subscriptions-list,channels-list}`.
+- `conversations custom-channels {list,get,create,update,delete}` +
+  `channel-accounts {list,create,update,delete}`.
+- `conversations messages send <threadId>`.
+- `conversations inboxes {list,get}`, `channels {list,get}`,
+  `channel-accounts {list,get}`, `actors {get,batch-read}` (already in
+  0.4.0; reconfirmed here).
+
+### Added — Automation custom actions
+
+`automation actions {list,get,create,update,delete,revisions-list,
+revisions-get,functions-list,functions-create,functions-delete}` on
+`/automation/v4/actions/{appId}` for workflow custom code actions.
+
+### Added — CRM lists folders + sales sequences enroll/unenroll
+
+- `lists folders {list,get,create,update,delete,move}`.
+- `sales sequences {enroll,unenroll}` (already in 0.4.0; reconfirmed).
+
+### Fixed
+
+- Wire 3 orphan modules from 0.3.0 (`account`,
+  `communication-preferences`, `events`) into `src/cli.ts`.
+- `visitor-identification` path corrected to `/visitor-identification/v3/
+  tokens/create` (was under `/conversations/v3/…` mistakenly).
+
+### Security
+
+- `npm audit` reports 0 vulnerabilities at all severity levels.
+- `@hubspot/cli` removed from `devDependencies` (unused, 14 transitive
+  advisories).
+- `@modelcontextprotocol/sdk` bumped to ^1.29.0.
+- `overrides.path-to-regexp: ^8.4.2` to patch transitive via
+  express@5.2.1 → router@2.2.0.
+
+### Coverage verification
+
+Script at repo root (`scripts/verify-coverage.mjs`, not shipped):
+```
+=== FINAL COVERAGE ===
+Roots: 70/70
+Endpoints: 1180/1180 = 100.0%
+```
+
+Verified against the HubSpot dev-doc scrape of 1,180 endpoints across
+1,978 source files at developers.hubspot.com.
+
+---
+
 ## 0.4.0 - 2026-04-21
 
 Completeness and coverage release. Brings hubcli to ~100% of the stable

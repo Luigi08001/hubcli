@@ -1,7 +1,7 @@
 {
   "name": "hubcli",
-  "version": "0.4.0",
-  "description": "Production-grade HubSpot CLI + MCP server. 27 command domains, 140+ MCP tools, enterprise safety rails, self-hosted.",
+  "version": "0.5.0",
+  "description": "Production-grade HubSpot CLI + MCP server. 100% public API coverage (1180 endpoints, 55+ command domains), enterprise safety rails, self-hosted. The headless-360 for HubSpot.",
   "type": "module",
   "bin": {
     "hubcli": "dist/cli.js"

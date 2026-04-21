@@ -21,6 +21,15 @@ import { registerPayments } from "./payments.js";
 import { registerInvoices } from "./invoices.js";
 import { registerSubscriptions } from "./subscriptions.js";
 import { registerCards } from "./cards.js";
+import { registerLeads } from "./leads.js";
+import { registerCarts } from "./carts.js";
+import { registerOrders } from "./orders.js";
+import { registerDiscounts } from "./discounts.js";
+import { registerFees } from "./fees.js";
+import { registerTaxes } from "./taxes.js";
+import { registerCommunications } from "./communications.js";
+import { registerUsersObject } from "./users.js";
+import { registerDatedApi } from "./dated.js";
 
 export function registerCrm(program: Command, getCtx: () => CliContext): void {
   const crm = program.command("crm").description("HubSpot CRM objects");
@@ -45,4 +54,13 @@ export function registerCrm(program: Command, getCtx: () => CliContext): void {
   registerInvoices(crm, getCtx);
   registerSubscriptions(crm, getCtx);
   registerCards(crm, getCtx);
+  registerLeads(crm, getCtx);
+  registerCarts(crm, getCtx);
+  registerOrders(crm, getCtx);
+  registerDiscounts(crm, getCtx);
+  registerFees(crm, getCtx);
+  registerTaxes(crm, getCtx);
+  registerCommunications(crm, getCtx);
+  registerUsersObject(crm, getCtx);
+  registerDatedApi(crm, getCtx);
 }
