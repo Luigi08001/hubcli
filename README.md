@@ -1,7 +1,7 @@
 # hubcli
 
 [![CI](https://github.com/Luigi08001/hscli/actions/workflows/ci.yml/badge.svg)](https://github.com/Luigi08001/hscli/actions/workflows/ci.yml)
-[![npm version](https://img.shields.io/npm/v/hubcli.svg)](https://www.npmjs.com/package/hscli)
+[![npm version](https://img.shields.io/npm/v/@revfleet/hscli.svg)](https://www.npmjs.com/package/@revfleet/hscli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node: >=20](https://img.shields.io/badge/Node-%3E%3D20-brightgreen)](package.json)
 [![HubSpot API coverage: 100%](https://img.shields.io/badge/HubSpot%20API-100%25%20(1180%20endpoints)-7c3aed)](docs/TIERS.md)
@@ -12,7 +12,7 @@
 
 ```bash
 # 1. Install
-npm install -g hscli
+npm install -g @revfleet/hscli
 
 # 2. Auth with a HubSpot Private App token (create one at
 #    Settings → Integrations → Private Apps → Create private app)
@@ -100,7 +100,7 @@ See [docs/TIERS.md](docs/TIERS.md) for the exact endpoint → tier mapping.
 From npm (once published):
 
 ```bash
-npm install -g hscli
+npm install -g @revfleet/hscli
 ```
 
 From source:
