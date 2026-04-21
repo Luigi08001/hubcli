@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.5.3 - 2026-04-21
+
+**npm package scoped to `@revfleet/hscli`.** After npm's anti-typosquat
+rule rejected both `hubcli` (too similar to `hub-cli`, an unrelated
+ArcGIS CLI) and `hscli` (too similar to `hs-cli`, another generic
+package), we moved the package to the authors organization on npm. This
+is the same pattern HubSpot itself uses for their own packages
+(`@hubspot/cli`, `@hubspot/api-client`).
+
+### Install
+
+```bash
+npm install -g @revfleet/hscli
+```
+
+Binary + everything else is unchanged: `hscli crm contacts list`.
+
+### Why @revfleet/
+
+`revfleet` is the authors product organization for CRM + HubSpot
+operational tooling. Future siblings (`@revfleet/orchestrator`,
+`@revfleet/audit`, etc.) will live under the same scope, so the
+authorship and maintenance signal stays coherent across the toolchain.
+
+### Zero behavior change
+
+- 162 tests still pass
+- 0 npm audit vulnerabilities
+- 100% HubSpot API coverage
+- Same binary name (`hscli`)
+- Same config dir (`~/.hscli/`)
+- Same env vars (`HSCLI_*`)
+
+---
+
 ## 0.5.2 - 2026-04-21
 
 **Rename: `hubcli` → `hscli`.** npm's anti-typosquat rule rejected
