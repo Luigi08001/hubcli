@@ -23,6 +23,10 @@ import { registerTimeline } from "./commands/timeline/index.js";
 import { registerConversations } from "./commands/conversations/index.js";
 import { registerAutomation } from "./commands/automation/index.js";
 import { registerSettings } from "./commands/settings/index.js";
+import { registerAccount } from "./commands/account/index.js";
+import { registerCommunicationPreferences } from "./commands/communication-preferences/index.js";
+import { registerEvents } from "./commands/events/index.js";
+import { registerEmailEvents } from "./commands/email-events/index.js";
 import { CliError, type CliContext, printError } from "./core/output.js";
 import { loadPlugins } from "./core/plugins.js";
 import pkg from "../package.json" with { type: "json" };
@@ -87,6 +91,10 @@ export function createProgram(): { program: Command; getCtx: () => CliContext } 
   registerConversations(program, () => ctx);
   registerAutomation(program, () => ctx);
   registerSettings(program, () => ctx);
+  registerAccount(program, () => ctx);
+  registerCommunicationPreferences(program, () => ctx);
+  registerEvents(program, () => ctx);
+  registerEmailEvents(program, () => ctx);
   registerMcp(program);
 
   program.configureOutput({
