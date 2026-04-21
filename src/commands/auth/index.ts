@@ -226,7 +226,7 @@ export function registerAuth(program: Command, getCtx: () => CliContext): void {
       if (!passphrase) {
         throw new CliError("VAULT_NO_PASSPHRASE", "Set HSCLI_VAULT_PASSPHRASE env var before encrypting.");
       }
-      const hubcliHome = process.env.HSCLI_HOME || resolve(process.env.HOME || "", ".hscli");
+      const hubcliHome = process.env.HSCLI_HOME || resolve(process.env.HOME || "", ".revfleet");
       encryptExistingVault(hubcliHome, passphrase);
       printResult(ctx, { encrypted: true, message: "auth.json encrypted to auth.enc and removed." });
     });
@@ -239,7 +239,7 @@ export function registerAuth(program: Command, getCtx: () => CliContext): void {
       if (!passphrase) {
         throw new CliError("VAULT_NO_PASSPHRASE", "Set HSCLI_VAULT_PASSPHRASE env var before decrypting.");
       }
-      const hubcliHome = process.env.HSCLI_HOME || resolve(process.env.HOME || "", ".hscli");
+      const hubcliHome = process.env.HSCLI_HOME || resolve(process.env.HOME || "", ".revfleet");
       if (!isVaultEncrypted(hubcliHome)) {
         throw new CliError("VAULT_NOT_ENCRYPTED", "No auth.enc found — vault is not encrypted.");
       }

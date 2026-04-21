@@ -1,6 +1,27 @@
 import { CliError } from "./output.js";
-import { appendFileSync } from "node:fs";
+import { appendFileSync, existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { homedir } from "node:os";
 import { randomUUID } from "node:crypto";
+
+/**
+ * Read the active trace session file (written by `hscli trace start`).
+ * Returns the trace output path if a session is active, or undefined.
+ * Keeps session awareness decoupled from the CLI command layer: the
+ * http client reads the state file on construction, so ANY code path
+ * that opens a HubSpotClient automatically participates in the trace.
+ */
+function readActiveTraceSessionFile(): string | undefined {
+  const home = process.env.HSCLI_HOME?.trim() || join(homedir(), ".revfleet");
+  const sessionPath = join(home, "trace-session.json");
+  if (!existsSync(sessionPath)) return undefined;
+  try {
+    const session = JSON.parse(readFileSync(sessionPath, "utf8")) as { file?: string };
+    return session.file;
+  } catch {
+    return undefined;
+  }
+}
 import { mapEndpointAvailabilityError, preflightEndpointCapability, recordEndpointSuccess } from "./capabilities.js";
 import { getToken, getApiBaseUrl } from "./auth.js";
 import { enforcePermissionProfile } from "./permissions.js";
@@ -120,7 +141,15 @@ export class HubSpotClient {
   constructor(private readonly token: string, options: HubSpotClientOptions = {}) {
     this.baseUrl = new URL(options.apiBaseUrl?.trim() || "https://api.hubapi.com");
     this.requestId = options.requestId?.trim() || process.env.HSCLI_REQUEST_ID?.trim() || randomUUID();
-    this.telemetryFile = options.telemetryFile?.trim() || process.env.HSCLI_TELEMETRY_FILE?.trim() || undefined;
+    // Telemetry priority:
+    //   1. explicit --telemetry-file flag / options.telemetryFile
+    //   2. HSCLI_TELEMETRY_FILE env var
+    //   3. active trace session file (set by `hscli trace start`)
+    // Users never need to re-pass --telemetry-file after `trace start`.
+    this.telemetryFile = options.telemetryFile?.trim()
+      || process.env.HSCLI_TELEMETRY_FILE?.trim()
+      || readActiveTraceSessionFile()
+      || undefined;
     this.profile = options.profile?.trim() || process.env.HSCLI_PROFILE?.trim() || "default";
     this.strictCapabilities = options.strictCapabilities ?? isEnvTrue(process.env.HSCLI_STRICT_CAPABILITIES);
   }
@@ -229,12 +258,21 @@ export class HubSpotClient {
     durationMs: number;
     attempt: number;
     error?: string;
+    requestBody?: unknown;
+    responseBody?: unknown;
+    requestBytes?: number;
+    responseBytes?: number;
   }): void {
     if (!this.telemetryFile) return;
     try {
+      // Baseline event: always includes ts + requestId + profile. toolName
+      // is set from HUBCLI_MCP_TOOL_NAME so MCP tool invocations show up
+      // distinctly in `hubcli trace stats` (byToolName breakdown).
       appendFileSync(this.telemetryFile, JSON.stringify({
         ts: new Date().toISOString(),
         requestId: this.requestId,
+        profile: this.profile,
+        toolName: process.env.HUBCLI_MCP_TOOL_NAME?.trim() || undefined,
         ...event,
       }) + "\n", "utf8");
     } catch {

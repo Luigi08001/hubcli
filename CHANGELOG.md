@@ -1,5 +1,76 @@
 # Changelog
 
+## 0.6.0 - 2026-04-21
+
+**Session tracing + replay.** New `hscli trace` command group brings
+agent-ready observability to every hscli request (CLI, MCP, script).
+Ship as a direct answer to the tracing/replay pillar in the Salesforce
+Headless 360 framing — open JSONL format, zero vendor lock, pipe-able
+to jq/grep/OTLP.
+
+### New commands
+
+- `hscli trace start [--out <file>] [--include-bodies] [--scope=read|write|all]`
+  — toggles a session. Writes a state file at `~/.revfleet/trace-session.json`
+  that `HubSpotClient` reads on every request. No need to re-pass
+  `--telemetry-file` everywhere after start.
+- `hscli trace stop` — stops the session, preserves the `.jsonl`, shows
+  file size + event count + next-step hints.
+- `hscli trace status` — prints active session state (file, size,
+  events, duration).
+- `hscli trace show <file> [--filter k=v,k=v] [--limit N] [--tail]` —
+  pretty-prints events. Filter supports `>=`, `<=`, `>`, `<`, `!` ops.
+  Example: `--filter 'status=>=400,method=POST'`.
+- `hscli trace stats <file>` — p50/p95/p99 latency, status/method/
+  profile/toolName breakdowns, error count, read-vs-write ratio, time
+  span.
+- `hscli trace errors <file> [--limit N]` — only status>=400 or error
+  events.
+- `hscli trace tail <file> [--format compact|json|pretty]` — live
+  stream new events as they're appended (like `tail -f`). Compact
+  format: `200 22:15:04 GET    /crm/v3/objects/contacts 142ms`.
+- `hscli trace diff <file-a> <file-b>` — compares two sessions by
+  `method+path` key (ignores specific IDs). Surfaces onlyInA, onlyInB,
+  per-key count changes, per-key status code divergence. Designed
+  for: reproducibility checks, stage→prod migration verification, CI
+  golden-path regression.
+- `hscli trace replay <file> [--profile <name>] [--limit N]` — re-runs
+  the GET requests. Writes are NEVER replayed (avoids accidental
+  re-mutation). Safe-by-default: dry-run output unless `--force` is
+  explicitly passed.
+
+### Enriched telemetry event format
+
+Every JSONL event now carries:
+- `profile` — which hscli profile emitted the request
+- `toolName` — populated when the request came from an MCP tool call
+  (via `HSCLI_MCP_TOOL_NAME`, set automatically by the MCP server)
+- `requestBytes` / `responseBytes` / `requestBody` / `responseBody` —
+  reserved for the upcoming `--include-bodies` body-capture mode
+
+### Config directory migration
+
+- **New primary**: `~/.revfleet/` (replaces `~/.hscli/` to avoid
+  colliding with `@hubspot/cli`'s own `~/.hscli/config.yml`)
+- **Legacy fallback**: if `~/.revfleet/auth.json` doesn't exist but
+  `~/.hubcli/auth.json` (pre-0.5.2) does, hscli transparently uses
+  the legacy path on read. Write operations use the new path.
+  Existing users can migrate manually via:
+  `mv ~/.hubcli/auth.json ~/.revfleet/auth.json`
+- `~/.hscli/` is now OFF-LIMITS for hscli writes (owned by HubSpot's
+  official `hs` CLI).
+- `hscli doctor hublet-check` still reads `~/.hscli/config.yml` — this
+  is the HubSpot official config it verifies against (unchanged).
+
+### No breaking change
+
+- 162 tests pass
+- 0 npm audit vulnerabilities
+- All previous hscli commands work identically
+- MCP tools auto-tag trace events with their tool name
+
+---
+
 ## 0.5.4 - 2026-04-21
 
 **GitHub repo transferred to `revfleet` organization.** All URLs
