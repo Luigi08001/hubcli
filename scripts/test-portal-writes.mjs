@@ -27,14 +27,14 @@ import path from "node:path";
 import { homedir } from "node:os";
 import { setTimeout as sleep } from "node:timers/promises";
 
-const PORTAL_PROFILE = process.env.HUBCLI_PROFILE || "default";
+const PORTAL_PROFILE = process.env.HSCLI_PROFILE || "default";
 const API_BASE = "https://api.hubapi.com";
 const CONCURRENCY = 3;
 const TIMEOUT_MS = 20_000;
-// See scripts/test-portal-coverage.mjs — set HUBCLI_ENDPOINTS_JSON to point
+// See scripts/test-portal-coverage.mjs — set HSCLI_ENDPOINTS_JSON to point
 // at your own scrape.
-const ENDPOINTS_JSON = process.env.HUBCLI_ENDPOINTS_JSON || `${homedir()}/Desktop/vault/HubSpot Audit/api-mapping/endpoints.json`;
-const DEV_APP_ID = process.env.HUBCLI_DEV_APP_ID || "0";
+const ENDPOINTS_JSON = process.env.HSCLI_ENDPOINTS_JSON || `${homedir()}/Desktop/vault/HubSpot Audit/api-mapping/endpoints.json`;
+const DEV_APP_ID = process.env.HSCLI_DEV_APP_ID || "0";
 const RUN_SUFFIX = Date.now().toString(36).slice(-5);
 
 const authPath = `${homedir()}/.hubcli/auth.json`;
@@ -442,7 +442,7 @@ async function main() {
 
   let md = "";
   md += `# Portal Write Probe — 147975758 (EU1, DEVELOPER_TEST)\n\n`;
-  md += `Generated: ${now}  •  hubcli @ ${gitSha}  •  profile: \`${PORTAL_PROFILE}\`  •  runSuffix: \`${RUN_SUFFIX}\`  •  HUBCLI_DEV_APP_ID: \`${DEV_APP_ID}\`\n\n`;
+  md += `Generated: ${now}  •  hubcli @ ${gitSha}  •  profile: \`${PORTAL_PROFILE}\`  •  runSuffix: \`${RUN_SUFFIX}\`  •  HSCLI_DEV_APP_ID: \`${DEV_APP_ID}\`\n\n`;
   md += `Probed ${results.length} write endpoints (POST non-search + PUT + PATCH + DELETE) of ${eps.length} total HubSpot API endpoints.\n\n`;
 
   md += `## Summary\n\n| Category | Count | % |\n|---|---:|---:|\n`;

@@ -3,14 +3,14 @@ import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const enabled = process.env.HUBCLI_ENABLE_SANDBOX_CONTRACT === "1";
+const enabled = process.env.HSCLI_ENABLE_SANDBOX_CONTRACT === "1";
 
 const maybeDescribe = enabled ? describe : describe.skip;
 
 function setupSandboxProfile(): { home: string; token: string } {
-  const token = process.env.HUBCLI_SANDBOX_TOKEN;
+  const token = process.env.HSCLI_SANDBOX_TOKEN;
   if (!token) {
-    throw new Error("HUBCLI_SANDBOX_TOKEN is required when HUBCLI_ENABLE_SANDBOX_CONTRACT=1");
+    throw new Error("HSCLI_SANDBOX_TOKEN is required when HSCLI_ENABLE_SANDBOX_CONTRACT=1");
   }
 
   const home = mkdtempSync(join(tmpdir(), "hubcli-contract-"));
@@ -33,7 +33,7 @@ function setupSandboxProfile(): { home: string; token: string } {
     JSON.stringify({ profiles: { sandbox: profileData } }),
   );
   process.env.HOME = home;
-  process.env.HUBCLI_HOME = dir;
+  process.env.HSCLI_HOME = dir;
 
   return { home, token };
 }
@@ -165,7 +165,7 @@ maybeDescribe("sandbox contract (opt-in)", () => {
     await run(["node", "hubcli", "--profile", "sandbox", "--json", "crm", "contacts", "list", "--limit", "1"]);
 
     const raw = JSON.stringify(stdoutSpy.getOutput());
-    expect(raw).not.toContain(process.env.HUBCLI_SANDBOX_TOKEN);
+    expect(raw).not.toContain(process.env.HSCLI_SANDBOX_TOKEN);
     expect(raw).not.toMatch(/Bearer\s+[a-zA-Z0-9_-]+/);
   });
 

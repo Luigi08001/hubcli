@@ -14,7 +14,7 @@ function setupHomeWithToken(
   const dir = join(home, ".hubcli");
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "auth.json"), JSON.stringify({ profiles: { [profile]: { token } } }));
-  process.env.HUBCLI_HOME = dir;
+  process.env.HSCLI_HOME = dir;
   return home;
 }
 
@@ -22,12 +22,12 @@ describe("plugin system", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.resetModules();
-    delete process.env.HUBCLI_HOME;
-    delete process.env.HUBCLI_PLUGINS;
-    delete process.env.HUBCLI_PROFILE;
+    delete process.env.HSCLI_HOME;
+    delete process.env.HSCLI_PLUGINS;
+    delete process.env.HSCLI_PROFILE;
   });
 
-  it("loads a plugin from HUBCLI_PLUGINS and registers its command", async () => {
+  it("loads a plugin from HSCLI_PLUGINS and registers its command", async () => {
     setupHomeWithToken();
     const pluginDir = mkdtempSync(join(tmpdir(), "hubcli-test-plugin-"));
     // Create a simple plugin
@@ -43,7 +43,7 @@ describe("plugin system", () => {
       }
     `);
 
-    process.env.HUBCLI_PLUGINS = pluginDir + "/index.mjs";
+    process.env.HSCLI_PLUGINS = pluginDir + "/index.mjs";
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
     const { run } = await import("../src/cli.js");
@@ -59,7 +59,7 @@ describe("plugin system", () => {
     const pluginDir = mkdtempSync(join(tmpdir(), "hubcli-bad-plugin-"));
     writeFileSync(join(pluginDir, "index.mjs"), `export const name = "no-register";`);
 
-    process.env.HUBCLI_PLUGINS = pluginDir + "/index.mjs";
+    process.env.HSCLI_PLUGINS = pluginDir + "/index.mjs";
     const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const { run } = await import("../src/cli.js");
@@ -74,7 +74,7 @@ describe("plugin system", () => {
     const pluginDir = mkdtempSync(join(tmpdir(), "hubcli-crash-plugin-"));
     writeFileSync(join(pluginDir, "index.mjs"), `throw new Error("plugin init crash");`);
 
-    process.env.HUBCLI_PLUGINS = pluginDir + "/index.mjs";
+    process.env.HSCLI_PLUGINS = pluginDir + "/index.mjs";
     const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     vi.spyOn(console, "log").mockImplementation(() => {});
 
@@ -105,7 +105,7 @@ describe("plugin system", () => {
       }
     `);
 
-    process.env.HUBCLI_PLUGINS = pluginDir + "/index.mjs";
+    process.env.HSCLI_PLUGINS = pluginDir + "/index.mjs";
     const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const fetchSpy = vi.spyOn(global, "fetch" as never);
 
@@ -133,7 +133,7 @@ describe("plugin system", () => {
       }
     `);
 
-    process.env.HUBCLI_PLUGINS = pluginDir + "/index.mjs";
+    process.env.HSCLI_PLUGINS = pluginDir + "/index.mjs";
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     const fetchSpy = vi.spyOn(global, "fetch" as never);
 
@@ -148,7 +148,7 @@ describe("plugin system", () => {
 
   it("does nothing when no plugins are configured", async () => {
     setupHomeWithToken();
-    // No HUBCLI_PLUGINS set, no hubcli-plugin packages in node_modules
+    // No HSCLI_PLUGINS set, no hubcli-plugin packages in node_modules
     const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const { run } = await import("../src/cli.js");

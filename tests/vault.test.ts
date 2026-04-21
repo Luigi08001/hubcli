@@ -24,7 +24,7 @@ describe("vault encryption", () => {
   const AUTH_DATA = { profiles: { default: { token: "pat-eu1-secret-token" } } };
 
   beforeEach(() => {
-    delete process.env.HUBCLI_VAULT_PASSPHRASE;
+    delete process.env.HSCLI_VAULT_PASSPHRASE;
   });
 
   // -----------------------------------------------------------------------
@@ -97,7 +97,7 @@ describe("vault encryption", () => {
   it("readVaultData throws when encrypted but no passphrase", () => {
     const dir = makeTmpHome();
     writeFileSync(join(dir, "auth.enc"), Buffer.alloc(100));
-    expect(() => readVaultData(dir)).toThrow("HUBCLI_VAULT_PASSPHRASE");
+    expect(() => readVaultData(dir)).toThrow("HSCLI_VAULT_PASSPHRASE");
   });
 
   it("readVaultData returns empty profiles when nothing exists", () => {

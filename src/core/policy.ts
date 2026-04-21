@@ -26,7 +26,7 @@ function readPolicyFile(path: string): PolicyConfig {
 }
 
 export function enforceWritePolicy(ctx: CliContext, method: "POST" | "PATCH" | "PUT" | "DELETE", path: string): void {
-  const policyPath = ctx.policyFile?.trim() || process.env.HUBCLI_POLICY_FILE?.trim();
+  const policyPath = ctx.policyFile?.trim() || process.env.HSCLI_POLICY_FILE?.trim();
   if (!policyPath) return;
 
   const config = readPolicyFile(policyPath);
