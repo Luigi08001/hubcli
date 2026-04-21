@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.5.3 - 2026-04-21
+
+**npm name: scoped to `@luigi08001/hscli`.** npm's anti-typosquat rule
+also rejected the unscoped `hscli` name (too similar to `hs-cli`, an
+unrelated cli keyword package). Rather than keep playing naming
+whack-a-mole with npm's heuristic, we moved to a scoped package under
+the author's namespace. This is the pattern HubSpot itself uses
+(`@hubspot/cli`, `@hubspot/api-client`).
+
+### What changes
+
+- **npm install**: `npm install -g @luigi08001/hscli`
+- **Binary**: still `hscli` (daily use unchanged: `hscli crm contacts list`)
+- **Everything else**: identical to 0.5.2
+
+### No behavior change
+
+162 tests pass, 0 vulns, 100% API coverage preserved.
+
+---
+
 ## 0.5.2 - 2026-04-21
 
 **Rename: `hubcli` → `hscli`.** npm's anti-typosquat rule rejected
