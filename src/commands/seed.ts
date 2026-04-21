@@ -50,6 +50,26 @@ const CALLS = [
   { hs_call_title: "Discovery call — NordicData", hs_call_body: "Discussed multi-region deployment needs. Budget range 120-180K.", hs_call_direction: "OUTBOUND", hs_call_duration: "1800000", contactIndex: 2 },
 ];
 
+const MEETINGS = [
+  { hs_meeting_title: "Kickoff — AcmeTech onboarding", hs_meeting_body: "Walk through integration plan + Q2 milestones.", hs_meeting_outcome: "COMPLETED", hs_meeting_start_time: new Date(Date.now() + 86400000 * 3).toISOString(), hs_meeting_end_time: new Date(Date.now() + 86400000 * 3 + 3600000).toISOString(), contactIndex: 0 },
+  { hs_meeting_title: "Quarterly review — NordicData", hs_meeting_body: "Q1 progress + Q2 expansion discussion.", hs_meeting_outcome: "SCHEDULED", hs_meeting_start_time: new Date(Date.now() + 86400000 * 10).toISOString(), hs_meeting_end_time: new Date(Date.now() + 86400000 * 10 + 1800000).toISOString(), contactIndex: 2 },
+];
+
+const PRODUCTS = [
+  { name: "Platform License — Starter", description: "Single-portal license, 10k contacts, standard support.", price: "5000", hs_sku: "HUBCLI-PLAT-STARTER", hs_cost_of_goods_sold: "800" },
+  { name: "Platform License — Pro", description: "Multi-portal, 100k contacts, dedicated CSM.", price: "25000", hs_sku: "HUBCLI-PLAT-PRO", hs_cost_of_goods_sold: "2500" },
+  { name: "Professional Services — Onboarding", description: "6-week guided onboarding engagement.", price: "12000", hs_sku: "HUBCLI-PS-ONBD", hs_cost_of_goods_sold: "6000" },
+];
+
+const LEADS = [
+  { firstname: "Eve", lastname: "Barros", email: "eve.barros@prospecttech.io", jobtitle: "Head of RevOps", lifecyclestage: "subscriber" },
+  { firstname: "Marco", lastname: "Keller", email: "marco.keller@inboundco.de", jobtitle: "Founder", lifecyclestage: "marketingqualifiedlead" },
+];
+
+const GOALS = [
+  { hs_goal_name: "Q2 Pipeline Coverage Target", hs_goal_description: "Maintain 3x coverage over Q2 booked ARR target." },
+];
+
 // --- Helpers ---
 
 async function safeCreate(client: HubSpotClient, path: string, body: unknown): Promise<{ id: string } | null> {
@@ -334,6 +354,414 @@ async function runSeed(ctx: CliContext): Promise<void> {
     }
   }
 
+  // --- Meetings (as engagement objects) ---
+  for (const m of MEETINGS) {
+    const props: Record<string, string> = {
+      hs_meeting_title: m.hs_meeting_title,
+      hs_meeting_body: m.hs_meeting_body,
+      hs_meeting_outcome: m.hs_meeting_outcome,
+      hs_meeting_start_time: m.hs_meeting_start_time,
+      hs_meeting_end_time: m.hs_meeting_end_time,
+      hs_timestamp: nowIso(),
+    };
+    if (ownerId) props.hubspot_owner_id = ownerId;
+    const rec = await safeCreate(client, "/crm/v3/objects/meetings", { properties: props });
+    if (rec) {
+      result.created.push({ type: "meeting", name: m.hs_meeting_title, id: rec.id });
+      const contactId = contactIds[m.contactIndex];
+      if (contactId) {
+        const status = await safeAssociate(client, "meetings", rec.id, "contacts", contactId);
+        result.associations.push({ from: `meeting:${rec.id}`, to: `contact:${contactId}`, status });
+      }
+    } else {
+      result.skipped.push({ type: "meeting", name: m.hs_meeting_title, reason: "create failed" });
+    }
+  }
+
+  // --- Products (commerce object) ---
+  const productIds: (string | null)[] = [];
+  // Uniqueness suffix to avoid collisions across repeat runs
+  const runSuffix = Date.now().toString(36).slice(-5);
+  for (const p of PRODUCTS) {
+    try {
+      // SKU must be unique across portal — add run suffix
+      const uniqueSku = `${p.hs_sku}-${runSuffix}`;
+      const rec = await safeCreate(client, "/crm/v3/objects/products", {
+        properties: {
+          name: p.name,
+          description: p.description,
+          price: p.price,
+          hs_sku: uniqueSku,
+        },
+      });
+      if (rec) {
+        productIds.push(rec.id);
+        result.created.push({ type: "product", name: p.name, id: rec.id, url: recordUrl("0-7", rec.id) });
+      } else {
+        productIds.push(null);
+        result.skipped.push({ type: "product", name: p.name, reason: "create failed" });
+      }
+    } catch (err) {
+      productIds.push(null);
+      result.skipped.push({ type: "product", name: p.name, reason: err instanceof CliError ? `${err.code}:${err.status}` : "error" });
+    }
+  }
+
+  // --- Line Items (linked to deals) ---
+  for (let i = 0; i < dealIds.length && i < productIds.length; i++) {
+    const dealId = dealIds[i];
+    const productId = productIds[i];
+    if (!dealId || !productId) continue;
+    try {
+      const rec = await safeCreate(client, "/crm/v3/objects/line_items", {
+        properties: {
+          name: `${PRODUCTS[i].name} — on deal ${DEALS[i].dealname}`,
+          hs_product_id: productId,
+          quantity: "1",
+          price: PRODUCTS[i].price,
+        },
+      });
+      if (rec) {
+        result.created.push({ type: "line_item", name: `${PRODUCTS[i].name} × 1`, id: rec.id });
+        const status = await safeAssociate(client, "line_items", rec.id, "deals", dealId);
+        result.associations.push({ from: `line_item:${rec.id}`, to: `deal:${dealId}`, status });
+      }
+    } catch (err) {
+      result.skipped.push({ type: "line_item", name: PRODUCTS[i].name, reason: err instanceof CliError ? `${err.code}:${err.status}` : "error" });
+    }
+  }
+
+  // --- Quotes (one per deal, best-effort) ---
+  for (let i = 0; i < Math.min(dealIds.length, 1); i++) {
+    const dealId = dealIds[i];
+    if (!dealId) continue;
+    try {
+      const rec = await safeCreate(client, "/crm/v3/objects/quotes", {
+        properties: {
+          hs_title: `Quote — ${DEALS[i].dealname}`,
+          hs_expiration_date: futureDate(30),
+          hs_status: "DRAFT",
+        },
+      });
+      if (rec) {
+        result.created.push({ type: "quote", name: `Quote — ${DEALS[i].dealname}`, id: rec.id });
+        const status = await safeAssociate(client, "quotes", rec.id, "deals", dealId);
+        result.associations.push({ from: `quote:${rec.id}`, to: `deal:${dealId}`, status });
+      }
+    } catch (err) {
+      result.skipped.push({ type: "quote", name: DEALS[i].dealname, reason: err instanceof CliError ? `${err.code}:${err.status}` : "error" });
+    }
+  }
+
+  // --- Leads (new CRM object — needs an associated contact/company and a lead type) ---
+  for (let i = 0; i < LEADS.length; i++) {
+    const l = LEADS[i];
+    const contactForLead = contactIds[i] || contactIds[0];
+    if (!contactForLead) {
+      result.skipped.push({ type: "lead", name: `${l.firstname} ${l.lastname}`, reason: "no contact to associate" });
+      continue;
+    }
+    try {
+      const rec = await safeCreate(client, "/crm/v3/objects/leads", {
+        properties: {
+          hs_lead_name: `${l.firstname} ${l.lastname}`,
+          hs_lead_type: "NEW_BUSINESS",
+        },
+        associations: [
+          {
+            to: { id: contactForLead },
+            types: [{ associationCategory: "HUBSPOT_DEFINED", associationTypeId: 578 }],
+          },
+        ],
+      });
+      if (rec) {
+        result.created.push({ type: "lead", name: `${l.firstname} ${l.lastname}`, id: rec.id });
+      }
+    } catch (err) {
+      result.skipped.push({ type: "lead", name: `${l.firstname} ${l.lastname}`, reason: err instanceof CliError ? `${err.code}:${err.status}` : "error" });
+    }
+  }
+
+  // --- Goals (best-effort) ---
+  for (const g of GOALS) {
+    try {
+      const rec = await safeCreate(client, "/crm/v3/objects/goals", {
+        properties: {
+          hs_goal_name: g.hs_goal_name,
+          hs_goal_description: g.hs_goal_description,
+        },
+      });
+      if (rec) result.created.push({ type: "goal", name: g.hs_goal_name, id: rec.id });
+    } catch (err) {
+      result.skipped.push({ type: "goal", name: g.hs_goal_name, reason: err instanceof CliError ? `${err.code}:${err.status}` : "error" });
+    }
+  }
+
+  // --- Marketing Form (non-HubSpot type to avoid legal consent payload complexity) ---
+  try {
+    const formName = `HubCLI Seed Contact Form ${runSuffix}`;
+    const formRec = await safeCreate(client, "/marketing/v3/forms/", {
+      name: formName,
+      formType: "hubspot",
+      fieldGroups: [{
+        groupType: "default_group",
+        richTextType: "text",
+        fields: [
+          { objectTypeId: "0-1", name: "email", label: "Email", required: true, fieldType: "email", hidden: false },
+          { objectTypeId: "0-1", name: "firstname", label: "First name", required: false, fieldType: "single_line_text", hidden: false },
+        ],
+      }],
+      configuration: {
+        allowLinkToResetForEditors: false,
+        archivable: true,
+        cloneable: true,
+        createNewContactForNewEmail: true,
+        editable: true,
+        language: "en",
+        notifyContactOwner: false,
+        postSubmitAction: { type: "thank_you", value: "Thanks!" },
+        recaptchaEnabled: false,
+      },
+      displayOptions: {
+        renderRawHtml: false,
+        theme: "default_style",
+        submitButtonText: "Submit",
+      },
+      legalConsentOptions: {
+        type: "legitimate_interest",
+        subscriptionTypeIds: [],
+        lawfulBasis: "LEAD",
+        privacyText: "HubCLI seed test form — not for production use.",
+      },
+    });
+    if (formRec) result.created.push({ type: "form", name: formName, id: formRec.id });
+  } catch (err) {
+    result.skipped.push({ type: "form", name: "HubCLI Seed Contact Form", reason: err instanceof CliError ? `${err.code}:${err.status}` : "error" });
+  }
+
+  // --- Static contact list ---
+  try {
+    const listName = `HubCLI Seed — Sample Contacts ${runSuffix}`;
+    const listRec = await safeCreate(client, "/crm/v3/lists", {
+      name: listName,
+      processingType: "MANUAL",
+      objectTypeId: "0-1",
+    });
+    if (listRec) {
+      result.created.push({ type: "list", name: listName, id: listRec.id });
+      // Try to add members
+      const validContacts = contactIds.filter((c): c is string => Boolean(c));
+      if (validContacts.length > 0) {
+        try {
+          await client.request(`/crm/v3/lists/${listRec.id}/memberships/add`, { method: "PUT", body: validContacts });
+          result.associations.push({ from: `list:${listRec.id}`, to: `contacts:${validContacts.length}`, status: "ok" });
+        } catch { /* ignore */ }
+      }
+    }
+  } catch (err) {
+    result.skipped.push({ type: "list", name: "HubCLI Seed — Sample Contacts", reason: err instanceof CliError ? `${err.code}:${err.status}` : "error" });
+  }
+
+  // --- Custom property group + property on contacts ---
+  try {
+    const groupRec = await safeCreate(client, "/crm/v3/properties/contacts/groups", {
+      name: "hubcli_seed_group",
+      label: "HubCLI Seed",
+      displayOrder: -1,
+    });
+    if (groupRec) result.created.push({ type: "property_group", name: "hubcli_seed_group", id: "hubcli_seed_group" });
+  } catch (err) {
+    result.skipped.push({ type: "property_group", name: "hubcli_seed_group", reason: err instanceof CliError ? `${err.code}:${err.status}` : "error" });
+  }
+  try {
+    const propRec = await safeCreate(client, "/crm/v3/properties/contacts", {
+      name: "hubcli_seed_tag",
+      label: "HubCLI Seed Tag",
+      type: "string",
+      fieldType: "text",
+      groupName: "hubcli_seed_group",
+      description: "Tag set by hubcli seed command for testing.",
+    });
+    if (propRec) result.created.push({ type: "property", name: "hubcli_seed_tag", id: "hubcli_seed_tag" });
+  } catch (err) {
+    result.skipped.push({ type: "property", name: "hubcli_seed_tag", reason: err instanceof CliError ? `${err.code}:${err.status}` : "error" });
+  }
+
+  // --- URL redirect ---
+  try {
+    const redirectRec = await safeCreate(client, "/cms/v3/url-redirects", {
+      routePrefix: "/hubcli-seed-redirect",
+      destination: "https://hubcli.dev",
+      redirectStyle: 301,
+      precedence: 100,
+      isOnlyAfterNotFound: false,
+      isMatchFullUrl: false,
+      isMatchQueryString: false,
+      isPattern: false,
+      isTrailingSlashOptional: true,
+      isProtocolAgnostic: true,
+      updated: Date.now(),
+      created: Date.now(),
+    });
+    if (redirectRec) result.created.push({ type: "url_redirect", name: "/hubcli-seed-redirect", id: redirectRec.id });
+  } catch (err) {
+    result.skipped.push({ type: "url_redirect", name: "/hubcli-seed-redirect", reason: err instanceof CliError ? `${err.code}:${err.status}` : "error" });
+  }
+
+  // --- Timeline event template + one event ---
+  try {
+    // Timeline templates require an appId — use the portal's hub as fallback. This often fails on non-app-dev portals.
+    const tmplRec = await safeCreate(client, `/crm/v3/timeline/event-templates`, {
+      name: "hubcli_seed_event",
+      objectType: "contacts",
+      headerTemplate: "HubCLI Seed Event",
+      detailTemplate: "Event created by hubcli seed for testing.",
+    });
+    if (tmplRec) {
+      result.created.push({ type: "timeline_template", name: "hubcli_seed_event", id: tmplRec.id });
+      // Try to emit an event using the first contact
+      if (contactIds[0]) {
+        try {
+          const evRec = await safeCreate(client, `/crm/v3/timeline/events`, {
+            eventTemplateId: tmplRec.id,
+            objectId: contactIds[0],
+            tokens: {},
+          });
+          if (evRec) result.created.push({ type: "timeline_event", name: "HubCLI Seed Event", id: evRec.id });
+        } catch { /* ignore */ }
+      }
+    }
+  } catch (err) {
+    result.skipped.push({ type: "timeline_template", name: "hubcli_seed_event", reason: err instanceof CliError ? `${err.code}:${err.status}` : "error" });
+  }
+
+  // --- Webhook subscription (requires app context; usually fails on non-app-dev portals) ---
+  try {
+    const whRec = await safeCreate(client, "/webhooks/v3/subscriptions", {
+      eventType: "contact.creation",
+      propertyName: "",
+      active: false,
+    });
+    if (whRec) result.created.push({ type: "webhook_subscription", name: "contact.creation (inactive)", id: whRec.id });
+  } catch (err) {
+    result.skipped.push({ type: "webhook_subscription", name: "contact.creation", reason: err instanceof CliError ? `${err.code}:${err.status}` : "error" });
+  }
+
+  // --- CMS site page (draft, best-effort — Free CMS allows drafts) ---
+  try {
+    const pageName = `HubCLI Seed Site Page ${runSuffix}`;
+    const pageRec = await safeCreate(client, "/cms/v3/pages/site-pages", {
+      name: pageName,
+      slug: `hubcli-seed-${runSuffix}`,
+      htmlTitle: "HubCLI Seed Page",
+      metaDescription: "A sample site page created by hubcli seed for testing.",
+      language: "en",
+    });
+    if (pageRec) result.created.push({ type: "site_page", name: pageName, id: pageRec.id });
+  } catch (err) {
+    result.skipped.push({ type: "site_page", name: "HubCLI Seed Site Page", reason: err instanceof CliError ? `${err.code}:${err.status}` : "error" });
+  }
+
+  // --- CMS landing page (draft) ---
+  try {
+    const lpName = `HubCLI Seed Landing Page ${runSuffix}`;
+    const lpRec = await safeCreate(client, "/cms/v3/pages/landing-pages", {
+      name: lpName,
+      slug: `hubcli-seed-lp-${runSuffix}`,
+      htmlTitle: "HubCLI Seed Landing Page",
+      language: "en",
+    });
+    if (lpRec) result.created.push({ type: "landing_page", name: lpName, id: lpRec.id });
+  } catch (err) {
+    result.skipped.push({ type: "landing_page", name: "HubCLI Seed Landing Page", reason: err instanceof CliError ? `${err.code}:${err.status}` : "error" });
+  }
+
+  // --- CMS blog post (draft, if blog available) ---
+  try {
+    const blogs = await client.request("/cms/v3/blogs/posts?limit=1") as { results?: Array<{ contentGroupId?: string }> };
+    const blogId = blogs.results?.[0]?.contentGroupId;
+    if (blogId) {
+      const postName = `HubCLI Seed Blog Post ${runSuffix}`;
+      const postRec = await safeCreate(client, "/cms/v3/blogs/posts", {
+        name: postName,
+        slug: `hubcli-seed-post-${runSuffix}`,
+        contentGroupId: blogId,
+        language: "en",
+      });
+      if (postRec) result.created.push({ type: "blog_post", name: postName, id: postRec.id });
+    } else {
+      result.skipped.push({ type: "blog_post", name: "HubCLI Seed Blog Post", reason: "no blog configured on portal" });
+    }
+  } catch (err) {
+    result.skipped.push({ type: "blog_post", name: "HubCLI Seed Blog Post", reason: err instanceof CliError ? `${err.code}:${err.status}` : "error" });
+  }
+
+  // --- Blog authors + tags ---
+  try {
+    const authorRec = await safeCreate(client, "/cms/v3/blogs/authors", {
+      name: `HubCLI Seed Author ${runSuffix}`,
+      email: `hubcli-seed-${runSuffix}@example.com`,
+    });
+    if (authorRec) result.created.push({ type: "blog_author", name: `HubCLI Seed Author ${runSuffix}`, id: authorRec.id });
+  } catch (err) {
+    result.skipped.push({ type: "blog_author", name: "HubCLI Seed Author", reason: err instanceof CliError ? `${err.code}:${err.status}` : "error" });
+  }
+  try {
+    const tagRec = await safeCreate(client, "/cms/v3/blogs/tags", {
+      name: `hubcli-seed-tag-${runSuffix}`,
+      slug: `hubcli-seed-tag-${runSuffix}`,
+      language: "en",
+    });
+    if (tagRec) result.created.push({ type: "blog_tag", name: `hubcli-seed-tag-${runSuffix}`, id: tagRec.id });
+  } catch (err) {
+    result.skipped.push({ type: "blog_tag", name: "HubCLI Seed Tag", reason: err instanceof CliError ? `${err.code}:${err.status}` : "error" });
+  }
+
+  // --- Small file upload (text content via URL import endpoint) ---
+  try {
+    const fileRec = await client.request("/files/v3/files/import/from/url/async", {
+      method: "POST",
+      body: {
+        access: "PUBLIC_NOT_INDEXABLE",
+        name: `hubcli-seed-${runSuffix}.txt`,
+        url: "https://hubspot.com/favicon.ico",
+        folderPath: "/hubcli-seed",
+        duplicateValidationStrategy: "REJECT",
+        duplicateValidationScope: "ENTIRE_PORTAL",
+      },
+    }) as { id?: string };
+    if (fileRec?.id) result.created.push({ type: "file_import_task", name: `hubcli-seed-${runSuffix}.txt`, id: fileRec.id });
+  } catch (err) {
+    result.skipped.push({ type: "file_import_task", name: "hubcli-seed file", reason: err instanceof CliError ? `${err.code}:${err.status}` : "error" });
+  }
+
+  // --- Transactional SMTP token (best-effort, Marketing Hub Pro+) ---
+  try {
+    const smtpRec = await safeCreate(client, "/marketing/v3/transactional/smtp-tokens", {
+      createContact: false,
+      campaignName: `HubCLI Seed ${runSuffix}`,
+    });
+    if (smtpRec) result.created.push({ type: "smtp_token", name: `HubCLI Seed Campaign ${runSuffix}`, id: smtpRec.id });
+  } catch (err) {
+    result.skipped.push({ type: "smtp_token", name: "HubCLI Seed Campaign", reason: err instanceof CliError ? `${err.code}:${err.status}` : "error" });
+  }
+
+  // --- HubDB table (CMS Hub feature) ---
+  try {
+    const hdbRec = await safeCreate(client, "/cms/v3/hubdb/tables", {
+      name: "hubcli_seed_table",
+      label: "HubCLI Seed Table",
+      useForPages: false,
+      columns: [
+        { name: "key", label: "Key", type: "TEXT" },
+        { name: "value", label: "Value", type: "TEXT" },
+      ],
+    });
+    if (hdbRec) result.created.push({ type: "hubdb_table", name: "hubcli_seed_table", id: hdbRec.id });
+  } catch (err) {
+    result.skipped.push({ type: "hubdb_table", name: "hubcli_seed_table", reason: err instanceof CliError ? `${err.code}:${err.status}` : "error" });
+  }
+
   // --- Custom objects: create a sample record per schema ---
   for (const schema of customSchemas) {
     const props: Record<string, string> = {
@@ -381,7 +809,7 @@ async function runSeed(ctx: CliContext): Promise<void> {
 export function registerSeed(program: Command, getCtx: () => CliContext): void {
   program
     .command("seed")
-    .description("Create sample CRM data (contacts, companies, deals, tickets, engagements) using the connected portal's pipelines and owner")
+    .description("Seed a test portal with comprehensive sample data: contacts, companies, deals, tickets, engagements (notes/tasks/calls/meetings), products + line-items, quotes, leads, goals, a marketing form, a static list, a custom property group + property, a URL redirect, a timeline event template + event, and (best-effort) a webhook subscription + HubDB table + custom-object records. Associations wired up automatically.")
     .action(async () => {
       const ctx = getCtx();
       if (ctx.dryRun) {
@@ -396,6 +824,22 @@ export function registerSeed(program: Command, getCtx: () => CliContext): void {
             notes: NOTES.length,
             tasks: TASKS.length,
             calls: CALLS.length,
+            meetings: MEETINGS.length,
+            products: PRODUCTS.length,
+            line_items: "1 per deal+product pair",
+            quotes: "1 (best-effort)",
+            leads: LEADS.length,
+            goals: GOALS.length,
+            form: 1,
+            list: 1,
+            property_group: 1,
+            custom_property: 1,
+            url_redirect: 1,
+            timeline_event_template: "1 (best-effort)",
+            timeline_event: "1 (best-effort)",
+            webhook_subscription: "1 (best-effort, usually fails w/o app)",
+            hubdb_table: "1 (best-effort, CMS Hub only)",
+            custom_object_records: "1 per schema detected",
           },
         });
         return;

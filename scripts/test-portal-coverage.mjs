@@ -107,6 +107,9 @@ async function discoverIds() {
     ["businessUnitId", "/settings/v3/business-units?limit=1", "id"],
     ["teamId", "/settings/v3/users/teams?limit=1", "id"],
     ["groupName", "/crm/v3/properties/contacts/groups?limit=1", "name"],
+    ["landingPageId", "/cms/v3/pages/landing-pages?limit=1", "id"],
+    ["sitePageId", "/cms/v3/pages/site-pages?limit=1", "id"],
+    ["redirectId", "/cms/v3/url-redirects?limit=1", "id"],
   ];
 
   await Promise.all(probes.map(async ([name, url, field]) => {
@@ -231,12 +234,29 @@ const KNOWN_SUBS = {
 function substitutePath(p) {
   let result = p;
   const leftover = [];
-  result = result.replace(/\{[^}]+\}/g, (m) => {
+  // Detect {objectType} earlier in the path — use it to route {objectId} to the right dynamic id
+  const m = p.match(/\/objects\/([a-z_-]+)/);
+  const objectTypeFromPath = m ? m[1] : null;
+  const objectTypeIdMap = {
+    "contacts": "{contactId}", "companies": "{companyId}", "deals": "{dealId}",
+    "tickets": "{ticketId}", "meetings": "{meetingId}", "notes": "{noteId}",
+    "tasks": "{taskId}", "calls": "{callId}", "products": "{productId}",
+    "line_items": "{lineItemId}", "quotes": "{quoteId}", "leads": "{leadId}",
+  };
+
+  result = result.replace(/\{[^}]+\}/g, (match) => {
     // Dynamic IDs take priority (real portal data)
-    if (dynamicIds[m] != null) return encodeURIComponent(dynamicIds[m]);
-    if (KNOWN_SUBS[m] != null) return encodeURIComponent(KNOWN_SUBS[m]);
-    leftover.push(m);
-    return m;
+    if (dynamicIds[match] != null) return encodeURIComponent(dynamicIds[match]);
+    // {objectId} fallback: if path has /objects/{objectType}, use the matching dynamic id
+    if (match === "{objectId}" && objectTypeFromPath) {
+      const hintedId = objectTypeIdMap[objectTypeFromPath];
+      if (hintedId && dynamicIds[hintedId] != null) return encodeURIComponent(dynamicIds[hintedId]);
+    }
+    // {id} fallback: use contactId as the generic "some-real-id" default
+    if (match === "{id}" && dynamicIds["{contactId}"]) return encodeURIComponent(dynamicIds["{contactId}"]);
+    if (KNOWN_SUBS[match] != null) return encodeURIComponent(KNOWN_SUBS[match]);
+    leftover.push(match);
+    return match;
   });
   return { path: result, leftover };
 }
