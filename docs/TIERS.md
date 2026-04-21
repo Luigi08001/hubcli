@@ -291,7 +291,7 @@ hubcli will immediately work on them — the commands already exist.
 ## Reporting an endpoint not working
 
 If you hit an endpoint that should work on your tier but returns an unexpected
-error, open an issue at [Luigi08001/hubcli/issues](https://github.com/Luigi08001/hubcli/issues/new)
+error, open an issue at [Luigi08001/hubcli/issues](https://github.com/Luigi08001/hscli/issues/new)
 with:
 
 1. Your portal's HubSpot plan (Starter / Pro / Enterprise, which Hubs)

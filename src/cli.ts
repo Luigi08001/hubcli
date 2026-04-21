@@ -98,10 +98,10 @@ export function createProgram(): { program: Command; getCtx: () => CliContext } 
         runId,
         telemetryFile,
       };
-      process.env.HUBCLI_PROFILE = ctx.profile;
-      process.env.HUBCLI_STRICT_CAPABILITIES = ctx.strictCapabilities ? "1" : "0";
-      process.env.HUBCLI_REQUEST_ID = runId;
-      if (telemetryFile) process.env.HUBCLI_TELEMETRY_FILE = telemetryFile;
+      process.env.HSCLI_PROFILE = ctx.profile;
+      process.env.HSCLI_STRICT_CAPABILITIES = ctx.strictCapabilities ? "1" : "0";
+      process.env.HSCLI_REQUEST_ID = runId;
+      if (telemetryFile) process.env.HSCLI_TELEMETRY_FILE = telemetryFile;
     });
 
   registerAuth(program, () => ctx);
@@ -194,7 +194,7 @@ export async function run(argv = process.argv): Promise<void> {
       strictCapabilities: Boolean(opts.strictCapabilities),
       policyFile: opts.policyFile ? String(opts.policyFile).trim() : undefined,
       changeTicket: opts.changeTicket ? String(opts.changeTicket).trim() : undefined,
-      runId: process.env.HUBCLI_REQUEST_ID,
+      runId: process.env.HSCLI_REQUEST_ID,
       telemetryFile: opts.telemetryFile ? String(opts.telemetryFile).trim() : undefined,
     };
     printError(ctx, err);

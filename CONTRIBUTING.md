@@ -26,7 +26,7 @@ First, check [docs/TIERS.md](docs/TIERS.md) — most "it doesn't work" cases are
 | 404 on a `{appId}` path | Need OAuth Developer App | See [OAuth setup](docs/TIERS.md#developer-platform-hubspot-developer-account-free) |
 | 400 / validation error | Body payload incomplete | Check HubSpot docs for required fields; pass via `--data` |
 
-If the endpoint **should** work on your tier but doesn't, open an [endpoint issue](https://github.com/Luigi08001/hubcli/issues/new?template=endpoint_not_working.md) with:
+If the endpoint **should** work on your tier but doesn't, open an [endpoint issue](https://github.com/Luigi08001/hscli/issues/new?template=endpoint_not_working.md) with:
 - The `hubcli` command you ran
 - Your portal's tier per hub
 - The HubSpot correlation ID from the response
@@ -59,7 +59,7 @@ If your probe run differs significantly from the shipped `docs/TESTING/PORTAL-14
 ## Development workflow
 
 ```bash
-git clone https://github.com/Luigi08001/hubcli.git
+git clone https://github.com/Luigi08001/hscli.git
 cd hubcli
 npm install
 npm run typecheck

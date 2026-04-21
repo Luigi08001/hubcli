@@ -13,7 +13,7 @@ function setupHomeWithToken(
   const dir = join(home, ".hubcli");
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "auth.json"), JSON.stringify({ profiles: { [profile]: { token, ...extras } } }));
-  process.env.HUBCLI_HOME = dir;
+  process.env.HSCLI_HOME = dir;
   return home;
 }
 
@@ -21,11 +21,11 @@ describe("hubcli", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.resetModules();
-    delete process.env.HUBCLI_HOME;
-    delete process.env.HUBCLI_PROFILE;
-    delete process.env.HUBCLI_STRICT_CAPABILITIES;
-    delete process.env.HUBCLI_REQUEST_ID;
-    delete process.env.HUBCLI_TELEMETRY_FILE;
+    delete process.env.HSCLI_HOME;
+    delete process.env.HSCLI_PROFILE;
+    delete process.env.HSCLI_STRICT_CAPABILITIES;
+    delete process.env.HSCLI_REQUEST_ID;
+    delete process.env.HSCLI_TELEMETRY_FILE;
   });
 
   it("parses global flags", async () => {
@@ -141,7 +141,7 @@ describe("hubcli", () => {
       scopes: ["content.read", "crm.objects.contacts.read"],
     });
     process.env.HOME = home;
-    const capabilitiesPath = join(process.env.HUBCLI_HOME!, "capabilities.json");
+    const capabilitiesPath = join(process.env.HSCLI_HOME!, "capabilities.json");
     writeFileSync(capabilitiesPath, JSON.stringify({
       version: 1,
       entries: [{
@@ -589,7 +589,7 @@ describe("hubcli", () => {
   it("returns missing-token auth error", async () => {
     const home = mkdtempSync(join(tmpdir(), "hubcli-no-auth-"));
     process.env.HOME = home;
-    process.env.HUBCLI_HOME = join(home, ".hubcli");
+    process.env.HSCLI_HOME = join(home, ".hubcli");
     const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const { run } = await import("../src/cli.js");
@@ -601,7 +601,7 @@ describe("hubcli", () => {
   it("requires --token or --token-stdin for auth login", async () => {
     const home = mkdtempSync(join(tmpdir(), "hubcli-auth-input-"));
     process.env.HOME = home;
-    process.env.HUBCLI_HOME = join(home, ".hubcli");
+    process.env.HSCLI_HOME = join(home, ".hubcli");
     const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const { run } = await import("../src/cli.js");
@@ -610,7 +610,7 @@ describe("hubcli", () => {
     expect(errSpy.mock.calls.some((c) => String(c[0]).includes("AUTH_TOKEN_REQUIRED"))).toBe(true);
   });
 
-  it("locks HUBCLI_HOME directory permissions on auth login", async () => {
+  it("locks HSCLI_HOME directory permissions on auth login", async () => {
     const home = mkdtempSync(join(tmpdir(), "hubcli-auth-perms-"));
     const dir = join(home, ".hubcli");
     mkdirSync(dir, { recursive: true });
@@ -618,7 +618,7 @@ describe("hubcli", () => {
       chmodSync(dir, 0o777);
     }
     process.env.HOME = home;
-    process.env.HUBCLI_HOME = dir;
+    process.env.HSCLI_HOME = dir;
     vi.spyOn(console, "log").mockImplementation(() => {});
 
     const { run } = await import("../src/cli.js");

@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.5.2 - 2026-04-21
+
+**Rename: `hubcli` → `hscli`.** npm's anti-typosquat rule rejected
+the `hubcli` name because it's "too similar to hub-cli" (an unrelated
+ArcGIS Portal CLI). Rather than fight the heuristic with an appeal,
+we renamed cleanly.
+
+### What changes
+
+- **npm package**: `hubcli` → `hscli`. Install: `npm install -g hscli`.
+- **Binary**: `hubcli` → `hscli`. Daily use: `hscli crm contacts list`.
+- **Config directory**: `~/.hubcli/` → `~/.hscli/`. Existing users migrate
+  by running `mv ~/.hubcli ~/.hscli`.
+- **Env vars**: `HUBCLI_*` → `HSCLI_*` (HSCLI_PROFILE, HSCLI_HOME,
+  HSCLI_MCP_PROFILE, HSCLI_TELEMETRY_FILE, HSCLI_VAULT_PASSPHRASE,
+  HSCLI_STRICT_CAPABILITIES, HSCLI_MCP_STRICT_CAPABILITIES,
+  HSCLI_MCP_TOOL_NAME, HSCLI_REQUEST_ID, HSCLI_TRACE_BODIES,
+  HSCLI_DEV_APP_ID, HSCLI_ENDPOINTS_JSON, HSCLI_PLUGINS,
+  HSCLI_ENABLE_SANDBOX_CONTRACT, HSCLI_SANDBOX_TOKEN).
+
+### Build hygiene
+
+- Added `rm -rf dist` to the build script so tarballs ship clean
+  (previous 0.5.1 tarball would have included stale `dist/commands/
+  seed.js` alongside the new `dist/commands/seed/` modules).
+
+### No behavior change
+
+All 162 tests still pass. 100% API coverage preserved. Same commands,
+same flags, same MCP tools — just renamed.
+
+---
+
+# Changelog
+
 ## 0.5.0 - 2026-04-21
 
 **100% HubSpot public API coverage.** Every one of the 1,180 endpoints in

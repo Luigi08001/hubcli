@@ -119,10 +119,10 @@ export class HubSpotClient {
 
   constructor(private readonly token: string, options: HubSpotClientOptions = {}) {
     this.baseUrl = new URL(options.apiBaseUrl?.trim() || "https://api.hubapi.com");
-    this.requestId = options.requestId?.trim() || process.env.HUBCLI_REQUEST_ID?.trim() || randomUUID();
-    this.telemetryFile = options.telemetryFile?.trim() || process.env.HUBCLI_TELEMETRY_FILE?.trim() || undefined;
-    this.profile = options.profile?.trim() || process.env.HUBCLI_PROFILE?.trim() || "default";
-    this.strictCapabilities = options.strictCapabilities ?? isEnvTrue(process.env.HUBCLI_STRICT_CAPABILITIES);
+    this.requestId = options.requestId?.trim() || process.env.HSCLI_REQUEST_ID?.trim() || randomUUID();
+    this.telemetryFile = options.telemetryFile?.trim() || process.env.HSCLI_TELEMETRY_FILE?.trim() || undefined;
+    this.profile = options.profile?.trim() || process.env.HSCLI_PROFILE?.trim() || "default";
+    this.strictCapabilities = options.strictCapabilities ?? isEnvTrue(process.env.HSCLI_STRICT_CAPABILITIES);
   }
 
   async request(path: string, options: RequestOptions = {}, attempt = 0): Promise<unknown> {

@@ -85,12 +85,12 @@ describe("HubSpot Zod schemas", () => {
 
     beforeEach(() => {
       warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-      delete process.env.HUBCLI_STRICT_SCHEMAS;
+      delete process.env.HSCLI_STRICT_SCHEMAS;
     });
 
     afterEach(() => {
       warnSpy.mockRestore();
-      delete process.env.HUBCLI_STRICT_SCHEMAS;
+      delete process.env.HSCLI_STRICT_SCHEMAS;
     });
 
     it("returns parsed data on valid input", () => {
@@ -110,14 +110,14 @@ describe("HubSpot Zod schemas", () => {
     });
 
     it("throws on invalid input in strict mode", () => {
-      process.env.HUBCLI_STRICT_SCHEMAS = "1";
+      process.env.HSCLI_STRICT_SCHEMAS = "1";
       const data = { not_a_record: true };
       expect(() => parseResponse(HubSpotRecord, data, "test")).toThrow("validation failed");
     });
 
     it("strict mode recognizes various truthy env values", () => {
       for (const val of ["1", "true", "yes", "TRUE", " Yes "]) {
-        process.env.HUBCLI_STRICT_SCHEMAS = val;
+        process.env.HSCLI_STRICT_SCHEMAS = val;
         expect(() => parseResponse(HubSpotRecord, {}, "test")).toThrow();
       }
     });

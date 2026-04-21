@@ -66,7 +66,7 @@ interface AuthFile {
 }
 
 export function getHubcliHomeDir(): string {
-  return process.env.HUBCLI_HOME?.trim() || join(homedir(), ".hubcli");
+  return process.env.HSCLI_HOME?.trim() || join(homedir(), ".hscli");
 }
 
 function authPaths(): { dir: string; file: string } {
@@ -82,7 +82,7 @@ function readAuthFile(): AuthFile {
     if (!passphrase) {
       throw new CliError(
         "VAULT_PASSPHRASE_REQUIRED",
-        "Vault is encrypted (auth.enc exists) but HUBCLI_VAULT_PASSPHRASE is not set. Set the env var or run 'hubcli auth decrypt' first.",
+        "Vault is encrypted (auth.enc exists) but HSCLI_VAULT_PASSPHRASE is not set. Set the env var or run 'hubcli auth decrypt' first.",
       );
     }
     return readVaultData(dir, passphrase) as AuthFile;
@@ -104,7 +104,7 @@ function writeAuthFile(data: AuthFile): void {
     if (!passphrase) {
       throw new CliError(
         "VAULT_PASSPHRASE_REQUIRED",
-        "Vault is encrypted (auth.enc exists) but HUBCLI_VAULT_PASSPHRASE is not set. Set the env var or run 'hubcli auth decrypt' first.",
+        "Vault is encrypted (auth.enc exists) but HSCLI_VAULT_PASSPHRASE is not set. Set the env var or run 'hubcli auth decrypt' first.",
       );
     }
     writeVaultData(dir, data, passphrase);

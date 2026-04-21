@@ -25,14 +25,14 @@ import path from "node:path";
 import { homedir } from "node:os";
 import { setTimeout as sleep } from "node:timers/promises";
 
-const PORTAL_PROFILE = process.env.HUBCLI_PROFILE || "default";
+const PORTAL_PROFILE = process.env.HSCLI_PROFILE || "default";
 const API_BASE = "https://api.hubapi.com";
 const CONCURRENCY = 4;
 const TIMEOUT_MS = 20_000;
 // Location of the HubSpot endpoints scrape used to drive the probe. Default
 // is the author's private vault path, but any contributor can point this at
-// their own scrape via HUBCLI_ENDPOINTS_JSON env var.
-const ENDPOINTS_JSON = process.env.HUBCLI_ENDPOINTS_JSON || `${homedir()}/Desktop/vault/HubSpot Audit/api-mapping/endpoints.json`;
+// their own scrape via HSCLI_ENDPOINTS_JSON env var.
+const ENDPOINTS_JSON = process.env.HSCLI_ENDPOINTS_JSON || `${homedir()}/Desktop/vault/HubSpot Audit/api-mapping/endpoints.json`;
 
 const authPath = `${homedir()}/.hubcli/auth.json`;
 const auth = JSON.parse(fs.readFileSync(authPath, "utf8"));
@@ -160,9 +160,9 @@ async function discoverIds() {
 }
 
 // Known safe substitutions for path segments we can't easily discover
-// If HUBCLI_DEV_APP_ID is set, use it for {appId} substitution (unlocks dev-platform endpoints
+// If HSCLI_DEV_APP_ID is set, use it for {appId} substitution (unlocks dev-platform endpoints
 // for an OAuth-installed Developer App). Otherwise fall back to "0" which will 401/403/404 as expected.
-const DEV_APP_ID = process.env.HUBCLI_DEV_APP_ID || "0";
+const DEV_APP_ID = process.env.HSCLI_DEV_APP_ID || "0";
 
 const KNOWN_SUBS = {
   "{appId}": DEV_APP_ID,
