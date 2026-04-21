@@ -1,8 +1,8 @@
 /**
- * Optional encrypted token vault for ~/.hubcli/auth.json.
+ * Optional encrypted token vault for ~/.hscli/auth.json.
  *
  * Uses AES-256-GCM with PBKDF2 key derivation — Node.js built-in crypto only.
- * Passphrase is read from HUBCLI_VAULT_PASSPHRASE env var.
+ * Passphrase is read from HSCLI_VAULT_PASSPHRASE env var.
  *
  * File format (auth.enc): salt(32) | iv(16) | authTag(16) | ciphertext
  */
@@ -78,7 +78,7 @@ export function isVaultEncrypted(hubcliHome: string): boolean {
  * Returns undefined if not set (plain-text mode).
  */
 export function getVaultPassphrase(): string | undefined {
-  const v = process.env.HUBCLI_VAULT_PASSPHRASE?.trim();
+  const v = process.env.HSCLI_VAULT_PASSPHRASE?.trim();
   return v || undefined;
 }
 
@@ -94,7 +94,7 @@ export function readVaultData(hubcliHome: string, passphrase?: string): object {
   if (existsSync(encPath)) {
     const pp = passphrase ?? getVaultPassphrase();
     if (!pp) {
-      throw new Error("Vault is encrypted but HUBCLI_VAULT_PASSPHRASE is not set.");
+      throw new Error("Vault is encrypted but HSCLI_VAULT_PASSPHRASE is not set.");
     }
     const encrypted = readFileSync(encPath);
     const plaintext = decryptVault(encrypted, pp);

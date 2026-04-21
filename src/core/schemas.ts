@@ -3,7 +3,7 @@
  *
  * These schemas validate response shapes to detect API drift.
  * By default, validation failures log a warning but don't break the CLI.
- * Set HUBCLI_STRICT_SCHEMAS=1 to throw on validation errors.
+ * Set HSCLI_STRICT_SCHEMAS=1 to throw on validation errors.
  */
 import { z } from "zod";
 import { CliError } from "./output.js";
@@ -96,7 +96,7 @@ export const AccountInfo = z.object({
  *
  * - On success: returns the parsed (and passthrough'd) data.
  * - On failure (non-strict): logs a warning and returns raw data as-is.
- * - On failure (strict / HUBCLI_STRICT_SCHEMAS=1): throws CliError.
+ * - On failure (strict / HSCLI_STRICT_SCHEMAS=1): throws CliError.
  */
 export function parseResponse<T>(
   schema: z.ZodType<T>,
@@ -126,6 +126,6 @@ export function parseResponse<T>(
 }
 
 function isStrictSchemas(): boolean {
-  const v = process.env.HUBCLI_STRICT_SCHEMAS?.trim().toLowerCase();
+  const v = process.env.HSCLI_STRICT_SCHEMAS?.trim().toLowerCase();
   return v === "1" || v === "true" || v === "yes";
 }

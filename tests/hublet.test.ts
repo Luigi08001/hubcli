@@ -12,7 +12,7 @@ function setupHomeWithToken(
   const dir = join(home, ".hubcli");
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "auth.json"), JSON.stringify({ profiles: { [profile]: { token, ...extras } } }));
-  process.env.HUBCLI_HOME = dir;
+  process.env.HSCLI_HOME = dir;
   return home;
 }
 
@@ -20,11 +20,11 @@ describe("hublet detection and routing", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.resetModules();
-    delete process.env.HUBCLI_HOME;
-    delete process.env.HUBCLI_PROFILE;
-    delete process.env.HUBCLI_STRICT_CAPABILITIES;
-    delete process.env.HUBCLI_REQUEST_ID;
-    delete process.env.HUBCLI_TELEMETRY_FILE;
+    delete process.env.HSCLI_HOME;
+    delete process.env.HSCLI_PROFILE;
+    delete process.env.HSCLI_STRICT_CAPABILITIES;
+    delete process.env.HSCLI_REQUEST_ID;
+    delete process.env.HSCLI_TELEMETRY_FILE;
   });
 
   // -----------------------------------------------------------------------
@@ -206,7 +206,7 @@ describe("hublet detection and routing", () => {
     const dir = join(home, ".hubcli");
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "auth.json"), JSON.stringify({ profiles: {} }));
-    process.env.HUBCLI_HOME = dir;
+    process.env.HSCLI_HOME = dir;
     process.env.HOME = home;
 
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
@@ -300,7 +300,7 @@ describe("hublet detection and routing", () => {
 
     it("reports error when profile not found", async () => {
       const home = mkdtempSync(join(tmpdir(), "hubcli-noauth-"));
-      process.env.HUBCLI_HOME = join(home, ".hubcli");
+      process.env.HSCLI_HOME = join(home, ".hubcli");
       process.env.HOME = home;
 
       const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});

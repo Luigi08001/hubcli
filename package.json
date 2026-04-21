@@ -1,13 +1,13 @@
 {
-  "name": "hubcli",
-  "version": "0.5.1",
+  "name": "hscli",
+  "version": "0.5.2",
   "description": "Headless HubSpot CLI + MCP server. 100% public API coverage (1180 endpoints, 55+ command domains) — full portal, no UI dependency. Enterprise safety rails, self-hosted.",
   "type": "module",
   "bin": {
-    "hubcli": "dist/cli.js"
+    "hscli": "dist/cli.js"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "rm -rf dist && tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "dev": "tsx src/cli.ts",
     "test": "vitest run",
@@ -18,7 +18,8 @@
     "release:checksums": "node scripts/release-checksums.mjs",
     "audit": "npm audit --audit-level=high",
     "release:verify": "npm run typecheck && npm run lint && npm test && npm run audit && npm run build && npm run release:checksums && shasum -a 256 -c release/checksums.sha256",
-    "prepublishOnly": "npm run typecheck && npm test && npm run build"
+    "prepublishOnly": "npm run typecheck && npm test && npm run build",
+    "clean": "rm -rf dist"
   },
   "keywords": [
     "hubspot",

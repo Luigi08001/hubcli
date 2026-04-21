@@ -219,27 +219,27 @@ export function registerAuth(program: Command, getCtx: () => CliContext): void {
     });
 
   auth.command("encrypt")
-    .description("Encrypt auth.json with AES-256-GCM (passphrase from HUBCLI_VAULT_PASSPHRASE)")
+    .description("Encrypt auth.json with AES-256-GCM (passphrase from HSCLI_VAULT_PASSPHRASE)")
     .action(() => {
       const ctx = getCtx();
       const passphrase = getVaultPassphrase();
       if (!passphrase) {
-        throw new CliError("VAULT_NO_PASSPHRASE", "Set HUBCLI_VAULT_PASSPHRASE env var before encrypting.");
+        throw new CliError("VAULT_NO_PASSPHRASE", "Set HSCLI_VAULT_PASSPHRASE env var before encrypting.");
       }
-      const hubcliHome = process.env.HUBCLI_HOME || resolve(process.env.HOME || "", ".hubcli");
+      const hubcliHome = process.env.HSCLI_HOME || resolve(process.env.HOME || "", ".hscli");
       encryptExistingVault(hubcliHome, passphrase);
       printResult(ctx, { encrypted: true, message: "auth.json encrypted to auth.enc and removed." });
     });
 
   auth.command("decrypt")
-    .description("Decrypt auth.enc back to auth.json (passphrase from HUBCLI_VAULT_PASSPHRASE)")
+    .description("Decrypt auth.enc back to auth.json (passphrase from HSCLI_VAULT_PASSPHRASE)")
     .action(() => {
       const ctx = getCtx();
       const passphrase = getVaultPassphrase();
       if (!passphrase) {
-        throw new CliError("VAULT_NO_PASSPHRASE", "Set HUBCLI_VAULT_PASSPHRASE env var before decrypting.");
+        throw new CliError("VAULT_NO_PASSPHRASE", "Set HSCLI_VAULT_PASSPHRASE env var before decrypting.");
       }
-      const hubcliHome = process.env.HUBCLI_HOME || resolve(process.env.HOME || "", ".hubcli");
+      const hubcliHome = process.env.HSCLI_HOME || resolve(process.env.HOME || "", ".hscli");
       if (!isVaultEncrypted(hubcliHome)) {
         throw new CliError("VAULT_NOT_ENCRYPTED", "No auth.enc found — vault is not encrypted.");
       }

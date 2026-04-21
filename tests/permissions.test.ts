@@ -15,14 +15,14 @@ function setupHomeWithToken(
     join(dir, "auth.json"),
     JSON.stringify({ profiles: { [profile]: { token, ...extra } } }),
   );
-  process.env.HUBCLI_HOME = dir;
+  process.env.HSCLI_HOME = dir;
   return home;
 }
 
 describe("permission profiles", () => {
   beforeEach(() => {
     vi.resetModules();
-    delete process.env.HUBCLI_HOME;
+    delete process.env.HSCLI_HOME;
   });
 
   it("read-only profile blocks POST", async () => {

@@ -14,8 +14,8 @@ describe("vault passphrase enforcement in auth", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.resetModules();
-    delete process.env.HUBCLI_HOME;
-    delete process.env.HUBCLI_VAULT_PASSPHRASE;
+    delete process.env.HSCLI_HOME;
+    delete process.env.HSCLI_VAULT_PASSPHRASE;
   });
 
   function makeEncryptedHome(): string {
@@ -31,13 +31,13 @@ describe("vault passphrase enforcement in auth", () => {
     const data = JSON.stringify({ profiles: { default: { token: "encrypted-token" } } });
     const encrypted = encryptVault(data, "test-pass");
     writeFileSync(join(dir, "auth.enc"), encrypted);
-    process.env.HUBCLI_HOME = dir;
+    process.env.HSCLI_HOME = dir;
     return dir;
   }
 
   it("readAuthFile throws VAULT_PASSPHRASE_REQUIRED when vault encrypted and no passphrase", async () => {
     makeEncryptedHome();
-    // No HUBCLI_VAULT_PASSPHRASE set
+    // No HSCLI_VAULT_PASSPHRASE set
     const { getToken } = await import("../src/core/auth.js");
     expect(() => getToken("default")).toThrow("Vault is encrypted");
   });
@@ -60,7 +60,7 @@ describe("vault passphrase enforcement in auth", () => {
 
   it("reads encrypted vault when passphrase IS provided", async () => {
     makeEncryptedHome();
-    process.env.HUBCLI_VAULT_PASSPHRASE = "test-pass";
+    process.env.HSCLI_VAULT_PASSPHRASE = "test-pass";
     const { getToken } = await import("../src/core/auth.js");
     expect(getToken("default")).toBe("encrypted-token");
   });
@@ -73,8 +73,8 @@ describe("404 record-not-found vs endpoint unavailable", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.resetModules();
-    delete process.env.HUBCLI_HOME;
-    delete process.env.HUBCLI_VAULT_PASSPHRASE;
+    delete process.env.HSCLI_HOME;
+    delete process.env.HSCLI_VAULT_PASSPHRASE;
   });
 
   function setupHome(): void {
@@ -84,7 +84,7 @@ describe("404 record-not-found vs endpoint unavailable", () => {
     writeFileSync(join(dir, "auth.json"), JSON.stringify({
       profiles: { default: { token: "test-token" } },
     }));
-    process.env.HUBCLI_HOME = dir;
+    process.env.HSCLI_HOME = dir;
   }
 
   it("record-level 404 returns HTTP_ERROR, not ENDPOINT_NOT_AVAILABLE", async () => {
@@ -149,8 +149,8 @@ describe("safeJson handles non-JSON responses", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.resetModules();
-    delete process.env.HUBCLI_HOME;
-    delete process.env.HUBCLI_VAULT_PASSPHRASE;
+    delete process.env.HSCLI_HOME;
+    delete process.env.HSCLI_VAULT_PASSPHRASE;
   });
 
   it("returns HTML body as message when response is not JSON", async () => {
@@ -160,7 +160,7 @@ describe("safeJson handles non-JSON responses", () => {
     writeFileSync(join(dir, "auth.json"), JSON.stringify({
       profiles: { default: { token: "test-token" } },
     }));
-    process.env.HUBCLI_HOME = dir;
+    process.env.HSCLI_HOME = dir;
 
     const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const htmlBody = "<html><body>Unprocessable Entity</body></html>";
@@ -190,8 +190,8 @@ describe("sync state persistence", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.resetModules();
-    delete process.env.HUBCLI_HOME;
-    delete process.env.HUBCLI_VAULT_PASSPHRASE;
+    delete process.env.HSCLI_HOME;
+    delete process.env.HSCLI_VAULT_PASSPHRASE;
   });
 
   function setupSyncTest(): { dir: string; stateFile: string } {
@@ -201,7 +201,7 @@ describe("sync state persistence", () => {
     writeFileSync(join(dir, "auth.json"), JSON.stringify({
       profiles: { default: { token: "test-token" } },
     }));
-    process.env.HUBCLI_HOME = dir;
+    process.env.HSCLI_HOME = dir;
     const stateFile = join(home, "sync-state.json");
     return { dir, stateFile };
   }

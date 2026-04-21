@@ -38,14 +38,14 @@ const baseArgsSchema = {
 
 export function resolveProfile(requested?: string): string {
   // Priority order:
-  // 1. HUBCLI_MCP_PROFILE — hard lock (any other profile request throws)
+  // 1. HSCLI_MCP_PROFILE — hard lock (any other profile request throws)
   // 2. Explicit `profile` arg on the tool call
-  // 3. HUBCLI_PROFILE — set by the CLI's preAction hook when user passes
+  // 3. HSCLI_PROFILE — set by the CLI's preAction hook when user passes
   //    `hubcli --profile prod mcp`. Without this, launching MCP with
   //    `--profile prod` silently fell back to "default" and could send
   //    reads/writes to the wrong portal.
   // 4. "default"
-  const isolatedProfile = process.env.HUBCLI_MCP_PROFILE?.trim();
+  const isolatedProfile = process.env.HSCLI_MCP_PROFILE?.trim();
   if (isolatedProfile) {
     const selected = requested?.trim() || isolatedProfile;
     if (selected !== isolatedProfile) {
@@ -57,7 +57,7 @@ export function resolveProfile(requested?: string): string {
   const requestedTrimmed = requested?.trim();
   if (requestedTrimmed) return requestedTrimmed;
 
-  const inheritedProfile = process.env.HUBCLI_PROFILE?.trim();
+  const inheritedProfile = process.env.HSCLI_PROFILE?.trim();
   if (inheritedProfile) return inheritedProfile;
 
   return "default";
@@ -94,7 +94,7 @@ async function executeTool(args: McpBaseArgs, fn: (ctx: CliContext, client: HubS
     const ctx = mcpContext(args);
     const client = new HubSpotClient(getToken(ctx.profile), {
       profile: ctx.profile,
-      strictCapabilities: isEnvTrue(process.env.HUBCLI_MCP_STRICT_CAPABILITIES),
+      strictCapabilities: isEnvTrue(process.env.HSCLI_MCP_STRICT_CAPABILITIES),
       apiBaseUrl: getApiBaseUrl(ctx.profile),
     });
     const result = await fn(ctx, client);

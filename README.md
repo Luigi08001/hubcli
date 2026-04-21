@@ -1,7 +1,7 @@
 # hubcli
 
 [![CI](https://github.com/Luigi08001/hubcli/actions/workflows/ci.yml/badge.svg)](https://github.com/Luigi08001/hubcli/actions/workflows/ci.yml)
-[![npm version](https://img.shields.io/npm/v/hubcli.svg)](https://www.npmjs.com/package/hubcli)
+[![npm version](https://img.shields.io/npm/v/hubcli.svg)](https://www.npmjs.com/package/hscli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node: >=20](https://img.shields.io/badge/Node-%3E%3D20-brightgreen)](package.json)
 [![HubSpot API coverage: 100%](https://img.shields.io/badge/HubSpot%20API-100%25%20(1180%20endpoints)-7c3aed)](docs/TIERS.md)
@@ -12,20 +12,20 @@
 
 ```bash
 # 1. Install
-npm install -g hubcli
+npm install -g hscli
 
 # 2. Auth with a HubSpot Private App token (create one at
 #    Settings → Integrations → Private Apps → Create private app)
-printf '%s' 'pat-eu1-XXXX-XXXX-XXXX' | hubcli auth login --token-stdin
+printf '%s' 'pat-eu1-XXXX-XXXX-XXXX' | hscli auth login --token-stdin
 
 # 3. Read
-hubcli crm contacts list --limit 5
+hscli crm contacts list --limit 5
 
 # 4. Write (dry-run by default, --force to execute)
-hubcli --force crm contacts create --data '{"properties":{"email":"jane@example.com"}}'
+hscli --force crm contacts create --data '{"properties":{"email":"jane@example.com"}}'
 
 # 5. Run as an MCP server for Claude Desktop, Cursor, Claude Code
-hubcli mcp
+hscli mcp
 ```
 
 That's the whole thing. For the full picture of what's available, read on.
@@ -100,7 +100,7 @@ See [docs/TIERS.md](docs/TIERS.md) for the exact endpoint → tier mapping.
 From npm (once published):
 
 ```bash
-npm install -g hubcli
+npm install -g hscli
 ```
 
 From source:
@@ -117,50 +117,50 @@ npm run build
 Save a token (recommended — avoids shell history):
 
 ```bash
-printf '%s' '<HUBSPOT_PRIVATE_APP_TOKEN>' | hubcli auth login --token-stdin
+printf '%s' '<HUBSPOT_PRIVATE_APP_TOKEN>' | hscli auth login --token-stdin
 ```
 
 Inline token (also supported):
 
 ```bash
-hubcli auth login --token <HUBSPOT_PRIVATE_APP_TOKEN>
+hscli auth login --token <HUBSPOT_PRIVATE_APP_TOKEN>
 ```
 
 Read:
 
 ```bash
-hubcli crm contacts list --limit 5
-hubcli marketing emails stats 123456
+hscli crm contacts list --limit 5
+hscli marketing emails stats 123456
 hubcli sales sequences list
 hubcli reporting dashboards list
-hubcli settings teams list
+hscli settings teams list
 ```
 
 Dry-run write:
 
 ```bash
-hubcli --dry-run crm contacts create --data '{"properties":{"email":"test@example.com"}}'
+hscli --dry-run crm contacts create --data '{"properties":{"email":"test@example.com"}}'
 ```
 
 Live write (explicit):
 
 ```bash
-hubcli --force crm contacts create --data '{"properties":{"email":"test@example.com"}}'
+hscli --force crm contacts create --data '{"properties":{"email":"test@example.com"}}'
 ```
 
 Policy-guarded delete with change ticket:
 
 ```bash
-hubcli --force --policy-file docs/POLICY_EXAMPLE.json --change-ticket CHG-123 \
+hscli --force --policy-file docs/POLICY_EXAMPLE.json --change-ticket CHG-123 \
   crm contacts delete 123
 ```
 
 ## Output modes
 
 ```bash
-hubcli --json crm companies list --limit 3           # JSON envelope
-hubcli --format csv crm contacts list --limit 5      # CSV
-hubcli --format yaml crm deals get 123               # YAML
+hscli --json crm companies list --limit 3           # JSON envelope
+hscli --format csv crm contacts list --limit 5      # CSV
+hscli --format yaml crm deals get 123               # YAML
 ```
 
 ## MCP: AI agents as first-class consumers
@@ -168,7 +168,7 @@ hubcli --format yaml crm deals get 123               # YAML
 hubcli ships a built-in MCP server over stdio with ~125 tools exposing the full surface:
 
 ```bash
-hubcli mcp
+hscli mcp
 ```
 
 For Claude Desktop, add to `claude_desktop_config.json`:
@@ -202,14 +202,14 @@ hubcli doctor capabilities --refresh
 Fail fast when a command hits an unsupported endpoint:
 
 ```bash
-hubcli --strict-capabilities marketing emails list
+hscli --strict-capabilities marketing emails list
 ```
 
 ## Schema introspection + offline validation
 
 ```bash
-hubcli crm describe contacts --refresh-cache
-hubcli crm validate contacts --offline --data '{"properties":{"email":"x@example.com"}}'
+hscli crm describe contacts --refresh-cache
+hscli crm validate contacts --offline --data '{"properties":{"email":"x@example.com"}}'
 ```
 
 Local schema cache means you can validate payloads without hitting HubSpot.

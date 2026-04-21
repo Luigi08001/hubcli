@@ -2,7 +2,7 @@
  * Plugin system for hubcli.
  *
  * Plugins are discovered from:
- * 1. HUBCLI_PLUGINS env var (comma-separated paths or package names)
+ * 1. HSCLI_PLUGINS env var (comma-separated paths or package names)
  * 2. node_modules packages with "hubcli-plugin" in keywords
  *
  * Each plugin must export: register(program: Command, context: PluginContext)
@@ -78,10 +78,10 @@ function discoverFromNodeModules(): string[] {
 }
 
 /**
- * Discover plugin specifiers from HUBCLI_PLUGINS env var.
+ * Discover plugin specifiers from HSCLI_PLUGINS env var.
  */
 function discoverFromEnv(): string[] {
-  const raw = process.env.HUBCLI_PLUGINS?.trim();
+  const raw = process.env.HSCLI_PLUGINS?.trim();
   if (!raw) return [];
   return raw.split(",").map((s) => s.trim()).filter(Boolean);
 }

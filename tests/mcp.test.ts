@@ -26,7 +26,7 @@ function setupHomeWithToken(
     join(dir, "auth.json"),
     JSON.stringify({ profiles: { [profile]: { token, ...extra } } }),
   );
-  process.env.HUBCLI_HOME = dir;
+  process.env.HSCLI_HOME = dir;
   process.env.HOME = home;
   return home;
 }
@@ -45,10 +45,10 @@ function mockFetchOk(data: unknown = { results: [] }) {
 describe("mcp server", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
-    delete process.env.HUBCLI_HOME;
-    delete process.env.HUBCLI_MCP_PROFILE;
-    delete process.env.HUBCLI_MCP_STRICT_CAPABILITIES;
-    delete process.env.HUBCLI_PROFILE;
+    delete process.env.HSCLI_HOME;
+    delete process.env.HSCLI_MCP_PROFILE;
+    delete process.env.HSCLI_MCP_STRICT_CAPABILITIES;
+    delete process.env.HSCLI_PROFILE;
   });
 
   // ────────────────────────────────────────────
@@ -469,12 +469,12 @@ describe("mcp server", () => {
   // ────────────────────────────────────────────
 
   it("profile isolation rejects cross-profile requests", () => {
-    process.env.HUBCLI_MCP_PROFILE = "locked";
+    process.env.HSCLI_MCP_PROFILE = "locked";
     expect(() => resolveProfile("other")).toThrow("locked to profile");
   });
 
   it("profile isolation allows matching profile", () => {
-    process.env.HUBCLI_MCP_PROFILE = "locked";
+    process.env.HSCLI_MCP_PROFILE = "locked";
     expect(resolveProfile("locked")).toBe("locked");
   });
 
@@ -482,24 +482,24 @@ describe("mcp server", () => {
     expect(resolveProfile()).toBe("default");
   });
 
-  // Codex P1.1 regression: CLI's preAction hook sets HUBCLI_PROFILE; MCP's
+  // Codex P1.1 regression: CLI's preAction hook sets HSCLI_PROFILE; MCP's
   // resolveProfile() must inherit it when no explicit `profile` arg is passed.
-  it("inherits HUBCLI_PROFILE env var when no explicit profile arg", () => {
-    delete process.env.HUBCLI_MCP_PROFILE;
-    process.env.HUBCLI_PROFILE = "prod-portal";
+  it("inherits HSCLI_PROFILE env var when no explicit profile arg", () => {
+    delete process.env.HSCLI_MCP_PROFILE;
+    process.env.HSCLI_PROFILE = "prod-portal";
     expect(resolveProfile()).toBe("prod-portal");
     expect(resolveProfile("")).toBe("prod-portal"); // empty string also falls through
   });
 
-  it("explicit profile arg takes precedence over HUBCLI_PROFILE", () => {
-    delete process.env.HUBCLI_MCP_PROFILE;
-    process.env.HUBCLI_PROFILE = "prod-portal";
+  it("explicit profile arg takes precedence over HSCLI_PROFILE", () => {
+    delete process.env.HSCLI_MCP_PROFILE;
+    process.env.HSCLI_PROFILE = "prod-portal";
     expect(resolveProfile("staging")).toBe("staging");
   });
 
-  it("HUBCLI_MCP_PROFILE isolation still wins over HUBCLI_PROFILE", () => {
-    process.env.HUBCLI_MCP_PROFILE = "locked";
-    process.env.HUBCLI_PROFILE = "prod-portal"; // should be ignored
+  it("HSCLI_MCP_PROFILE isolation still wins over HSCLI_PROFILE", () => {
+    process.env.HSCLI_MCP_PROFILE = "locked";
+    process.env.HSCLI_PROFILE = "prod-portal"; // should be ignored
     expect(resolveProfile()).toBe("locked");
     expect(() => resolveProfile("prod-portal")).toThrow("locked to profile");
   });
