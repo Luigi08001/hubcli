@@ -71,8 +71,8 @@ export function createProgram(): { program: Command; getCtx: () => CliContext } 
   const runId = randomUUID();
 
   program
-    .name("hubcli")
-    .description("HubSpot CLI")
+    .name("hscli")
+    .description("Headless HubSpot CLI + MCP server")
     .version(pkg.version)
     .option("--profile <name>", "Auth profile", "default")
     .option("--json", "JSON output")
