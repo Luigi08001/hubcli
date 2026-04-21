@@ -110,7 +110,26 @@ async function discoverIds() {
     ["landingPageId", "/cms/v3/pages/landing-pages?limit=1", "id"],
     ["sitePageId", "/cms/v3/pages/site-pages?limit=1", "id"],
     ["redirectId", "/cms/v3/url-redirects?limit=1", "id"],
+    ["tableIdOrName", "/cms/v3/hubdb/tables?limit=1", "id"],
+    ["campaignGuid", "/marketing/v3/campaigns?limit=1", "id"],
+    ["marketingEventId", "/marketing/v3/marketing-events?limit=1", "id"],
+    ["workflowId", "/automation/v4/flows?limit=1", "id"],
+    ["blogId", "/cms/v3/blogs/posts?limit=1", "contentGroupId"],
   ];
+
+  // Also proper crm list discovery (the "list" object, not folders)
+  try {
+    const r = await fetch(`${API_BASE}/crm/v3/lists/search`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ count: 1 }),
+    });
+    if (r.ok) {
+      const j = await r.json();
+      const first = j.lists?.[0];
+      if (first?.listId) dynamicIds["{listId}"] = String(first.listId);
+    }
+  } catch {}
 
   await Promise.all(probes.map(async ([name, url, field]) => {
     const item = await list(url);
@@ -138,9 +157,13 @@ async function discoverIds() {
 }
 
 // Known safe substitutions for path segments we can't easily discover
+// If HUBCLI_DEV_APP_ID is set, use it for {appId} substitution (unlocks dev-platform endpoints
+// for an OAuth-installed Developer App). Otherwise fall back to "0" which will 401/403/404 as expected.
+const DEV_APP_ID = process.env.HUBCLI_DEV_APP_ID || "0";
+
 const KNOWN_SUBS = {
-  "{appId}": "0",                 // will typically fail with 404 or 403; that's OK — we record it
-  "{applicationId}": "0",
+  "{appId}": DEV_APP_ID,
+  "{applicationId}": DEV_APP_ID,
   "{definitionId}": "0",
   "{revisionId}": "0",
   "{functionType}": "PRE_FETCH_OPTIONS",
@@ -231,7 +254,15 @@ const KNOWN_SUBS = {
   "{templateId}": "0",
 };
 
+// Paths in the scrape with placeholders like `{0}`, `{3}`, `{162}`, `{410}` are
+// scraping artifacts where HTTP status codes or sample ints leaked into path
+// templates. Skip them cleanly rather than marking SKIP-PARAM.
+function isScrapeArtifact(p) {
+  return /\{\d+\}/.test(p);
+}
+
 function substitutePath(p) {
+  if (isScrapeArtifact(p)) return { path: p, leftover: ["<scrape-artifact>"] };
   let result = p;
   const leftover = [];
   // Detect {objectType} earlier in the path — use it to route {objectId} to the right dynamic id
