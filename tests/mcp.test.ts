@@ -48,6 +48,7 @@ describe("mcp server", () => {
     delete process.env.HUBCLI_HOME;
     delete process.env.HUBCLI_MCP_PROFILE;
     delete process.env.HUBCLI_MCP_STRICT_CAPABILITIES;
+    delete process.env.HUBCLI_PROFILE;
   });
 
   // ────────────────────────────────────────────
@@ -481,6 +482,28 @@ describe("mcp server", () => {
     expect(resolveProfile()).toBe("default");
   });
 
+  // Codex P1.1 regression: CLI's preAction hook sets HUBCLI_PROFILE; MCP's
+  // resolveProfile() must inherit it when no explicit `profile` arg is passed.
+  it("inherits HUBCLI_PROFILE env var when no explicit profile arg", () => {
+    delete process.env.HUBCLI_MCP_PROFILE;
+    process.env.HUBCLI_PROFILE = "prod-portal";
+    expect(resolveProfile()).toBe("prod-portal");
+    expect(resolveProfile("")).toBe("prod-portal"); // empty string also falls through
+  });
+
+  it("explicit profile arg takes precedence over HUBCLI_PROFILE", () => {
+    delete process.env.HUBCLI_MCP_PROFILE;
+    process.env.HUBCLI_PROFILE = "prod-portal";
+    expect(resolveProfile("staging")).toBe("staging");
+  });
+
+  it("HUBCLI_MCP_PROFILE isolation still wins over HUBCLI_PROFILE", () => {
+    process.env.HUBCLI_MCP_PROFILE = "locked";
+    process.env.HUBCLI_PROFILE = "prod-portal"; // should be ignored
+    expect(resolveProfile()).toBe("locked");
+    expect(() => resolveProfile("prod-portal")).toThrow("locked to profile");
+  });
+
   // ────────────────────────────────────────────
   // 8. Batch read (non-mutating POST)
   // ────────────────────────────────────────────
@@ -529,5 +552,63 @@ describe("mcp server", () => {
 
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(result.structuredContent).toMatchObject({ dryRun: true });
+  });
+
+  // ────────────────────────────────────────────
+  // 11. Codex P1.3 regression: handlers must not double-wrap via textResult()
+  // (the outer executeTool wraps exactly once; if a handler also wraps,
+  // clients receive structuredContent.content[0].text = "{...json...}" blob
+  // instead of the actual structured payload)
+  // ────────────────────────────────────────────
+
+  it("crm_lists_list returns structured payload, not double-wrapped blob", async () => {
+    setupHomeWithToken();
+    const mock = new MockMcpServer();
+    registerHubSpotTools(mock as any);
+    mockFetchOk({ lists: [{ listId: 42, name: "Active" }], hasMore: false });
+
+    const result = await mock.tools.get("crm_lists_list")!({});
+
+    expect(result).toBeDefined();
+    expect(result.structuredContent).toMatchObject({ lists: [{ listId: 42 }] });
+    // Specifically: structuredContent must NOT have `content` as a child
+    // (which would indicate a double-wrap)
+    expect(result.structuredContent).not.toHaveProperty("content");
+  });
+
+  it("sales_sequences_list returns structured payload, not double-wrapped blob", async () => {
+    setupHomeWithToken();
+    const mock = new MockMcpServer();
+    registerHubSpotTools(mock as any);
+    mockFetchOk({ results: [{ id: "1" }] });
+
+    const result = await mock.tools.get("sales_sequences_list")!({ userId: "u" });
+
+    expect(result.structuredContent).toMatchObject({ results: [{ id: "1" }] });
+    expect(result.structuredContent).not.toHaveProperty("content");
+  });
+
+  it("reporting_dashboards_list returns structured payload, not double-wrapped blob", async () => {
+    setupHomeWithToken();
+    const mock = new MockMcpServer();
+    registerHubSpotTools(mock as any);
+    mockFetchOk({ results: [{ id: "d1", name: "Sales" }] });
+
+    const result = await mock.tools.get("reporting_dashboards_list")!({});
+
+    expect(result.structuredContent).toMatchObject({ results: [{ id: "d1" }] });
+    expect(result.structuredContent).not.toHaveProperty("content");
+  });
+
+  it("crm_exports_list returns structured payload, not double-wrapped blob", async () => {
+    setupHomeWithToken();
+    const mock = new MockMcpServer();
+    registerHubSpotTools(mock as any);
+    mockFetchOk({ results: [{ id: "e1", status: "DONE" }] });
+
+    const result = await mock.tools.get("crm_exports_list")!({});
+
+    expect(result.structuredContent).toMatchObject({ results: [{ id: "e1" }] });
+    expect(result.structuredContent).not.toHaveProperty("content");
   });
 });

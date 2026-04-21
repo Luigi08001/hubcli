@@ -29,7 +29,10 @@ const PORTAL_PROFILE = process.env.HUBCLI_PROFILE || "default";
 const API_BASE = "https://api.hubapi.com";
 const CONCURRENCY = 4;
 const TIMEOUT_MS = 20_000;
-const ENDPOINTS_JSON = `${homedir()}/Desktop/vault/HubSpot Audit/api-mapping/endpoints.json`;
+// Location of the HubSpot endpoints scrape used to drive the probe. Default
+// is the author's private vault path, but any contributor can point this at
+// their own scrape via HUBCLI_ENDPOINTS_JSON env var.
+const ENDPOINTS_JSON = process.env.HUBCLI_ENDPOINTS_JSON || `${homedir()}/Desktop/vault/HubSpot Audit/api-mapping/endpoints.json`;
 
 const authPath = `${homedir()}/.hubcli/auth.json`;
 const auth = JSON.parse(fs.readFileSync(authPath, "utf8"));

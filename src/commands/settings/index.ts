@@ -121,21 +121,26 @@ export function registerSettings(program: Command, getCtx: () => CliContext): vo
 
   auditLogs
     .command("list")
+    .description("List HubSpot account audit-log events (/account-info/v3/activity/audit-logs)")
     .option("--limit <n>", "Max records", "100")
     .option("--after <cursor>", "Paging cursor")
-    .option("--before <date>", "Before date (ISO 8601)")
-    .option("--start-date <date>", "After date (ISO 8601)")
-    .option("--user-id <id>", "Filter by user ID")
+    .option("--occurred-before <iso>", "Events that occurred before this ISO-8601 datetime")
+    .option("--occurred-after <iso>", "Events that occurred after this ISO-8601 datetime")
+    .option("--acting-user-id <id>", "Filter by the user id that performed the action")
+    .option("--event-type <type>", "Filter by event type (e.g. USER_LOGIN, PERMISSION_CHANGE)")
+    .option("--object-type <type>", "Filter by the object type the action was performed on")
     .action(async (opts) => {
       const ctx = getCtx();
       const client = new HubSpotClient(getToken(ctx.profile));
       const params = new URLSearchParams();
       params.set("limit", String(parseNumberFlag(opts.limit, "--limit")));
       if (opts.after) params.set("after", opts.after);
-      if (opts.before) params.set("before", opts.before);
-      if (opts.startDate) params.set("after", opts.startDate);
-      if (opts.userId) params.set("userId", opts.userId);
-      const res = await client.request(`/account-info/v3/activity/audit-log/events?${params.toString()}`);
+      if (opts.occurredBefore) params.set("occurredBefore", opts.occurredBefore);
+      if (opts.occurredAfter) params.set("occurredAfter", opts.occurredAfter);
+      if (opts.actingUserId) params.set("actingUserId", opts.actingUserId);
+      if (opts.eventType) params.set("eventType", opts.eventType);
+      if (opts.objectType) params.set("objectType", opts.objectType);
+      const res = await client.request(`/account-info/v3/activity/audit-logs?${params.toString()}`);
       printResult(ctx, res);
     });
 

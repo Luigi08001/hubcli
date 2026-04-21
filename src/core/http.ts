@@ -109,6 +109,13 @@ export class HubSpotClient {
   private readonly profile: string;
   private readonly strictCapabilities: boolean;
   private readonly rateLimitState: RateLimitSnapshot = { nextRequestAtMs: 0 };
+  // Portal timezone (e.g. "US/Eastern"). Fetched lazily from
+  // /account-info/v3/details the first time daily quota headers appear,
+  // then used so the daily reset calculation matches HubSpot's actual
+  // reset time (HubSpot resets daily usage at midnight in the portal's
+  // own timezone, not UTC). Falls back to "UTC" if detection fails.
+  private portalTimeZone: string | undefined;
+  private portalTimeZoneFetching: Promise<void> | undefined;
 
   constructor(private readonly token: string, options: HubSpotClientOptions = {}) {
     this.baseUrl = new URL(options.apiBaseUrl?.trim() || "https://api.hubapi.com");
@@ -315,14 +322,50 @@ export class HubSpotClient {
     const dailyMax = parsePositiveInt(headers.get("x-hubspot-ratelimit-daily"));
     const dailyRemaining = parseNonNegativeInt(headers.get("x-hubspot-ratelimit-daily-remaining"));
     if (dailyMax !== undefined && dailyRemaining !== undefined) {
-      const resetAtMs = nextUtcMidnightMs(now);
+      const resetAtMs = nextMidnightMs(now, this.portalTimeZone ?? "UTC");
       this.rateLimitState.daily = {
         max: dailyMax,
         remaining: dailyRemaining,
         resetAtMs,
       };
       this.rateLimitState.nextRequestAtMs = this.computeDailyPacingNextAt(resetAtMs, dailyMax, dailyRemaining);
+      // Lazily fetch the portal's timezone on first daily-quota sighting so
+      // subsequent resets use the correct local midnight.
+      this.ensurePortalTimeZoneFetched();
     }
+  }
+
+  /**
+   * Fetch the portal's timezone once and cache it on the client instance.
+   * /account-info/v3/details returns a `timeZone` string (e.g. "US/Eastern").
+   * If the request fails or times out, fall back to "UTC" silently — daily
+   * quota tracking still works, just off by a few hours for non-UTC portals.
+   */
+  private ensurePortalTimeZoneFetched(): void {
+    if (this.portalTimeZone || this.portalTimeZoneFetching) return;
+    const url = this.resolveUrl("/account-info/v3/details");
+    this.portalTimeZoneFetching = (async () => {
+      try {
+        const response = await fetch(url, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+            "X-Hubcli-Request-Id": this.requestId,
+          },
+          signal: AbortSignal.timeout(5_000),
+        });
+        if (response.ok) {
+          const body = await response.json().catch(() => null) as { timeZone?: string } | null;
+          if (body?.timeZone && typeof body.timeZone === "string") {
+            this.portalTimeZone = body.timeZone;
+            return;
+          }
+        }
+      } catch {
+        // silent fallback
+      }
+      this.portalTimeZone = "UTC";
+    })();
   }
 
   private observeTooManyRequests(headers: Headers): void {
@@ -410,14 +453,51 @@ function parseNonNegativeInt(value: string | null): number | undefined {
 
 function nextUtcMidnightMs(nowMs: number): number {
   const now = new Date(nowMs);
-  const next = Date.UTC(
+  return Date.UTC(
     now.getUTCFullYear(),
     now.getUTCMonth(),
     now.getUTCDate() + 1,
-    0,
-    0,
-    0,
-    0,
+    0, 0, 0, 0,
   );
-  return next;
+}
+
+/**
+ * Return the epoch ms of the next midnight in the given IANA timezone.
+ * HubSpot resets daily usage at midnight in the portal's own timezone.
+ * Falls back to UTC if the timeZone is "UTC" or if Intl formatting fails.
+ */
+function nextMidnightMs(nowMs: number, timeZone: string): number {
+  if (!timeZone || timeZone === "UTC") return nextUtcMidnightMs(nowMs);
+
+  try {
+    // Render the current instant as the local date in the target timezone.
+    const fmt = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    });
+    const parts = Object.fromEntries(fmt.formatToParts(new Date(nowMs)).map(p => [p.type, p.value]));
+    const localNow = new Date(`${parts.year}-${parts.month}-${parts.day}T${parts.hour === "24" ? "00" : parts.hour}:${parts.minute}:${parts.second}Z`).getTime();
+
+    // Offset between UTC and local wall time (ms)
+    const offsetMs = localNow - nowMs;
+
+    // Compute midnight in local wall time, expressed in UTC-epoch ms
+    const localDate = new Date(localNow);
+    const localMidnightUtcMs = Date.UTC(
+      localDate.getUTCFullYear(),
+      localDate.getUTCMonth(),
+      localDate.getUTCDate() + 1,
+      0, 0, 0, 0,
+    );
+    // Adjust back from "local wall time expressed as UTC" to actual UTC epoch
+    return localMidnightUtcMs - offsetMs;
+  } catch {
+    return nextUtcMidnightMs(nowMs);
+  }
 }

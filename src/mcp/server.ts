@@ -37,14 +37,30 @@ const baseArgsSchema = {
 };
 
 export function resolveProfile(requested?: string): string {
+  // Priority order:
+  // 1. HUBCLI_MCP_PROFILE — hard lock (any other profile request throws)
+  // 2. Explicit `profile` arg on the tool call
+  // 3. HUBCLI_PROFILE — set by the CLI's preAction hook when user passes
+  //    `hubcli --profile prod mcp`. Without this, launching MCP with
+  //    `--profile prod` silently fell back to "default" and could send
+  //    reads/writes to the wrong portal.
+  // 4. "default"
   const isolatedProfile = process.env.HUBCLI_MCP_PROFILE?.trim();
-  if (!isolatedProfile) return requested?.trim() || "default";
-
-  const selected = requested?.trim() || isolatedProfile;
-  if (selected !== isolatedProfile) {
-    throw new CliError("MCP_PROFILE_ISOLATED", `MCP server is locked to profile '${isolatedProfile}'.`);
+  if (isolatedProfile) {
+    const selected = requested?.trim() || isolatedProfile;
+    if (selected !== isolatedProfile) {
+      throw new CliError("MCP_PROFILE_ISOLATED", `MCP server is locked to profile '${isolatedProfile}'.`);
+    }
+    return isolatedProfile;
   }
-  return isolatedProfile;
+
+  const requestedTrimmed = requested?.trim();
+  if (requestedTrimmed) return requestedTrimmed;
+
+  const inheritedProfile = process.env.HUBCLI_PROFILE?.trim();
+  if (inheritedProfile) return inheritedProfile;
+
+  return "default";
 }
 
 function mcpContext(args: McpBaseArgs): CliContext {
@@ -534,7 +550,7 @@ export function registerHubSpotTools(server: McpServer): void {
     if (args.limit) params.set("limit", String(args.limit));
     if (args.after) params.set("after", args.after);
     const qs = params.toString();
-    return textResult(await client.request(`/crm/v3/lists${qs ? `?${qs}` : ""}`));
+    return await client.request(`/crm/v3/lists${qs ? `?${qs}` : ""}`);
   }));
 
   server.registerTool("crm_lists_get", {
@@ -545,7 +561,7 @@ export function registerHubSpotTools(server: McpServer): void {
     },
   }, (args) => executeTool(args, async (_ctx, client) => {
     const listIdSegment = encodePathSegment(args.listId, "listId");
-    return textResult(await client.request(`/crm/v3/lists/${listIdSegment}`));
+    return await client.request(`/crm/v3/lists/${listIdSegment}`);
   }));
 
   server.registerTool("crm_lists_create", {
@@ -589,7 +605,7 @@ export function registerHubSpotTools(server: McpServer): void {
     },
   }, (args) => executeTool(args, async (_ctx, client) => {
     const listIdSegment = encodePathSegment(args.listId, "listId");
-    return textResult(await client.request(`/crm/v3/lists/${listIdSegment}/memberships`));
+    return await client.request(`/crm/v3/lists/${listIdSegment}/memberships`);
   }));
 
   // ── Sequences ──────────────────────────────────────────────────────────
@@ -606,7 +622,7 @@ export function registerHubSpotTools(server: McpServer): void {
     if (args.limit) params.set("limit", String(args.limit));
     if (args.after) params.set("after", args.after);
     const qs = params.toString();
-    return textResult(await client.request(`/automation/v4/sequences${qs ? `?${qs}` : ""}`));
+    return await client.request(`/automation/v4/sequences${qs ? `?${qs}` : ""}`);
   }));
 
   server.registerTool("sales_sequences_get", {
@@ -617,7 +633,7 @@ export function registerHubSpotTools(server: McpServer): void {
     },
   }, (args) => executeTool(args, async (_ctx, client) => {
     const sequenceIdSegment = encodePathSegment(args.sequenceId, "sequenceId");
-    return textResult(await client.request(`/automation/v4/sequences/${sequenceIdSegment}`));
+    return await client.request(`/automation/v4/sequences/${sequenceIdSegment}`);
   }));
 
   server.registerTool("sales_sequences_enrollments", {
@@ -628,7 +644,7 @@ export function registerHubSpotTools(server: McpServer): void {
     },
   }, (args) => executeTool(args, async (_ctx, client) => {
     const sequenceIdSegment = encodePathSegment(args.sequenceId, "sequenceId");
-    return textResult(await client.request(`/automation/v4/sequences/${sequenceIdSegment}/enrollments`));
+    return await client.request(`/automation/v4/sequences/${sequenceIdSegment}/enrollments`);
   }));
 
   // ── Reporting ──────────────────────────────────────────────────────────
@@ -645,7 +661,7 @@ export function registerHubSpotTools(server: McpServer): void {
     if (args.limit) params.set("limit", String(args.limit));
     if (args.after) params.set("after", args.after);
     const qs = params.toString();
-    return textResult(await client.request(`/analytics/v2/reports${qs ? `?${qs}` : ""}`));
+    return await client.request(`/analytics/v2/reports${qs ? `?${qs}` : ""}`);
   }));
 
   server.registerTool("reporting_dashboards_get", {
@@ -656,7 +672,7 @@ export function registerHubSpotTools(server: McpServer): void {
     },
   }, (args) => executeTool(args, async (_ctx, client) => {
     const dashboardIdSegment = encodePathSegment(args.dashboardId, "dashboardId");
-    return textResult(await client.request(`/analytics/v2/reports/${dashboardIdSegment}`));
+    return await client.request(`/analytics/v2/reports/${dashboardIdSegment}`);
   }));
 
   // ── Exports ────────────────────────────────────────────────────────────
@@ -683,7 +699,7 @@ export function registerHubSpotTools(server: McpServer): void {
     if (args.limit) params.set("limit", String(args.limit));
     if (args.after) params.set("after", args.after);
     const qs = params.toString();
-    return textResult(await client.request(`/crm/v3/exports${qs ? `?${qs}` : ""}`));
+    return await client.request(`/crm/v3/exports${qs ? `?${qs}` : ""}`);
   }));
 
   server.registerTool("crm_exports_get", {
@@ -694,7 +710,7 @@ export function registerHubSpotTools(server: McpServer): void {
     },
   }, (args) => executeTool(args, async (_ctx, client) => {
     const exportIdSegment = encodePathSegment(args.exportId, "exportId");
-    return textResult(await client.request(`/crm/v3/exports/${exportIdSegment}`));
+    return await client.request(`/crm/v3/exports/${exportIdSegment}`);
   }));
 
   server.registerTool("crm_exports_status", {
@@ -705,7 +721,7 @@ export function registerHubSpotTools(server: McpServer): void {
     },
   }, (args) => executeTool(args, async (_ctx, client) => {
     const exportIdSegment = encodePathSegment(args.exportId, "exportId");
-    return textResult(await client.request(`/crm/v3/exports/${exportIdSegment}/status`));
+    return await client.request(`/crm/v3/exports/${exportIdSegment}/status`);
   }));
 
   // ── Pipeline Stages ────────────────────────────────────────────────────

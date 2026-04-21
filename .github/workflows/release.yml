@@ -52,7 +52,12 @@ jobs:
           shasum -a 256 "hubcli-${VERSION}.tar.gz" >> release/checksums.sha256
 
       - name: Generate artifact attestation
+        # Build provenance attestation is only available on public repos
+        # (or private repos on paid GitHub plans). Made non-blocking so the
+        # Release workflow completes on private repos; when the repo goes
+        # public, attestations will be generated automatically.
         uses: actions/attest-build-provenance@v2
+        continue-on-error: true
         with:
           subject-path: "hubcli-*.tar.gz"
 

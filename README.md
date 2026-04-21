@@ -8,6 +8,33 @@
 
 **The headless HubSpot CLI + MCP server. 100% public API coverage (1,180 endpoints, 55+ command domains), enterprise safety rails, self-hosted.**
 
+## Get started in 30 seconds
+
+```bash
+# 1. Install
+npm install -g hubcli
+
+# 2. Auth with a HubSpot Private App token (create one at
+#    Settings → Integrations → Private Apps → Create private app)
+printf '%s' 'pat-eu1-XXXX-XXXX-XXXX' | hubcli auth login --token-stdin
+
+# 3. Read
+hubcli crm contacts list --limit 5
+
+# 4. Write (dry-run by default, --force to execute)
+hubcli --force crm contacts create --data '{"properties":{"email":"jane@example.com"}}'
+
+# 5. Run as an MCP server for Claude Desktop, Cursor, Claude Code
+hubcli mcp
+```
+
+That's the whole thing. For the full picture of what's available, read on.
+
+---
+
+<details>
+<summary><strong>Full coverage map (55+ domains)</strong></summary>
+
 hubcli gives you one TypeScript binary that covers **every** endpoint of HubSpot's public API surface — verified against a scrape of HubSpot's own dev docs (1,178 source files, 1,180 endpoints). Whether an endpoint actually returns data on *your* portal depends on the HubSpot tier you're on (see [docs/TIERS.md](docs/TIERS.md)). hubcli exposes them all.
 
 - **Full CRM** — contacts, companies, deals, tickets, leads, quotes, products, line items, orders, carts, discounts, fees, taxes, invoices, subscriptions, payments, goals, communications, users, feedback-submissions, custom objects, properties (+ legacy v1/v2), pipelines, associations v4 (+ labels CRUD + dated 2025-09), owners, imports, exports, engagements (notes/tasks/calls/meetings), sync, describe/validate, timeline, CRM Cards (UI Extensions), filter + count primitives on every object
@@ -26,6 +53,9 @@ hubcli gives you one TypeScript binary that covers **every** endpoint of HubSpot
 - **Built-in MCP server** over stdio (140+ tools) for Claude Desktop, Cursor, Claude Code, any MCP client
 
 Enterprise-grade from day one: `--dry-run`, `--force`, policy files, change tickets, capability probing, rate-limit intelligence, token redaction, path scope allowlisting, idempotency keys.
+
+</details>
+
 
 ## How it compares
 

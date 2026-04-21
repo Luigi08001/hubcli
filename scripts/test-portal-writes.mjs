@@ -31,7 +31,9 @@ const PORTAL_PROFILE = process.env.HUBCLI_PROFILE || "default";
 const API_BASE = "https://api.hubapi.com";
 const CONCURRENCY = 3;
 const TIMEOUT_MS = 20_000;
-const ENDPOINTS_JSON = `${homedir()}/Desktop/vault/HubSpot Audit/api-mapping/endpoints.json`;
+// See scripts/test-portal-coverage.mjs — set HUBCLI_ENDPOINTS_JSON to point
+// at your own scrape.
+const ENDPOINTS_JSON = process.env.HUBCLI_ENDPOINTS_JSON || `${homedir()}/Desktop/vault/HubSpot Audit/api-mapping/endpoints.json`;
 const DEV_APP_ID = process.env.HUBCLI_DEV_APP_ID || "0";
 const RUN_SUFFIX = Date.now().toString(36).slice(-5);
 
