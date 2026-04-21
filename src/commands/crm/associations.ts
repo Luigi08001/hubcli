@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { createClient, HubSpotClient } from "../../core/http.js";
 import type { CliContext } from "../../core/output.js";
 import { CliError, printResult } from "../../core/output.js";
-import { encodePathSegment, maybeWrite, parseNumberFlag } from "./shared.js";
+import { encodePathSegment, maybeWrite, parseJsonPayload, parseNumberFlag } from "./shared.js";
 
 const KNOWN_OBJECT_TYPES = new Set([
   "contacts", "companies", "deals", "tickets",
@@ -109,6 +109,78 @@ export function registerAssociations(crm: Command, getCtx: () => CliContext): vo
       const toObjectIdSegment = encodePathSegment(toObjectId, "toObjectId");
       const path = `/crm/v4/objects/${fromObjectTypeSegment}/${fromObjectIdSegment}/associations/default/${toObjectTypeSegment}/${toObjectIdSegment}`;
       const res = await maybeWrite(ctx, client, "DELETE", path);
+      printResult(ctx, res);
+    });
+
+  const labels = associations.command("labels").description("Association label/type definitions between two object types");
+
+  labels
+    .command("list")
+    .description("List all association labels/types between two object types")
+    .argument("<fromObjectType>")
+    .argument("<toObjectType>")
+    .action(async (fromObjectType, toObjectType) => {
+      const ctx = getCtx();
+      const client = createClient(ctx.profile);
+      const fromValue = await resolveObjectType(fromObjectType, client, "fromObjectType");
+      const toValue = await resolveObjectType(toObjectType, client, "toObjectType");
+      const fromSeg = encodePathSegment(fromValue, "fromObjectType");
+      const toSeg = encodePathSegment(toValue, "toObjectType");
+      const res = await client.request(`/crm/v4/associations/${fromSeg}/${toSeg}/labels`);
+      printResult(ctx, res);
+    });
+
+  labels
+    .command("create")
+    .description("Create a user-defined association label between two object types")
+    .argument("<fromObjectType>")
+    .argument("<toObjectType>")
+    .requiredOption("--data <payload>", "Label payload JSON: { label, name? }")
+    .action(async (fromObjectType, toObjectType, opts) => {
+      const ctx = getCtx();
+      const client = createClient(ctx.profile);
+      const fromValue = await resolveObjectType(fromObjectType, client, "fromObjectType");
+      const toValue = await resolveObjectType(toObjectType, client, "toObjectType");
+      const fromSeg = encodePathSegment(fromValue, "fromObjectType");
+      const toSeg = encodePathSegment(toValue, "toObjectType");
+      const payload = parseJsonPayload(opts.data);
+      const res = await maybeWrite(ctx, client, "POST", `/crm/v4/associations/${fromSeg}/${toSeg}/labels`, payload);
+      printResult(ctx, res);
+    });
+
+  labels
+    .command("update")
+    .description("Update a user-defined association label")
+    .argument("<fromObjectType>")
+    .argument("<toObjectType>")
+    .requiredOption("--data <payload>", "Label update payload JSON: { associationTypeId, label, name? }")
+    .action(async (fromObjectType, toObjectType, opts) => {
+      const ctx = getCtx();
+      const client = createClient(ctx.profile);
+      const fromValue = await resolveObjectType(fromObjectType, client, "fromObjectType");
+      const toValue = await resolveObjectType(toObjectType, client, "toObjectType");
+      const fromSeg = encodePathSegment(fromValue, "fromObjectType");
+      const toSeg = encodePathSegment(toValue, "toObjectType");
+      const payload = parseJsonPayload(opts.data);
+      const res = await maybeWrite(ctx, client, "PUT", `/crm/v4/associations/${fromSeg}/${toSeg}/labels`, payload);
+      printResult(ctx, res);
+    });
+
+  labels
+    .command("delete")
+    .description("Delete a user-defined association label by associationTypeId")
+    .argument("<fromObjectType>")
+    .argument("<toObjectType>")
+    .argument("<associationTypeId>")
+    .action(async (fromObjectType, toObjectType, associationTypeId) => {
+      const ctx = getCtx();
+      const client = createClient(ctx.profile);
+      const fromValue = await resolveObjectType(fromObjectType, client, "fromObjectType");
+      const toValue = await resolveObjectType(toObjectType, client, "toObjectType");
+      const fromSeg = encodePathSegment(fromValue, "fromObjectType");
+      const toSeg = encodePathSegment(toValue, "toObjectType");
+      const idSeg = encodePathSegment(associationTypeId, "associationTypeId");
+      const res = await maybeWrite(ctx, client, "DELETE", `/crm/v4/associations/${fromSeg}/${toSeg}/labels/${idSeg}`);
       printResult(ctx, res);
     });
 }

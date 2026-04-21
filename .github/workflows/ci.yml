@@ -26,7 +26,12 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        # Use `npm install` rather than `npm ci` because some transitive
+        # optional WASM deps (@emnapi/*) resolve differently across OSes —
+        # a lock file generated on macOS may not contain the exact versions
+        # Linux pulls at install time. `npm install` is more forgiving
+        # while still respecting the lock for main deps.
+        run: npm install --no-audit --prefer-offline
 
       - name: Typecheck
         run: npm run typecheck

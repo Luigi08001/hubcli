@@ -147,6 +147,85 @@ export function registerObjectCommands(parent: Command, objectType: string, getC
     printResult(ctx, res);
   });
 
+  // ── Filter-based search (property filters, operators, sorts) ──
+  cmd
+    .command("filter")
+    .description("Search with property filters (operators: EQ, NEQ, GT, GTE, LT, LTE, HAS_PROPERTY, NOT_HAS_PROPERTY, CONTAINS_TOKEN, NOT_CONTAINS_TOKEN, BETWEEN)")
+    .requiredOption("--filters <json>", "Filter groups JSON: [{\"filters\":[{\"property\":\"...\",\"operator\":\"...\",\"value\":\"...\"}]}]")
+    .option("--properties <csv>", "Properties to return (comma-separated)")
+    .option("--sorts <json>", "Sort array JSON: [{\"propertyName\":\"...\",\"direction\":\"ASCENDING\"}]")
+    .option("--query <text>", "Free text query to combine with filters")
+    .option("--limit <n>", "Max records per page", "10")
+    .option("--after <n>", "Paging offset")
+    .option("--count-only", "Return only the total count, no records")
+    .action(async (opts) => {
+      const ctx = getCtx();
+      const client = createClient(ctx.profile);
+      const portal = resolvePortalContext(ctx.profile);
+
+      const filterGroups = parseJsonPayload(opts.filters);
+      const body: Record<string, unknown> = {
+        filterGroups: Array.isArray(filterGroups) ? filterGroups : [filterGroups],
+        limit: opts.countOnly ? 1 : parseNumberFlag(opts.limit, "--limit"),
+      };
+
+      if (opts.properties) {
+        body.properties = opts.properties.split(",").map((p: string) => p.trim());
+      }
+      if (opts.sorts) {
+        body.sorts = JSON.parse(opts.sorts);
+      }
+      if (opts.query) {
+        body.query = opts.query;
+      }
+      if (opts.after !== undefined) {
+        body.after = parseNumberFlag(opts.after, "--after");
+      }
+
+      const res = await client.request(`/crm/v3/objects/${objectType}/search`, {
+        method: "POST",
+        body,
+      });
+      parseResponse(HubSpotSearchResponse, res, `${objectType} filter`);
+
+      if (opts.countOnly) {
+        const searchRes = res as { total: number };
+        printResult(ctx, { total: searchRes.total, objectType });
+      } else {
+        enrichListResponse(res, portal, objectType);
+        printResult(ctx, res);
+      }
+    });
+
+  // ── Count-only mode (fastest way to get total records) ──
+  cmd
+    .command("count")
+    .description("Get total record count (optionally filtered)")
+    .option("--filters <json>", "Filter groups JSON (same as filter command)")
+    .option("--query <text>", "Free text search query")
+    .action(async (opts) => {
+      const ctx = getCtx();
+      const client = createClient(ctx.profile);
+
+      const body: Record<string, unknown> = { limit: 1 };
+
+      if (opts.filters) {
+        const filterGroups = parseJsonPayload(opts.filters);
+        body.filterGroups = Array.isArray(filterGroups) ? filterGroups : [filterGroups];
+      }
+      if (opts.query) {
+        body.query = opts.query;
+      }
+
+      const res = await client.request(`/crm/v3/objects/${objectType}/search`, {
+        method: "POST",
+        body,
+      });
+      parseResponse(HubSpotSearchResponse, res, `${objectType} count`);
+      const searchRes = res as { total: number };
+      printResult(ctx, { total: searchRes.total, objectType });
+    });
+
   cmd.command("create").requiredOption("--data <payload>", "HubSpot object payload JSON").action(async (opts) => {
     const ctx = getCtx();
     const client = createClient(ctx.profile);

@@ -23,6 +23,44 @@ import { registerTimeline } from "./commands/timeline/index.js";
 import { registerConversations } from "./commands/conversations/index.js";
 import { registerAutomation } from "./commands/automation/index.js";
 import { registerSettings } from "./commands/settings/index.js";
+import { registerAccount } from "./commands/account/index.js";
+import { registerCommunicationPreferences } from "./commands/communication-preferences/index.js";
+import { registerEvents } from "./commands/events/index.js";
+import { registerEmailEvents } from "./commands/email-events/index.js";
+import { registerMediaBridge } from "./commands/media-bridge/index.js";
+import { registerFeatureFlags } from "./commands/feature-flags/index.js";
+import { registerMarketingEmailsV1 } from "./commands/marketing-emails-v1/index.js";
+import { registerIntegrators } from "./commands/integrators/index.js";
+import { registerIntegrations } from "./commands/integrations/index.js";
+import { registerExtensions } from "./commands/extensions/index.js";
+import {
+  registerBroadcast,
+  registerVisitorIdentification,
+  registerSubmissions,
+  registerScheduler,
+  registerTax,
+  registerAppinstalls,
+  registerMarketingExtras,
+  registerOwnersExtras,
+  registerBusinessUnits,
+  registerBroadcastsRoot,
+  registerFormIntegrations,
+} from "./commands/legacy/index.js";
+import {
+  registerContactsV1,
+  registerCompaniesV2,
+  registerDealsV1,
+  registerOwnersV2,
+  registerEngagementsV1,
+  registerPropertiesLegacy,
+  registerReportsV2,
+  registerPaymentsSubscriptions,
+  registerContentV2,
+  registerSalesExtensions,
+  registerComments,
+  registerCallingV1,
+  registerChannels,
+} from "./commands/legacy-v1/index.js";
 import { CliError, type CliContext, printError } from "./core/output.js";
 import { loadPlugins } from "./core/plugins.js";
 import pkg from "../package.json" with { type: "json" };
@@ -87,6 +125,40 @@ export function createProgram(): { program: Command; getCtx: () => CliContext } 
   registerConversations(program, () => ctx);
   registerAutomation(program, () => ctx);
   registerSettings(program, () => ctx);
+  registerAccount(program, () => ctx);
+  registerCommunicationPreferences(program, () => ctx);
+  registerEvents(program, () => ctx);
+  registerEmailEvents(program, () => ctx);
+  registerMediaBridge(program, () => ctx);
+  registerFeatureFlags(program, () => ctx);
+  registerMarketingEmailsV1(program, () => ctx);
+  registerIntegrators(program, () => ctx);
+  registerIntegrations(program, () => ctx);
+  registerExtensions(program, () => ctx);
+  registerBroadcast(program, () => ctx);
+  registerVisitorIdentification(program, () => ctx);
+  registerSubmissions(program, () => ctx);
+  registerScheduler(program, () => ctx);
+  registerTax(program, () => ctx);
+  registerAppinstalls(program, () => ctx);
+  registerMarketingExtras(program, () => ctx);
+  registerOwnersExtras(program, () => ctx);
+  registerContactsV1(program, () => ctx);
+  registerCompaniesV2(program, () => ctx);
+  registerDealsV1(program, () => ctx);
+  registerOwnersV2(program, () => ctx);
+  registerEngagementsV1(program, () => ctx);
+  registerPropertiesLegacy(program, () => ctx);
+  registerReportsV2(program, () => ctx);
+  registerPaymentsSubscriptions(program, () => ctx);
+  registerContentV2(program, () => ctx);
+  registerSalesExtensions(program, () => ctx);
+  registerComments(program, () => ctx);
+  registerCallingV1(program, () => ctx);
+  registerChannels(program, () => ctx);
+  registerBusinessUnits(program, () => ctx);
+  registerBroadcastsRoot(program, () => ctx);
+  registerFormIntegrations(program, () => ctx);
   registerMcp(program);
 
   program.configureOutput({

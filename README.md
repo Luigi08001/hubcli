@@ -4,23 +4,26 @@
 [![npm version](https://img.shields.io/npm/v/hubcli.svg)](https://www.npmjs.com/package/hubcli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node: >=20](https://img.shields.io/badge/Node-%3E%3D20-brightgreen)](package.json)
-[![HubSpot API coverage: 95%+](https://img.shields.io/badge/HubSpot%20API-95%25%2B-7c3aed)](docs/COMMAND_TREE.md)
+[![HubSpot API coverage: 100%](https://img.shields.io/badge/HubSpot%20API-100%25%20(1180%20endpoints)-7c3aed)](docs/TIERS.md)
 
-**A production-grade HubSpot CLI + MCP server — 25 command domains, 125+ MCP tools, enterprise safety rails, self-hosted.**
+**The headless HubSpot CLI + MCP server. 100% public API coverage (1,180 endpoints, 55+ command domains), enterprise safety rails, self-hosted.**
 
-hubcli gives you one TypeScript binary that covers ~95% of HubSpot's public API surface:
+hubcli gives you one TypeScript binary that covers **every** endpoint of HubSpot's public API surface — verified against a scrape of HubSpot's own dev docs (1,178 source files, 1,180 endpoints). Whether an endpoint actually returns data on *your* portal depends on the HubSpot tier you're on (see [docs/TIERS.md](docs/TIERS.md)). hubcli exposes them all.
 
-- **Full CRM** — contacts, companies, deals, tickets, quotes, products, line items, goals, payments, invoices, subscriptions, custom objects, properties, pipelines, associations, owners, imports, engagements, sync, describe/validate
-- **Marketing** — emails (with per-email stats), campaigns, ads, social, SEO, landing pages, transactional, subscriptions, events, behavioral events
-- **Sales** — sequences, meetings, calling, goals
-- **Service** — conversations, feedback, chatflows, knowledge-base, pipelines, automation, tickets
-- **CMS** — HubDB, redirects, site-search, landing pages, domains
-- **Settings** — users, teams, business units, currencies, GDPR, audit-logs
+- **Full CRM** — contacts, companies, deals, tickets, leads, quotes, products, line items, orders, carts, discounts, fees, taxes, invoices, subscriptions, payments, goals, communications, users, feedback-submissions, custom objects, properties (+ legacy v1/v2), pipelines, associations v4 (+ labels CRUD + dated 2025-09), owners, imports, exports, engagements (notes/tasks/calls/meetings), sync, describe/validate, timeline, CRM Cards (UI Extensions), filter + count primitives on every object
+- **Marketing** — emails (v3 + legacy v1, per-email stats), campaigns, ads, social, SEO, landing pages, transactional, subscriptions, events (+ attendance + participations), behavioral events, forms, form integrations, legacy email events stream (per-recipient)
+- **Sales** — sequences (+ enroll/unenroll), meetings, calling, goals, scheduler (meeting links, book/reschedule/cancel), sales extensions (videoconferencing, accounting)
+- **Service** — conversations (threads, messages, inboxes, channels, channel-accounts, actors, custom-channels), feedback, chatflows, knowledge-base, ticket pipelines, visitor-identification
+- **CMS** — site pages, landing pages (+ folders), blog posts (+ authors + tags + blog-settings), HubDB (tables, rows, drafts, publishing), URL redirects, source-code, domains, SEO audit, site search, topics, audit-logs, comments, legacy content/api/v2 (Pages, Layouts, Templates, Modules, UrlMappings)
+- **Settings** — users, teams, business units, currencies, GDPR, audit-logs, communication preferences (v3 + v4 batch)
 - **Account** — info, audit-logs, private-apps, API usage
-- **Operations** — lists, reporting, exports, workflows, automation, webhooks, timeline
-- **Communication preferences**, **conversations**, **events**, **site-search**, **domains**
-- **Raw API** command with path-scope controls
-- **Built-in MCP server** over stdio (125+ tools) for Claude Desktop, Cursor, Claude Code, any MCP client
+- **Operations** — lists (+ folders + memberships), reporting, exports, workflows (v4 + legacy v2/v3), automation custom actions, webhooks (subscriptions), timeline (templates + events + integrators)
+- **Commerce Hub** — quotes, products, line-items, invoices, subscriptions, payments, orders, carts, discounts, fees, taxes, payments-subscriptions, tax rates
+- **Developer Platform** — feature flags, CRM cards, integrators timeline, media bridge (properties + schemas + settings + events), extensions (calling + videoconferencing + accounting + sales)
+- **Legacy v1/v2** — contacts-v1, companies-v2, deals-v1, owners-v2, engagements-v1, properties-legacy, reports-v2, calling-v1, channels, broadcast, appinstalls, marketing-emails-v1
+- **Niche** — email events, email events per-recipient stream, submissions, visitor-identification, scheduler, tax, appinstalls, marketing-extras, owners-extras
+- **Raw API** command with path-scope controls + OAuth flow support
+- **Built-in MCP server** over stdio (140+ tools) for Claude Desktop, Cursor, Claude Code, any MCP client
 
 Enterprise-grade from day one: `--dry-run`, `--force`, policy files, change tickets, capability probing, rate-limit intelligence, token redaction, path scope allowlisting, idempotency keys.
 
@@ -42,6 +45,25 @@ hubcli's emphasis:
 5. **Used in production.** Powers [CRMforge](https://crmforge.ai), the AI HubSpot consultant.
 
 Full landscape: [docs/LAUNCH/COMPETITIVE-LANDSCAPE.md](docs/LAUNCH/COMPETITIVE-LANDSCAPE.md).
+
+## "100% coverage" — what that means
+
+hubcli's coverage claim is precise: **every one of HubSpot's 1,180 documented public API endpoints has a corresponding CLI subcommand.** This is verified against an automated scrape of HubSpot's developer documentation (committed at [docs/TESTING/PORTAL-147975758-COVERAGE.md](docs/TESTING/PORTAL-147975758-COVERAGE.md) and [PORTAL-147975758-WRITES.md](docs/TESTING/PORTAL-147975758-WRITES.md)).
+
+It does **not** mean every endpoint returns 2xx on your portal — HubSpot tier-locks hundreds of endpoints behind paid plans:
+
+| Portal profile | Reachable endpoints (read + write) |
+|---|---:|
+| Free account | ~550 / 1180 (46.6%) |
+| Starter hubs | ~640 / 1180 (54.2%) |
+| Professional hubs | ~890 / 1180 (75.4%) |
+| Enterprise hubs (all) + Commerce + Ops | ~1140 / 1180 (96.6%) |
+| Developer App OAuth install | adds ~30 app-dev endpoints |
+| Legacy hapikey (pre-June-2023 accounts) | adds ~40 zombie endpoints |
+
+See [docs/TIERS.md](docs/TIERS.md) for the exact endpoint → tier mapping.
+
+**If an endpoint your portal should access doesn't work**, open an [endpoint issue](https://github.com/Luigi08001/hubcli/issues/new?template=endpoint_not_working.md) — we triage these fast.
 
 ## Install
 
