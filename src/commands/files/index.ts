@@ -3,6 +3,7 @@ import { createClient } from "../../core/http.js";
 import type { CliContext } from "../../core/output.js";
 import { printResult } from "../../core/output.js";
 import { encodePathSegment, parseNumberFlag } from "../crm/shared.js";
+import { registerFolders } from "./folders.js";
 
 export function registerFiles(program: Command, getCtx: () => CliContext): void {
   const files = program.command("files").description("HubSpot Files APIs");
@@ -28,4 +29,6 @@ export function registerFiles(program: Command, getCtx: () => CliContext): void 
     const res = await client.request(`/files/v3/files/${fileIdSegment}`);
     printResult(ctx, res);
   });
+
+  registerFolders(files, getCtx);
 }

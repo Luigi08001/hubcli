@@ -52,6 +52,7 @@ const ALLOWED_PATH_SCOPES = [
   "account-info",
   "integrations",
   "analytics",
+  "email",
 ];
 
 interface RollingQuotaState {

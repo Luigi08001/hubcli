@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { createClient } from "../../core/http.js";
 import type { CliContext } from "../../core/output.js";
 import { printResult } from "../../core/output.js";
-import { encodePathSegment, parseNumberFlag } from "../crm/shared.js";
+import { encodePathSegment, maybeWrite, parseJsonPayload, parseNumberFlag } from "../crm/shared.js";
 
 export function registerSequences(sales: Command, getCtx: () => CliContext): void {
   const sequences = sales.command("sequences").description("HubSpot Sequences");
@@ -52,6 +52,30 @@ export function registerSequences(sales: Command, getCtx: () => CliContext): voi
       params.set("limit", String(parseNumberFlag(opts.limit, "--limit")));
       if (opts.after) params.set("after", opts.after);
       const res = await client.request(`/automation/v4/sequences/${sequenceIdSegment}/enrollments?${params.toString()}`);
+      printResult(ctx, res);
+    });
+
+  sequences
+    .command("enroll")
+    .description("Enroll a contact in a sequence (requires --data with sequenceId, senderEmail, contactId)")
+    .requiredOption("--data <payload>", "Enrollment payload JSON: { sequenceId, senderEmail, contactId, startTime?, overrideDailyLimit? }")
+    .action(async (opts) => {
+      const ctx = getCtx();
+      const client = createClient(ctx.profile);
+      const payload = parseJsonPayload(opts.data);
+      const res = await maybeWrite(ctx, client, "POST", "/automation/v4/sequences/enrollments", payload);
+      printResult(ctx, res);
+    });
+
+  sequences
+    .command("unenroll")
+    .description("Cancel/unenroll a contact from an active sequence enrollment")
+    .argument("<enrollmentId>")
+    .action(async (enrollmentId) => {
+      const ctx = getCtx();
+      const client = createClient(ctx.profile);
+      const seg = encodePathSegment(enrollmentId, "enrollmentId");
+      const res = await maybeWrite(ctx, client, "POST", `/automation/v4/sequences/enrollments/${seg}/cancel`);
       printResult(ctx, res);
     });
 }

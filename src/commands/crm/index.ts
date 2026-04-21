@@ -20,6 +20,7 @@ import { registerGoals } from "./goals.js";
 import { registerPayments } from "./payments.js";
 import { registerInvoices } from "./invoices.js";
 import { registerSubscriptions } from "./subscriptions.js";
+import { registerCards } from "./cards.js";
 
 export function registerCrm(program: Command, getCtx: () => CliContext): void {
   const crm = program.command("crm").description("HubSpot CRM objects");
@@ -43,4 +44,5 @@ export function registerCrm(program: Command, getCtx: () => CliContext): void {
   registerPayments(crm, getCtx);
   registerInvoices(crm, getCtx);
   registerSubscriptions(crm, getCtx);
+  registerCards(crm, getCtx);
 }
