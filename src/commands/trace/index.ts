@@ -217,7 +217,7 @@ export function registerTrace(program: Command, getCtx: () => CliContext): void 
   trace
     .command("tail")
     .description("Live-stream a trace file as new events are appended (like tail -f)")
-    .argument("<file>", "Path to the .jsonl trace file (or leave blank to tail the active session)")
+    .argument("[file]", "Path to the .jsonl trace file (defaults to the active session)")
     .option("--format <mode>", "Output format: compact|json|pretty", "compact")
     .action(async (fileArg, opts) => {
       const session = readSession();

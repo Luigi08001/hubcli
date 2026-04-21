@@ -1,6 +1,6 @@
 {
   "name": "@revfleet/hscli",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Headless HubSpot CLI + MCP server. 100% public API coverage (1180 endpoints, 55+ command domains) — full portal, no UI dependency. Enterprise safety rails, self-hosted.",
   "type": "module",
   "bin": {
@@ -12,7 +12,7 @@
     "dev": "tsx src/cli.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:contract": "HUBCLI_ENABLE_SANDBOX_CONTRACT=1 vitest run tests/contract.sandbox.test.ts",
+    "test:contract": "HSCLI_ENABLE_SANDBOX_CONTRACT=1 vitest run tests/contract.sandbox.test.ts",
     "lint": "eslint src/ tests/",
     "lint:fix": "eslint src/ tests/ --fix",
     "release:checksums": "node scripts/release-checksums.mjs",

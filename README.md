@@ -1,4 +1,4 @@
-# hubcli
+# hscli
 
 [![CI](https://github.com/revfleet/hscli/actions/workflows/ci.yml/badge.svg)](https://github.com/revfleet/hscli/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/@revfleet/hscli.svg)](https://www.npmjs.com/package/@revfleet/hscli)
@@ -35,7 +35,7 @@ That's the whole thing. For the full picture of what's available, read on.
 <details>
 <summary><strong>Full coverage map (55+ domains)</strong></summary>
 
-hubcli gives you one TypeScript binary that covers **every** endpoint of HubSpot's public API surface — verified against a scrape of HubSpot's own dev docs (1,178 source files, 1,180 endpoints). Whether an endpoint actually returns data on *your* portal depends on the HubSpot tier you're on (see [docs/TIERS.md](docs/TIERS.md)). hubcli exposes them all.
+hscli gives you one TypeScript binary that covers **every** endpoint of HubSpot's public API surface — verified against a scrape of HubSpot's own dev docs (1,178 source files, 1,180 endpoints). Whether an endpoint actually returns data on *your* portal depends on the HubSpot tier you're on (see [docs/TIERS.md](docs/TIERS.md)). hscli exposes them all.
 
 - **Full CRM** — contacts, companies, deals, tickets, leads, quotes, products, line items, orders, carts, discounts, fees, taxes, invoices, subscriptions, payments, goals, communications, users, feedback-submissions, custom objects, properties (+ legacy v1/v2), pipelines, associations v4 (+ labels CRUD + dated 2025-09), owners, imports, exports, engagements (notes/tasks/calls/meetings), sync, describe/validate, timeline, CRM Cards (UI Extensions), filter + count primitives on every object
 - **Marketing** — emails (v3 + legacy v1, per-email stats), campaigns, ads, social, SEO, landing pages, transactional, subscriptions, events (+ attendance + participations), behavioral events, forms, form integrations, legacy email events stream (per-recipient)
@@ -66,19 +66,18 @@ The HubSpot CLI + MCP space is crowded:
 - **[Composio](https://composio.dev/toolkits/hubspot)** — hosted SaaS MCP at `connect.composio.dev/mcp`, part of their 850-app adapter platform. Proprietary, they hold your token on their infra (SOC 2 Type 2).
 - **Community OSS MCP servers** — [peakmojo/mcp-hubspot](https://github.com/peakmojo/mcp-hubspot), [lkm1developer/hubspot-mcp-server](https://github.com/lkm1developer/hubspot-mcp-server), [shinzo-labs/hubspot-mcp](https://github.com/shinzo-labs/hubspot-mcp), [CData's hubspot-mcp-server](https://github.com/CDataSoftware/hubspot-mcp-server-by-cdata), and ~15 others on GitHub.
 
-hubcli's emphasis:
+hscli's emphasis:
 
-1. **CLI-first with MCP as a peer surface.** Every MCP tool has a matching `hubcli` command — same write gates, same redaction, same capability probing in both.
+1. **CLI-first with MCP as a peer surface.** Every MCP tool has a matching `hscli` command — same write gates, same redaction, same capability probing in both.
 2. **Self-hosted and token-sovereign.** Your HubSpot private app token never leaves your machine. Contrast with Composio.
 3. **Enterprise safety gates.** `--dry-run`, `--force`, policy files, change tickets, path scope allowlisting, idempotency keys. Most community MCP servers don't have these.
 4. **HubSpot-native engineering.** Reads HubSpot's `X-HubSpot-RateLimit-*` headers, proactive throttling, capability probing by `portalId + scopes`, offline schema validation, idempotency-key on every write.
-5. **Used in production.** Powers [CRMforge](https://crmforge.ai), the AI HubSpot consultant.
 
 Full landscape: [docs/LAUNCH/COMPETITIVE-LANDSCAPE.md](docs/LAUNCH/COMPETITIVE-LANDSCAPE.md).
 
 ## "100% coverage" — what that means
 
-hubcli's coverage claim is precise: **every one of HubSpot's 1,180 documented public API endpoints has a corresponding CLI subcommand.** This is verified against an automated scrape of HubSpot's developer documentation (committed at [docs/TESTING/PORTAL-147975758-COVERAGE.md](docs/TESTING/PORTAL-147975758-COVERAGE.md) and [PORTAL-147975758-WRITES.md](docs/TESTING/PORTAL-147975758-WRITES.md)).
+hscli's coverage claim is precise: **every one of HubSpot's 1,180 documented public API endpoints has a corresponding CLI subcommand.** This is verified against an automated scrape of HubSpot's developer documentation (committed at [docs/TESTING/PORTAL-147975758-COVERAGE.md](docs/TESTING/PORTAL-147975758-COVERAGE.md) and [PORTAL-147975758-WRITES.md](docs/TESTING/PORTAL-147975758-WRITES.md)).
 
 It does **not** mean every endpoint returns 2xx on your portal — HubSpot tier-locks hundreds of endpoints behind paid plans:
 
@@ -107,7 +106,7 @@ From source:
 
 ```bash
 git clone https://github.com/revfleet/hscli.git
-cd hubcli
+cd hscli
 npm install
 npm run build
 ```
@@ -131,8 +130,8 @@ Read:
 ```bash
 hscli crm contacts list --limit 5
 hscli marketing emails stats 123456
-hubcli sales sequences list
-hubcli reporting dashboards list
+hscli sales sequences list
+hscli reporting dashboards list
 hscli settings teams list
 ```
 
@@ -155,6 +154,81 @@ hscli --force --policy-file docs/POLICY_EXAMPLE.json --change-ticket CHG-123 \
   crm contacts delete 123
 ```
 
+<details>
+<summary><strong>Policy-as-code (v0.7)</strong> — glob matching, time windows, approval gates, built-in templates</summary>
+
+Policy files let ops define *what* an agent is allowed to do — not just *whether* it can write. Rule matching is first-match-wins: method + path glob (`*` within a segment, `**` across segments), optional time window (`window.hours`, `window.days`, `window.tz`), optional change-ticket requirement, optional approval gate.
+
+```bash
+# List built-in templates (read-only, no-deletes, business-hours, compliance-strict, change-ticket-required)
+hscli policy templates list
+
+# Copy a template to edit locally
+hscli policy templates extract no-deletes --to ./policy.json
+
+# Validate before shipping
+hscli policy validate ./policy.json
+
+# Dry-run which rule would fire for a hypothetical request
+hscli --policy-file ./policy.json \
+  policy show-matching DELETE /crm/v3/objects/contacts/123
+```
+
+Enforcement is automatic once `--policy-file` is set (or `HSCLI_POLICY_FILE` env var). Error codes (`POLICY_RULE_DENY`, `POLICY_DEFAULT_DENY`, `POLICY_CHANGE_TICKET_REQUIRED`, `POLICY_APPROVAL_REQUIRED`, `POLICY_OUT_OF_WINDOW`) are machine-readable.
+
+Tutorial: [docs/TUTORIALS/secure-agent-writes.md](docs/TUTORIALS/secure-agent-writes.md).
+
+</details>
+
+<details>
+<summary><strong>Trace + replay (v0.6+)</strong> — observability of every request, human + MCP</summary>
+
+`hscli trace` records every request to a JSONL file — method, path, status, latency, profile, `toolName` (when invoked from an MCP tool), optional request/response bodies. Useful for reproducibility, regression detection between portals, debugging agent behavior.
+
+```bash
+# Start recording to ~/.revfleet/trace-<ts>.jsonl (or pass --out)
+hscli trace start --include-bodies --scope all
+
+# Run anything. Every request appends.
+hscli crm contacts list
+hscli mcp   # MCP requests tagged with toolName
+
+# Stop; the file stays, session state clears.
+hscli trace stop
+
+# Inspect
+hscli trace show ./trace-<ts>.jsonl --filter status=>=400
+hscli trace stats ./trace-<ts>.jsonl          # p50/p95/p99 latency, method breakdown
+hscli trace errors ./trace-<ts>.jsonl         # only errors
+hscli trace diff  ./run-a.jsonl ./run-b.jsonl # detect reproducibility divergence
+
+# Replay GETs (safe-by-default: dry-run unless --force)
+hscli trace replay ./trace-<ts>.jsonl
+```
+
+Writes (`POST/PUT/PATCH/DELETE`) are intentionally not replayable to prevent accidental re-mutation.
+
+Tutorial: [docs/TUTORIALS/trace-replay-repro.md](docs/TUTORIALS/trace-replay-repro.md).
+
+</details>
+
+<details>
+<summary><strong>Audit (v0.7)</strong> — &ldquo;who did what when&rdquo; across every recorded session</summary>
+
+`hscli audit` reads trace JSONL files (single file or an entire directory of `trace-*.jsonl`) and answers operational audit questions. Pairs with `trace` for full provenance.
+
+```bash
+hscli audit timeline --since 24h                     # chronological event list, last 24h
+hscli audit who alice --since 7d                     # what has profile 'alice' done?
+hscli audit what /crm/v3/objects/contacts --since 7d # who touched this path?
+hscli audit writes --since 24h                       # all writes in the last 24h (+ failures)
+hscli audit by-tool                                  # per-MCP-tool call count, error rate, avg latency
+```
+
+Tutorial: [docs/TUTORIALS/audit-portal-writes.md](docs/TUTORIALS/audit-portal-writes.md).
+
+</details>
+
 ## Output modes
 
 ```bash
@@ -165,7 +239,7 @@ hscli --format yaml crm deals get 123               # YAML
 
 ## MCP: AI agents as first-class consumers
 
-hubcli ships a built-in MCP server over stdio with ~125 tools exposing the full surface:
+hscli ships a built-in MCP server over stdio with ~125 tools exposing the full surface:
 
 ```bash
 hscli mcp
@@ -176,18 +250,18 @@ For Claude Desktop, add to `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "hubcli": {
-      "command": "hubcli",
+    "hscli": {
+      "command": "hscli",
       "args": ["mcp"],
       "env": {
-        "HUBCLI_MCP_PROFILE": "default"
+        "HSCLI_MCP_PROFILE": "default"
       }
     }
   }
 }
 ```
 
-Restart Claude. Now Claude can list contacts, search deals, inspect workflows, and — with `--force` passed at tool-call time — perform safe writes. All CLI safety rails apply to MCP calls. Secrets are redacted from every tool response. `HUBCLI_MCP_PROFILE` locks the stdio server to one auth profile to prevent cross-tenant access.
+Restart Claude. Now Claude can list contacts, search deals, inspect workflows, and — with `--force` passed at tool-call time — perform safe writes. All CLI safety rails apply to MCP calls. Secrets are redacted from every tool response. `HSCLI_MCP_PROFILE` locks the stdio server to one auth profile to prevent cross-tenant access.
 
 See [docs/MCP.md](docs/MCP.md) for the full tool catalog.
 
@@ -196,7 +270,7 @@ See [docs/MCP.md](docs/MCP.md) for the full tool catalog.
 Probe portal capabilities and cache them by `portalId + scopes`:
 
 ```bash
-hubcli doctor capabilities --refresh
+hscli doctor capabilities --refresh
 ```
 
 Fail fast when a command hits an unsupported endpoint:
@@ -229,12 +303,14 @@ Full threat model: [SECURITY.md](SECURITY.md).
 
 ## Caches
 
-Under `HUBCLI_HOME` (default: `~/.hubcli`):
+Under `HSCLI_HOME` (default: `~/.revfleet`; legacy `~/.hubcli` is still honored for existing installs):
 
 - `auth.json` — profile tokens (0600 permissions, 0700 directory)
 - `capabilities.json` — portal/tier capability cache
 - `schema-cache.json` — CRM schema cache for describe/validate
 - `auth.enc` — optional encrypted vault (when passphrase is set)
+- `trace-session.json` — active trace session state (v0.6+)
+- `trace-*.jsonl` — recorded request traces (v0.6+)
 
 ## Documentation
 
@@ -282,6 +358,3 @@ Issues and PRs welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow,
 
 MIT — see [LICENSE](LICENSE).
 
----
-
-**Built as the foundation for [CRMforge](https://crmforge.ai)**, the AI HubSpot consultant. hubcli is open source so the ecosystem can build on it.

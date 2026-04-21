@@ -120,31 +120,48 @@ function pathMatches(rulePath: string | undefined, requestPath: string): boolean
 function isWithinWindow(window: PolicyWindow | undefined): boolean {
   if (!window) return true;
   const now = new Date();
+  const dayNames = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
+
+  // Both days and hours must be evaluated in window.tz (or system local time
+  // when omitted). UTC was a latent bug: "mon-fri, US/Eastern" would let a
+  // Friday write land on Saturday UTC — or block a Monday write still in
+  // Sunday local time.
+  const tz = window.tz;
 
   // Days
   if (window.days) {
-    const dayNames = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
-    const today = dayNames[now.getUTCDay()];
+    let todayIdx: number;
+    if (tz) {
+      try {
+        const fmt = new Intl.DateTimeFormat("en-US", { timeZone: tz, weekday: "short" });
+        const weekday = fmt.format(now).toLowerCase().slice(0, 3);
+        todayIdx = dayNames.indexOf(weekday as typeof dayNames[number]);
+        if (todayIdx === -1) todayIdx = now.getDay();
+      } catch {
+        todayIdx = now.getDay();
+      }
+    } else {
+      todayIdx = now.getDay();
+    }
     const allowed = parseDays(window.days);
-    if (!allowed.includes(today)) return false;
+    if (!allowed.includes(dayNames[todayIdx])) return false;
   }
 
-  // Hours (interpret in window.tz if given, else local)
+  // Hours
   if (window.hours) {
     const [fromStr, toStr] = window.hours.split("-");
     const fromHour = Number(fromStr);
     const toHour = Number(toStr);
-    const tz = window.tz;
     let currentHour: number;
     if (tz) {
       try {
         const fmt = new Intl.DateTimeFormat("en-US", { timeZone: tz, hour: "2-digit", hour12: false });
         currentHour = Number(fmt.format(now).replace(/\D/g, "").slice(0, 2));
       } catch {
-        currentHour = now.getUTCHours();
+        currentHour = now.getHours();
       }
     } else {
-      currentHour = now.getUTCHours();
+      currentHour = now.getHours();
     }
     if (currentHour < fromHour || currentHour >= toHour) return false;
   }

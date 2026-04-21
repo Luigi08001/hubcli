@@ -13,8 +13,8 @@ function setupSandboxProfile(): { home: string; token: string } {
     throw new Error("HSCLI_SANDBOX_TOKEN is required when HSCLI_ENABLE_SANDBOX_CONTRACT=1");
   }
 
-  const home = mkdtempSync(join(tmpdir(), "hubcli-contract-"));
-  const dir = join(home, ".hubcli");
+  const home = mkdtempSync(join(tmpdir(), "hscli-contract-"));
+  const dir = join(home, ".revfleet");
   mkdirSync(dir, { recursive: true });
 
   // Detect hublet from token prefix for proper routing
@@ -48,9 +48,9 @@ maybeDescribe("sandbox contract (opt-in)", () => {
     const { run } = await import("../src/cli.js");
     const spy = capturePrintResult();
 
-    await run(["node", "hubcli", "--profile", "sandbox", "--json", "crm", "contacts", "list", "--limit", "1"]);
+    await run(["node", "hscli", "--profile", "sandbox", "--json", "crm", "contacts", "list", "--limit", "1"]);
 
-    const output = spy.getOutput();
+    const output = unwrap(spy.getOutput());
     expect(output).toHaveProperty("results");
     expect(Array.isArray(output.results)).toBe(true);
   });
@@ -60,9 +60,9 @@ maybeDescribe("sandbox contract (opt-in)", () => {
     const { run } = await import("../src/cli.js");
     const spy = capturePrintResult();
 
-    await run(["node", "hubcli", "--profile", "sandbox", "--json", "crm", "companies", "list", "--limit", "1"]);
+    await run(["node", "hscli", "--profile", "sandbox", "--json", "crm", "companies", "list", "--limit", "1"]);
 
-    const output = spy.getOutput();
+    const output = unwrap(spy.getOutput());
     expect(output).toHaveProperty("results");
   });
 
@@ -71,9 +71,9 @@ maybeDescribe("sandbox contract (opt-in)", () => {
     const { run } = await import("../src/cli.js");
     const spy = capturePrintResult();
 
-    await run(["node", "hubcli", "--profile", "sandbox", "--json", "crm", "deals", "list", "--limit", "1"]);
+    await run(["node", "hscli", "--profile", "sandbox", "--json", "crm", "deals", "list", "--limit", "1"]);
 
-    const output = spy.getOutput();
+    const output = unwrap(spy.getOutput());
     expect(output).toHaveProperty("results");
   });
 
@@ -82,9 +82,9 @@ maybeDescribe("sandbox contract (opt-in)", () => {
     const { run } = await import("../src/cli.js");
     const spy = capturePrintResult();
 
-    await run(["node", "hubcli", "--profile", "sandbox", "--json", "crm", "tickets", "list", "--limit", "1"]);
+    await run(["node", "hscli", "--profile", "sandbox", "--json", "crm", "tickets", "list", "--limit", "1"]);
 
-    const output = spy.getOutput();
+    const output = unwrap(spy.getOutput());
     expect(output).toHaveProperty("results");
   });
 
@@ -97,9 +97,9 @@ maybeDescribe("sandbox contract (opt-in)", () => {
     const { run } = await import("../src/cli.js");
     const spy = capturePrintResult();
 
-    await run(["node", "hubcli", "--profile", "sandbox", "--json", "crm", "properties", "list", "contacts"]);
+    await run(["node", "hscli", "--profile", "sandbox", "--json", "crm", "properties", "list", "contacts"]);
 
-    const output = spy.getOutput();
+    const output = unwrap(spy.getOutput());
     expect(output).toHaveProperty("results");
     if (output.results.length > 0) {
       expect(output.results[0]).toHaveProperty("name");
@@ -112,9 +112,9 @@ maybeDescribe("sandbox contract (opt-in)", () => {
     const { run } = await import("../src/cli.js");
     const spy = capturePrintResult();
 
-    await run(["node", "hubcli", "--profile", "sandbox", "--json", "crm", "pipelines", "list", "deals"]);
+    await run(["node", "hscli", "--profile", "sandbox", "--json", "crm", "pipelines", "list", "deals"]);
 
-    const output = spy.getOutput();
+    const output = unwrap(spy.getOutput());
     expect(output).toHaveProperty("results");
   });
 
@@ -123,9 +123,9 @@ maybeDescribe("sandbox contract (opt-in)", () => {
     const { run } = await import("../src/cli.js");
     const spy = capturePrintResult();
 
-    await run(["node", "hubcli", "--profile", "sandbox", "--json", "crm", "owners", "list", "--limit", "5"]);
+    await run(["node", "hscli", "--profile", "sandbox", "--json", "crm", "owners", "list", "--limit", "5"]);
 
-    const output = spy.getOutput();
+    const output = unwrap(spy.getOutput());
     expect(output).toHaveProperty("results");
   });
 
@@ -139,13 +139,13 @@ maybeDescribe("sandbox contract (opt-in)", () => {
     const spy = capturePrintResult();
 
     await run([
-      "node", "hubcli", "--profile", "sandbox", "--json",
+      "node", "hscli", "--profile", "sandbox", "--json",
       "crm", "contacts", "create",
-      "--data", '{"properties":{"email":"dryrun@test.hubcli.dev","firstname":"DryRun"}}',
+      "--data", '{"properties":{"email":"dryrun@test.hscli.dev","firstname":"DryRun"}}',
       "--dry-run",
     ]);
 
-    const output = spy.getOutput();
+    const output = unwrap(spy.getOutput());
     expect(output).toMatchObject({
       dryRun: true,
       method: "POST",
@@ -162,10 +162,10 @@ maybeDescribe("sandbox contract (opt-in)", () => {
     const { run } = await import("../src/cli.js");
     const stdoutSpy = capturePrintResult();
 
-    await run(["node", "hubcli", "--profile", "sandbox", "--json", "crm", "contacts", "list", "--limit", "1"]);
+    await run(["node", "hscli", "--profile", "sandbox", "--json", "crm", "contacts", "list", "--limit", "1"]);
 
     const raw = JSON.stringify(stdoutSpy.getOutput());
-    expect(raw).not.toContain(process.env.HSCLI_SANDBOX_TOKEN);
+    expect(raw).not.toContain(process.env.HSCLI_SANDBOX_TOKEN!);
     expect(raw).not.toMatch(/Bearer\s+[a-zA-Z0-9_-]+/);
   });
 
@@ -178,12 +178,18 @@ maybeDescribe("sandbox contract (opt-in)", () => {
     const { run } = await import("../src/cli.js");
     const spy = capturePrintResult();
 
-    await run(["node", "hubcli", "--profile", "sandbox", "--json", "forms", "list", "--limit", "1"]);
+    await run(["node", "hscli", "--profile", "sandbox", "--json", "forms", "list", "--limit", "1"]);
 
-    const output = spy.getOutput();
+    const output = unwrap(spy.getOutput());
     expect(output).toHaveProperty("results");
   });
 });
+
+/** Unwrap the CLI's `{ ok: true, data: <payload> }` envelope. */
+function unwrap(raw: any): any {
+  if (raw && typeof raw === "object" && "ok" in raw && "data" in raw) return raw.data;
+  return raw;
+}
 
 /**
  * Capture output from printResult by intercepting console.log / process.stdout.write.

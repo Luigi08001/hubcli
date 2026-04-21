@@ -1,11 +1,10 @@
 import { Command } from "commander";
 import { readFileSync } from "node:fs";
 import { HubSpotClient } from "../../core/http.js";
-import { getProfile, getToken, hasProfile, listProfiles, removeToken, saveProfile, saveToken, detectHublet, resolveApiDomain } from "../../core/auth.js";
+import { getProfile, getToken, hasProfile, listProfiles, removeToken, saveProfile, saveToken, detectHublet, resolveApiDomain, getHubcliHomeDir } from "../../core/auth.js";
 import type { CliContext } from "../../core/output.js";
 import { CliError, printResult } from "../../core/output.js";
 import { encryptExistingVault, decryptExistingVault, getVaultPassphrase, isVaultEncrypted } from "../../core/vault.js";
-import { resolve } from "node:path";
 
 async function fetchPortalDetails(token: string): Promise<{ portalId?: string; uiDomain?: string }> {
   const result: { portalId?: string; uiDomain?: string } = {};
@@ -226,7 +225,7 @@ export function registerAuth(program: Command, getCtx: () => CliContext): void {
       if (!passphrase) {
         throw new CliError("VAULT_NO_PASSPHRASE", "Set HSCLI_VAULT_PASSPHRASE env var before encrypting.");
       }
-      const hubcliHome = process.env.HSCLI_HOME || resolve(process.env.HOME || "", ".revfleet");
+      const hubcliHome = getHubcliHomeDir();
       encryptExistingVault(hubcliHome, passphrase);
       printResult(ctx, { encrypted: true, message: "auth.json encrypted to auth.enc and removed." });
     });
@@ -239,7 +238,7 @@ export function registerAuth(program: Command, getCtx: () => CliContext): void {
       if (!passphrase) {
         throw new CliError("VAULT_NO_PASSPHRASE", "Set HSCLI_VAULT_PASSPHRASE env var before decrypting.");
       }
-      const hubcliHome = process.env.HSCLI_HOME || resolve(process.env.HOME || "", ".revfleet");
+      const hubcliHome = getHubcliHomeDir();
       if (!isVaultEncrypted(hubcliHome)) {
         throw new CliError("VAULT_NOT_ENCRYPTED", "No auth.enc found — vault is not encrypted.");
       }

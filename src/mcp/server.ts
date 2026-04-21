@@ -89,14 +89,7 @@ function textResult(data: unknown): { content: Array<{ type: "text"; text: strin
   };
 }
 
-async function executeTool(args: McpBaseArgs, fn: (ctx: CliContext, client: HubSpotClient) => Promise<unknown>, toolName?: string) {
-  // Tag every request made during this tool call with the MCP tool name, so
-  // trace files produced by `HUBCLI_TELEMETRY_FILE` show up in
-  // `hubcli trace stats --byToolName`. We use an env var rather than
-  // threading through the request options because fn() may construct
-  // arbitrary client.request() chains and we want all of them tagged.
-  const previousToolName = process.env.HUBCLI_MCP_TOOL_NAME;
-  if (toolName) process.env.HUBCLI_MCP_TOOL_NAME = toolName;
+async function executeTool(args: McpBaseArgs, fn: (ctx: CliContext, client: HubSpotClient) => Promise<unknown>) {
   try {
     const ctx = mcpContext(args);
     const client = new HubSpotClient(getToken(ctx.profile), {
@@ -119,12 +112,43 @@ async function executeTool(args: McpBaseArgs, fn: (ctx: CliContext, client: HubS
         details: err.details,
       }),
     };
-  } finally {
-    if (toolName) {
-      if (previousToolName === undefined) delete process.env.HUBCLI_MCP_TOOL_NAME;
-      else process.env.HUBCLI_MCP_TOOL_NAME = previousToolName;
-    }
   }
+}
+
+/**
+ * Wrap `server.registerTool` so every MCP handler runs with
+ * HUBCLI_MCP_TOOL_NAME set to this tool's name. The HTTP layer reads this
+ * env var to tag trace/telemetry events, so `hscli trace stats` and
+ * `hscli audit by-tool` can break activity down by MCP tool.
+ *
+ * The SDK's registerTool signature is a heavily-overloaded generic; we
+ * stay loosely typed here because every callsite already builds its own
+ * config/handler with the right shape.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function registerMcpTool(server: McpServer, name: string, config: any, handler: (...args: any[]) => any): void {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const wrapped = (...handlerArgs: any[]): any => {
+    const previous = process.env.HUBCLI_MCP_TOOL_NAME;
+    process.env.HUBCLI_MCP_TOOL_NAME = name;
+    const restore = () => {
+      if (previous === undefined) delete process.env.HUBCLI_MCP_TOOL_NAME;
+      else process.env.HUBCLI_MCP_TOOL_NAME = previous;
+    };
+    try {
+      const result = handler(...handlerArgs);
+      if (result && typeof (result as PromiseLike<unknown>).then === "function") {
+        return Promise.resolve(result as PromiseLike<unknown>).finally(restore);
+      }
+      restore();
+      return result;
+    } catch (err) {
+      restore();
+      throw err;
+    }
+  };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (server.registerTool as any)(name, config, wrapped);
 }
 
 function isEnvTrue(value: string | undefined): boolean {
@@ -134,7 +158,7 @@ function isEnvTrue(value: string | undefined): boolean {
 }
 
 function registerStandardObjectTools(server: McpServer, objectType: string): void {
-  server.registerTool(`crm_${objectType}_list`, {
+  registerMcpTool(server,`crm_${objectType}_list`, {
     description: `List ${objectType}`,
     inputSchema: {
       ...baseArgsSchema,
@@ -157,7 +181,7 @@ function registerStandardObjectTools(server: McpServer, objectType: string): voi
     return res;
   }));
 
-  server.registerTool(`crm_${objectType}_get`, {
+  registerMcpTool(server,`crm_${objectType}_get`, {
     description: `Get one ${objectType.slice(0, -1)} by ID`,
     inputSchema: {
       ...baseArgsSchema,
@@ -173,7 +197,7 @@ function registerStandardObjectTools(server: McpServer, objectType: string): voi
     return res;
   }));
 
-  server.registerTool(`crm_${objectType}_search`, {
+  registerMcpTool(server,`crm_${objectType}_search`, {
     description: `Search ${objectType}`,
     inputSchema: {
       ...baseArgsSchema,
@@ -195,7 +219,7 @@ function registerStandardObjectTools(server: McpServer, objectType: string): voi
     return res;
   }));
 
-  server.registerTool(`crm_${objectType}_create`, {
+  registerMcpTool(server,`crm_${objectType}_create`, {
     description: `Create ${objectType.slice(0, -1)} (dry-run by default unless force=true)`,
     inputSchema: {
       ...baseArgsSchema,
@@ -208,7 +232,7 @@ function registerStandardObjectTools(server: McpServer, objectType: string): voi
     return res;
   }));
 
-  server.registerTool(`crm_${objectType}_update`, {
+  registerMcpTool(server,`crm_${objectType}_update`, {
     description: `Update ${objectType.slice(0, -1)} (dry-run by default unless force=true)`,
     inputSchema: {
       ...baseArgsSchema,
@@ -223,7 +247,7 @@ function registerStandardObjectTools(server: McpServer, objectType: string): voi
     return res;
   }));
 
-  server.registerTool(`crm_${objectType}_delete`, {
+  registerMcpTool(server,`crm_${objectType}_delete`, {
     description: `Delete/archive ${objectType.slice(0, -1)} by ID (dry-run by default unless force=true)`,
     inputSchema: { ...baseArgsSchema, id: z.string().min(1) },
   }, (args) => executeTool(args, (ctx, client) => {
@@ -231,22 +255,22 @@ function registerStandardObjectTools(server: McpServer, objectType: string): voi
     return maybeWrite(ctx, client, "DELETE", `/crm/v3/objects/${objectType}/${idSegment}`);
   }));
 
-  server.registerTool(`crm_${objectType}_merge`, {
+  registerMcpTool(server,`crm_${objectType}_merge`, {
     description: `Merge ${objectType} records (endpoint support varies by object)`,
     inputSchema: { ...baseArgsSchema, data: z.record(z.string(), z.unknown()) },
   }, (args) => executeTool(args, (ctx, client) => maybeWrite(ctx, client, "POST", `/crm/v3/objects/${objectType}/merge`, args.data)));
 
-  server.registerTool(`crm_${objectType}_batch_read`, {
+  registerMcpTool(server,`crm_${objectType}_batch_read`, {
     description: `Batch read ${objectType}`,
     inputSchema: { ...baseArgsSchema, data: z.record(z.string(), z.unknown()) },
   }, (args) => executeTool(args, (_ctx, client) => client.request(`/crm/v3/objects/${objectType}/batch/read`, { method: "POST", body: args.data })));
 
-  server.registerTool(`crm_${objectType}_batch_upsert`, {
+  registerMcpTool(server,`crm_${objectType}_batch_upsert`, {
     description: `Batch upsert ${objectType} (dry-run by default unless force=true)`,
     inputSchema: { ...baseArgsSchema, data: z.record(z.string(), z.unknown()) },
   }, (args) => executeTool(args, (ctx, client) => maybeWrite(ctx, client, "POST", `/crm/v3/objects/${objectType}/batch/upsert`, args.data)));
 
-  server.registerTool(`crm_${objectType}_batch_archive`, {
+  registerMcpTool(server,`crm_${objectType}_batch_archive`, {
     description: `Batch archive ${objectType} (dry-run by default unless force=true)`,
     inputSchema: { ...baseArgsSchema, data: z.record(z.string(), z.unknown()) },
   }, (args) => executeTool(args, (ctx, client) => maybeWrite(ctx, client, "POST", `/crm/v3/objects/${objectType}/batch/archive`, args.data)));
@@ -261,7 +285,7 @@ export function registerHubSpotTools(server: McpServer): void {
     registerStandardObjectTools(server, objectType);
   }
 
-  server.registerTool("crm_properties_list", {
+  registerMcpTool(server,"crm_properties_list", {
     description: "List properties for an object type",
     inputSchema: { ...baseArgsSchema, objectType: z.enum(PROPERTY_OBJECT_TYPES) },
   }, (args) => executeTool(args, (_ctx, client) => {
@@ -270,7 +294,7 @@ export function registerHubSpotTools(server: McpServer): void {
     return client.request(`/crm/v3/properties/${objectTypeSegment}`);
   }));
 
-  server.registerTool("crm_properties_get", {
+  registerMcpTool(server,"crm_properties_get", {
     description: "Get one property definition",
     inputSchema: { ...baseArgsSchema, objectType: z.enum(PROPERTY_OBJECT_TYPES), propertyName: z.string().min(1) },
   }, (args) => executeTool(args, (_ctx, client) => {
@@ -280,7 +304,7 @@ export function registerHubSpotTools(server: McpServer): void {
     return client.request(`/crm/v3/properties/${objectTypeSegment}/${propertyNameSegment}`);
   }));
 
-  server.registerTool("crm_properties_create", {
+  registerMcpTool(server,"crm_properties_create", {
     description: "Create property (dry-run by default unless force=true)",
     inputSchema: { ...baseArgsSchema, objectType: z.enum(PROPERTY_OBJECT_TYPES), data: z.record(z.string(), z.unknown()) },
   }, (args) => executeTool(args, (ctx, client) => {
@@ -289,7 +313,7 @@ export function registerHubSpotTools(server: McpServer): void {
     return maybeWrite(ctx, client, "POST", `/crm/v3/properties/${objectTypeSegment}`, args.data);
   }));
 
-  server.registerTool("crm_properties_update", {
+  registerMcpTool(server,"crm_properties_update", {
     description: "Update property (dry-run by default unless force=true)",
     inputSchema: {
       ...baseArgsSchema,
@@ -304,7 +328,7 @@ export function registerHubSpotTools(server: McpServer): void {
     return maybeWrite(ctx, client, "PATCH", `/crm/v3/properties/${objectTypeSegment}/${propertyNameSegment}`, args.data);
   }));
 
-  server.registerTool("crm_associations_list", {
+  registerMcpTool(server,"crm_associations_list", {
     description: "List associations between CRM objects (supports standard types, engagements, and custom object type IDs like 2-199622513)",
     inputSchema: {
       ...baseArgsSchema,
@@ -324,7 +348,7 @@ export function registerHubSpotTools(server: McpServer): void {
     return client.request(`/crm/v4/objects/${fromObjectTypeSegment}/${fromObjectIdSegment}/associations/${toObjectTypeSegment}?${params.toString()}`);
   }));
 
-  server.registerTool("crm_associations_create", {
+  registerMcpTool(server,"crm_associations_create", {
     description: "Create default association (dry-run by default unless force=true). Supports standard types, engagements, and custom object type IDs.",
     inputSchema: {
       ...baseArgsSchema,
@@ -342,7 +366,7 @@ export function registerHubSpotTools(server: McpServer): void {
     );
   }));
 
-  server.registerTool("crm_associations_remove", {
+  registerMcpTool(server,"crm_associations_remove", {
     description: "Remove default association (dry-run by default unless force=true). Supports standard types, engagements, and custom object type IDs.",
     inputSchema: {
       ...baseArgsSchema,
@@ -360,12 +384,12 @@ export function registerHubSpotTools(server: McpServer): void {
     );
   }));
 
-  server.registerTool("crm_imports_create", {
+  registerMcpTool(server,"crm_imports_create", {
     description: "Create import (dry-run by default unless force=true)",
     inputSchema: { ...baseArgsSchema, data: z.record(z.string(), z.unknown()) },
   }, (args) => executeTool(args, (ctx, client) => maybeWrite(ctx, client, "POST", "/crm/v3/imports", args.data)));
 
-  server.registerTool("crm_imports_list", {
+  registerMcpTool(server,"crm_imports_list", {
     description: "List import jobs",
     inputSchema: { ...baseArgsSchema, limit: z.number().int().positive().default(100), after: z.string().optional() },
   }, (args) => executeTool(args, (_ctx, client) => {
@@ -375,7 +399,7 @@ export function registerHubSpotTools(server: McpServer): void {
     return client.request(`/crm/v3/imports?${params.toString()}`);
   }));
 
-  server.registerTool("crm_imports_get", {
+  registerMcpTool(server,"crm_imports_get", {
     description: "Get import by ID",
     inputSchema: { ...baseArgsSchema, importId: z.string().min(1) },
   }, (args) => executeTool(args, (_ctx, client) => {
@@ -383,7 +407,7 @@ export function registerHubSpotTools(server: McpServer): void {
     return client.request(`/crm/v3/imports/${importIdSegment}`);
   }));
 
-  server.registerTool("crm_imports_errors", {
+  registerMcpTool(server,"crm_imports_errors", {
     description: "Get import errors",
     inputSchema: { ...baseArgsSchema, importId: z.string().min(1) },
   }, (args) => executeTool(args, (_ctx, client) => {
@@ -391,7 +415,7 @@ export function registerHubSpotTools(server: McpServer): void {
     return client.request(`/crm/v3/imports/${importIdSegment}/errors`);
   }));
 
-  server.registerTool("crm_owners_list", {
+  registerMcpTool(server,"crm_owners_list", {
     description: "List HubSpot owners",
     inputSchema: {
       ...baseArgsSchema,
@@ -407,22 +431,22 @@ export function registerHubSpotTools(server: McpServer): void {
     return client.request(`/crm/v3/owners/?${params.toString()}`);
   }));
 
-  server.registerTool("crm_custom_schemas_list", {
+  registerMcpTool(server,"crm_custom_schemas_list", {
     description: "List custom object schemas",
     inputSchema: { ...baseArgsSchema },
   }, (args) => executeTool(args, (_ctx, client) => client.request("/crm/v3/schemas")));
 
-  server.registerTool("crm_custom_schemas_get", {
+  registerMcpTool(server,"crm_custom_schemas_get", {
     description: "Get custom object schema by objectType",
     inputSchema: { ...baseArgsSchema, objectType: z.string().min(1) },
   }, (args) => executeTool(args, (_ctx, client) => client.request(`/crm/v3/schemas/${encodePathSegment(args.objectType, "objectType")}`)));
 
-  server.registerTool("crm_custom_schemas_create", {
+  registerMcpTool(server,"crm_custom_schemas_create", {
     description: "Create custom object schema (dry-run by default unless force=true)",
     inputSchema: { ...baseArgsSchema, data: z.record(z.string(), z.unknown()) },
   }, (args) => executeTool(args, (ctx, client) => maybeWrite(ctx, client, "POST", "/crm/v3/schemas", args.data)));
 
-  server.registerTool("crm_custom_schemas_update", {
+  registerMcpTool(server,"crm_custom_schemas_update", {
     description: "Update custom object schema (dry-run by default unless force=true)",
     inputSchema: { ...baseArgsSchema, objectType: z.string().min(1), data: z.record(z.string(), z.unknown()) },
   }, (args) => executeTool(args, (ctx, client) => maybeWrite(
@@ -433,7 +457,7 @@ export function registerHubSpotTools(server: McpServer): void {
     args.data,
   )));
 
-  server.registerTool("crm_custom_records_list", {
+  registerMcpTool(server,"crm_custom_records_list", {
     description: "List custom object records by objectType",
     inputSchema: { ...baseArgsSchema, objectType: z.string().min(1), limit: z.number().int().positive().default(50), after: z.string().optional() },
   }, (args) => executeTool(args, async (ctx, client) => {
@@ -446,7 +470,7 @@ export function registerHubSpotTools(server: McpServer): void {
     return res;
   }));
 
-  server.registerTool("crm_custom_records_get", {
+  registerMcpTool(server,"crm_custom_records_get", {
     description: "Get custom object record by objectType and id",
     inputSchema: { ...baseArgsSchema, objectType: z.string().min(1), id: z.string().min(1) },
   }, (args) => executeTool(args, async (ctx, client) => {
@@ -458,7 +482,7 @@ export function registerHubSpotTools(server: McpServer): void {
     return res;
   }));
 
-  server.registerTool("crm_custom_records_search", {
+  registerMcpTool(server,"crm_custom_records_search", {
     description: "Search custom object records",
     inputSchema: { ...baseArgsSchema, objectType: z.string().min(1), data: z.record(z.string(), z.unknown()) },
   }, (args) => executeTool(args, async (ctx, client) => {
@@ -471,7 +495,7 @@ export function registerHubSpotTools(server: McpServer): void {
     return res;
   }));
 
-  server.registerTool("crm_custom_records_create", {
+  registerMcpTool(server,"crm_custom_records_create", {
     description: "Create custom object record (dry-run by default unless force=true)",
     inputSchema: { ...baseArgsSchema, objectType: z.string().min(1), data: z.record(z.string(), z.unknown()) },
   }, (args) => executeTool(args, async (ctx, client) => {
@@ -487,7 +511,7 @@ export function registerHubSpotTools(server: McpServer): void {
     return res;
   }));
 
-  server.registerTool("crm_custom_records_update", {
+  registerMcpTool(server,"crm_custom_records_update", {
     description: "Update custom object record (dry-run by default unless force=true)",
     inputSchema: { ...baseArgsSchema, objectType: z.string().min(1), id: z.string().min(1), data: z.record(z.string(), z.unknown()) },
   }, (args) => executeTool(args, async (ctx, client) => {
@@ -503,7 +527,7 @@ export function registerHubSpotTools(server: McpServer): void {
     return res;
   }));
 
-  server.registerTool("crm_custom_records_delete", {
+  registerMcpTool(server,"crm_custom_records_delete", {
     description: "Delete custom object record (dry-run by default unless force=true)",
     inputSchema: { ...baseArgsSchema, objectType: z.string().min(1), id: z.string().min(1) },
   }, (args) => executeTool(args, (ctx, client) => maybeWrite(
@@ -513,7 +537,7 @@ export function registerHubSpotTools(server: McpServer): void {
     `/crm/v3/objects/${encodePathSegment(args.objectType, "objectType")}/${encodePathSegment(args.id, "id")}`,
   )));
 
-  server.registerTool("crm_pipelines_list", {
+  registerMcpTool(server,"crm_pipelines_list", {
     description: "List pipelines for object type",
     inputSchema: { ...baseArgsSchema, objectType: z.enum(PIPELINE_OBJECT_TYPES) },
   }, (args) => executeTool(args, (_ctx, client) => {
@@ -522,7 +546,7 @@ export function registerHubSpotTools(server: McpServer): void {
     return client.request(`/crm/v3/pipelines/${objectTypeSegment}`);
   }));
 
-  server.registerTool("crm_pipelines_get", {
+  registerMcpTool(server,"crm_pipelines_get", {
     description: "Get one pipeline",
     inputSchema: { ...baseArgsSchema, objectType: z.enum(PIPELINE_OBJECT_TYPES), pipelineId: z.string().min(1) },
   }, (args) => executeTool(args, (_ctx, client) => {
@@ -532,7 +556,7 @@ export function registerHubSpotTools(server: McpServer): void {
     return client.request(`/crm/v3/pipelines/${objectTypeSegment}/${pipelineIdSegment}`);
   }));
 
-  server.registerTool("hub_api_request", {
+  registerMcpTool(server,"hub_api_request", {
     description: "Raw HubSpot API request with safety controls",
     inputSchema: {
       ...baseArgsSchema,
@@ -550,7 +574,7 @@ export function registerHubSpotTools(server: McpServer): void {
 
   // ── Lists ──────────────────────────────────────────────────────────────
 
-  server.registerTool("crm_lists_list", {
+  registerMcpTool(server,"crm_lists_list", {
     description: "List CRM lists with pagination",
     inputSchema: {
       ...baseArgsSchema,
@@ -565,7 +589,7 @@ export function registerHubSpotTools(server: McpServer): void {
     return await client.request(`/crm/v3/lists${qs ? `?${qs}` : ""}`);
   }));
 
-  server.registerTool("crm_lists_get", {
+  registerMcpTool(server,"crm_lists_get", {
     description: "Get a CRM list by ID",
     inputSchema: {
       ...baseArgsSchema,
@@ -576,7 +600,7 @@ export function registerHubSpotTools(server: McpServer): void {
     return await client.request(`/crm/v3/lists/${listIdSegment}`);
   }));
 
-  server.registerTool("crm_lists_create", {
+  registerMcpTool(server,"crm_lists_create", {
     description: "Create a CRM list (dry-run by default unless force=true)",
     inputSchema: {
       ...baseArgsSchema,
@@ -586,7 +610,7 @@ export function registerHubSpotTools(server: McpServer): void {
     return maybeWrite(ctx, client, "POST", "/crm/v3/lists", args.data);
   }));
 
-  server.registerTool("crm_lists_update", {
+  registerMcpTool(server,"crm_lists_update", {
     description: "Update a CRM list (dry-run by default unless force=true)",
     inputSchema: {
       ...baseArgsSchema,
@@ -598,7 +622,7 @@ export function registerHubSpotTools(server: McpServer): void {
     return maybeWrite(ctx, client, "PATCH", `/crm/v3/lists/${listIdSegment}`, args.data);
   }));
 
-  server.registerTool("crm_lists_delete", {
+  registerMcpTool(server,"crm_lists_delete", {
     description: "Delete a CRM list (dry-run by default unless force=true)",
     inputSchema: {
       ...baseArgsSchema,
@@ -609,7 +633,7 @@ export function registerHubSpotTools(server: McpServer): void {
     return maybeWrite(ctx, client, "DELETE", `/crm/v3/lists/${listIdSegment}`);
   }));
 
-  server.registerTool("crm_lists_memberships", {
+  registerMcpTool(server,"crm_lists_memberships", {
     description: "Get memberships of a CRM list",
     inputSchema: {
       ...baseArgsSchema,
@@ -622,7 +646,7 @@ export function registerHubSpotTools(server: McpServer): void {
 
   // ── Sequences ──────────────────────────────────────────────────────────
 
-  server.registerTool("sales_sequences_list", {
+  registerMcpTool(server,"sales_sequences_list", {
     description: "List sales sequences with pagination",
     inputSchema: {
       ...baseArgsSchema,
@@ -637,7 +661,7 @@ export function registerHubSpotTools(server: McpServer): void {
     return await client.request(`/automation/v4/sequences${qs ? `?${qs}` : ""}`);
   }));
 
-  server.registerTool("sales_sequences_get", {
+  registerMcpTool(server,"sales_sequences_get", {
     description: "Get a sales sequence by ID",
     inputSchema: {
       ...baseArgsSchema,
@@ -648,7 +672,7 @@ export function registerHubSpotTools(server: McpServer): void {
     return await client.request(`/automation/v4/sequences/${sequenceIdSegment}`);
   }));
 
-  server.registerTool("sales_sequences_enrollments", {
+  registerMcpTool(server,"sales_sequences_enrollments", {
     description: "Get enrollments for a sales sequence",
     inputSchema: {
       ...baseArgsSchema,
@@ -661,7 +685,7 @@ export function registerHubSpotTools(server: McpServer): void {
 
   // ── Reporting ──────────────────────────────────────────────────────────
 
-  server.registerTool("reporting_dashboards_list", {
+  registerMcpTool(server,"reporting_dashboards_list", {
     description: "List analytics reports/dashboards with pagination",
     inputSchema: {
       ...baseArgsSchema,
@@ -676,7 +700,7 @@ export function registerHubSpotTools(server: McpServer): void {
     return await client.request(`/analytics/v2/reports${qs ? `?${qs}` : ""}`);
   }));
 
-  server.registerTool("reporting_dashboards_get", {
+  registerMcpTool(server,"reporting_dashboards_get", {
     description: "Get an analytics report/dashboard by ID",
     inputSchema: {
       ...baseArgsSchema,
@@ -689,7 +713,7 @@ export function registerHubSpotTools(server: McpServer): void {
 
   // ── Exports ────────────────────────────────────────────────────────────
 
-  server.registerTool("crm_exports_create", {
+  registerMcpTool(server,"crm_exports_create", {
     description: "Create a CRM export (dry-run by default unless force=true)",
     inputSchema: {
       ...baseArgsSchema,
@@ -699,7 +723,7 @@ export function registerHubSpotTools(server: McpServer): void {
     return maybeWrite(ctx, client, "POST", "/crm/v3/exports", args.data);
   }));
 
-  server.registerTool("crm_exports_list", {
+  registerMcpTool(server,"crm_exports_list", {
     description: "List CRM exports with pagination",
     inputSchema: {
       ...baseArgsSchema,
@@ -714,7 +738,7 @@ export function registerHubSpotTools(server: McpServer): void {
     return await client.request(`/crm/v3/exports${qs ? `?${qs}` : ""}`);
   }));
 
-  server.registerTool("crm_exports_get", {
+  registerMcpTool(server,"crm_exports_get", {
     description: "Get a CRM export by ID",
     inputSchema: {
       ...baseArgsSchema,
@@ -725,7 +749,7 @@ export function registerHubSpotTools(server: McpServer): void {
     return await client.request(`/crm/v3/exports/${exportIdSegment}`);
   }));
 
-  server.registerTool("crm_exports_status", {
+  registerMcpTool(server,"crm_exports_status", {
     description: "Get the status of a CRM export",
     inputSchema: {
       ...baseArgsSchema,
@@ -738,7 +762,7 @@ export function registerHubSpotTools(server: McpServer): void {
 
   // ── Pipeline Stages ────────────────────────────────────────────────────
 
-  server.registerTool("crm_pipelines_stages", {
+  registerMcpTool(server,"crm_pipelines_stages", {
     description: "List stages for a pipeline",
     inputSchema: {
       ...baseArgsSchema,
@@ -754,7 +778,7 @@ export function registerHubSpotTools(server: McpServer): void {
 
   // ── Property Groups ────────────────────────────────────────────────────
 
-  server.registerTool("crm_property_groups_list", {
+  registerMcpTool(server,"crm_property_groups_list", {
     description: "List property groups for an object type",
     inputSchema: {
       ...baseArgsSchema,
@@ -766,7 +790,7 @@ export function registerHubSpotTools(server: McpServer): void {
     return client.request(`/crm/v3/properties/${objectTypeSegment}/groups`);
   }));
 
-  server.registerTool("crm_property_groups_create", {
+  registerMcpTool(server,"crm_property_groups_create", {
     description: "Create a property group (dry-run by default unless force=true)",
     inputSchema: {
       ...baseArgsSchema,
@@ -779,7 +803,7 @@ export function registerHubSpotTools(server: McpServer): void {
     return maybeWrite(ctx, client, "POST", `/crm/v3/properties/${objectTypeSegment}/groups`, args.data);
   }));
 
-  server.registerTool("crm_property_groups_update", {
+  registerMcpTool(server,"crm_property_groups_update", {
     description: "Update a property group (dry-run by default unless force=true)",
     inputSchema: {
       ...baseArgsSchema,

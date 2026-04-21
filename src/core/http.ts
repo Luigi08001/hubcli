@@ -6,18 +6,30 @@ import { randomUUID } from "node:crypto";
 
 /**
  * Read the active trace session file (written by `hscli trace start`).
- * Returns the trace output path if a session is active, or undefined.
- * Keeps session awareness decoupled from the CLI command layer: the
- * http client reads the state file on construction, so ANY code path
- * that opens a HubSpotClient automatically participates in the trace.
+ * Returns the full session (file path + scope + includeBodies) if a
+ * session is active, or undefined. Keeps session awareness decoupled
+ * from the CLI command layer: the http client reads the state file on
+ * construction, so ANY code path that opens a HubSpotClient
+ * automatically participates in the trace.
  */
-function readActiveTraceSessionFile(): string | undefined {
+interface ActiveTraceSession {
+  file: string;
+  scope: "read" | "write" | "all";
+  includeBodies: boolean;
+}
+function readActiveTraceSession(): ActiveTraceSession | undefined {
   const home = process.env.HSCLI_HOME?.trim() || join(homedir(), ".revfleet");
   const sessionPath = join(home, "trace-session.json");
   if (!existsSync(sessionPath)) return undefined;
   try {
-    const session = JSON.parse(readFileSync(sessionPath, "utf8")) as { file?: string };
-    return session.file;
+    const session = JSON.parse(readFileSync(sessionPath, "utf8")) as {
+      file?: string;
+      scope?: string;
+      includeBodies?: boolean;
+    };
+    if (!session.file) return undefined;
+    const scope = session.scope === "read" || session.scope === "write" ? session.scope : "all";
+    return { file: session.file, scope, includeBodies: Boolean(session.includeBodies) };
   } catch {
     return undefined;
   }
@@ -127,6 +139,8 @@ export class HubSpotClient {
   private readonly baseUrl: URL;
   private readonly requestId: string;
   private readonly telemetryFile?: string;
+  private readonly traceScope: "read" | "write" | "all";
+  private readonly traceIncludeBodies: boolean;
   private readonly profile: string;
   private readonly strictCapabilities: boolean;
   private readonly rateLimitState: RateLimitSnapshot = { nextRequestAtMs: 0 };
@@ -146,10 +160,21 @@ export class HubSpotClient {
     //   2. HSCLI_TELEMETRY_FILE env var
     //   3. active trace session file (set by `hscli trace start`)
     // Users never need to re-pass --telemetry-file after `trace start`.
+    const activeSession = readActiveTraceSession();
     this.telemetryFile = options.telemetryFile?.trim()
       || process.env.HSCLI_TELEMETRY_FILE?.trim()
-      || readActiveTraceSessionFile()
+      || activeSession?.file
       || undefined;
+    // Only honor session scope/bodies when the telemetry file actually
+    // comes from the active session. If the caller passed an explicit
+    // --telemetry-file, they own the filtering policy.
+    const telemetryFromSession = !options.telemetryFile?.trim()
+      && !process.env.HSCLI_TELEMETRY_FILE?.trim()
+      && activeSession?.file !== undefined;
+    this.traceScope = telemetryFromSession ? (activeSession?.scope ?? "all") : "all";
+    this.traceIncludeBodies = telemetryFromSession
+      ? Boolean(activeSession?.includeBodies)
+      : isEnvTrue(process.env.HSCLI_TRACE_BODIES);
     this.profile = options.profile?.trim() || process.env.HSCLI_PROFILE?.trim() || "default";
     this.strictCapabilities = options.strictCapabilities ?? isEnvTrue(process.env.HSCLI_STRICT_CAPABILITIES);
   }
@@ -199,7 +224,14 @@ export class HubSpotClient {
 
       if (!response.ok) {
         const details = await safeJson(response);
-        this.emitTelemetry({ method, path: pathname, status: response.status, durationMs: Date.now() - startedAt, attempt });
+        this.emitTelemetry({
+          method,
+          path: pathname,
+          status: response.status,
+          durationMs: Date.now() - startedAt,
+          attempt,
+          ...(this.traceIncludeBodies ? { requestBody: options.body, responseBody: details } : {}),
+        });
         const endpointError = mapEndpointAvailabilityError({
           profile: this.profile,
           path: pathname,
@@ -211,9 +243,27 @@ export class HubSpotClient {
       }
 
       recordEndpointSuccess({ profile: this.profile, path: pathname, statusCode: response.status });
-      if (response.status === 204) return { ok: true };
-      this.emitTelemetry({ method, path: pathname, status: response.status, durationMs: Date.now() - startedAt, attempt });
-      return safeJson(response);
+      if (response.status === 204) {
+        this.emitTelemetry({
+          method,
+          path: pathname,
+          status: response.status,
+          durationMs: Date.now() - startedAt,
+          attempt,
+          ...(this.traceIncludeBodies ? { requestBody: options.body } : {}),
+        });
+        return { ok: true };
+      }
+      const responseBody = await safeJson(response);
+      this.emitTelemetry({
+        method,
+        path: pathname,
+        status: response.status,
+        durationMs: Date.now() - startedAt,
+        attempt,
+        ...(this.traceIncludeBodies ? { requestBody: options.body, responseBody } : {}),
+      });
+      return responseBody;
     } catch (error) {
       this.emitTelemetry({
         method,
@@ -264,6 +314,15 @@ export class HubSpotClient {
     responseBytes?: number;
   }): void {
     if (!this.telemetryFile) return;
+    // Scope filter — set by `hscli trace start --scope read|write|all`.
+    // THROTTLE pseudo-events are always emitted (diagnostic signal, not
+    // a real request, so scope doesn't apply).
+    if (this.traceScope !== "all" && event.method !== "THROTTLE") {
+      const isWrite = event.method === "POST" || event.method === "PUT"
+        || event.method === "PATCH" || event.method === "DELETE";
+      if (this.traceScope === "read" && isWrite) return;
+      if (this.traceScope === "write" && !isWrite) return;
+    }
     try {
       // Baseline event: always includes ts + requestId + profile. toolName
       // is set from HUBCLI_MCP_TOOL_NAME so MCP tool invocations show up

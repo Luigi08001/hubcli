@@ -76,11 +76,19 @@ export function getHubcliHomeDir(): string {
   const explicit = process.env.HSCLI_HOME?.trim();
   if (explicit) return explicit;
   const primary = join(homedir(), ".revfleet");
-  // If the new primary has an auth.json, always use it.
-  if (existsSync(join(primary, "auth.json"))) return primary;
-  // Fallback to legacy ~/.hubcli if it still has the only auth.json.
+  // Primary wins if it has either a plaintext auth.json OR an encrypted
+  // auth.enc. Checking only auth.json would silently route an encrypted-
+  // primary user back to a stale legacy plaintext store.
+  if (
+    existsSync(join(primary, "auth.json"))
+    || existsSync(join(primary, "auth.enc"))
+  ) return primary;
+  // Fallback to legacy ~/.hubcli if it still has the only auth store.
   const legacy = join(homedir(), ".hubcli");
-  if (existsSync(join(legacy, "auth.json"))) return legacy;
+  if (
+    existsSync(join(legacy, "auth.json"))
+    || existsSync(join(legacy, "auth.enc"))
+  ) return legacy;
   return primary;
 }
 
