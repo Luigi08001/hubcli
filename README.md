@@ -57,23 +57,12 @@ Enterprise-grade from day one: `--dry-run`, `--force`, policy files, change tick
 </details>
 
 
-## How it compares
-
-The HubSpot CLI + MCP space is crowded:
-
-- **[HubSpot's official CLI](https://github.com/HubSpot/hubspot-cli)** (`@hubspot/cli`, `hs`) — scoped to CMS authoring (themes, serverless, HubDB sync). Complementary, not competing.
-- **[HubSpot's official MCP server](https://github.com/hubspot/mcp-server)** — public repo exists but empty as of writing. Remote MCP service announced.
-- **[Composio](https://composio.dev/toolkits/hubspot)** — hosted SaaS MCP at `connect.composio.dev/mcp`, part of their 850-app adapter platform. Proprietary, they hold your token on their infra (SOC 2 Type 2).
-- **Community OSS MCP servers** — [peakmojo/mcp-hubspot](https://github.com/peakmojo/mcp-hubspot), [lkm1developer/hubspot-mcp-server](https://github.com/lkm1developer/hubspot-mcp-server), [shinzo-labs/hubspot-mcp](https://github.com/shinzo-labs/hubspot-mcp), [CData's hubspot-mcp-server](https://github.com/CDataSoftware/hubspot-mcp-server-by-cdata), and ~15 others on GitHub.
-
-hscli's emphasis:
+## What hscli focuses on
 
 1. **CLI-first with MCP as a peer surface.** Every MCP tool has a matching `hscli` command — same write gates, same redaction, same capability probing in both.
-2. **Self-hosted and token-sovereign.** Your HubSpot private app token never leaves your machine. Contrast with Composio.
-3. **Enterprise safety gates.** `--dry-run`, `--force`, policy files, change tickets, path scope allowlisting, idempotency keys. Most community MCP servers don't have these.
-4. **HubSpot-native engineering.** Reads HubSpot's `X-HubSpot-RateLimit-*` headers, proactive throttling, capability probing by `portalId + scopes`, offline schema validation, idempotency-key on every write.
-
-Full landscape: [docs/LAUNCH/COMPETITIVE-LANDSCAPE.md](docs/LAUNCH/COMPETITIVE-LANDSCAPE.md).
+2. **Self-hosted and token-sovereign.** Your HubSpot private app token stays on your machine.
+3. **Safety gates by default.** `--dry-run`, `--force`, policy files, change tickets, path scope allowlisting, idempotency keys on every write.
+4. **HubSpot-native engineering.** Reads HubSpot's `X-HubSpot-RateLimit-*` headers, proactive throttling, capability probing by `portalId + scopes`, offline schema validation.
 
 ## "100% coverage" — what that means
 
