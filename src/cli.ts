@@ -208,11 +208,24 @@ export async function run(argv = process.argv): Promise<void> {
   }
 }
 
-import { pathToFileURL } from "node:url";
-import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { realpathSync } from "node:fs";
 
-if (import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
-  void run();
+// Only auto-run when invoked directly, not when imported. We need realpath
+// on BOTH sides: `import.meta.url` follows symlinks automatically (it's
+// the real file), but `process.argv[1]` is the string the user typed —
+// which, for a globally-installed npm bin, is the symlink in
+// /usr/local/bin/ or ~/.npm-global/bin/, not the resolved target. Without
+// realpath on argv[1], the comparison never matches and `run()` never
+// fires → the CLI exits silently with code 0.
+try {
+  const entryReal = realpathSync(process.argv[1] ?? "");
+  const selfReal = fileURLToPath(import.meta.url);
+  if (entryReal === selfReal) {
+    void run();
+  }
+} catch {
+  // If realpath fails (e.g. imported as ESM for testing), silently skip.
 }
 
 function resolveOutputFormat(raw: unknown, jsonFlag: boolean): "json" | "table" | "csv" | "yaml" {

@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.8.1 - 2026-04-22
+
+**Critical fix — globally-installed `hscli` binary was silent on all commands.**
+
+The entry-point guard in `src/cli.ts` compared `import.meta.url` against
+`resolve(process.argv[1])`, but `resolve()` does not follow symlinks.
+A global npm install creates `~/.npm-global/bin/hscli` as a symlink into
+`.../node_modules/@revfleet/hscli/dist/cli.js`; with the un-resolved
+compare, the two paths never matched, so `run()` never fired and the
+binary exited with code 0 and no output. Fix: resolve both sides with
+`fs.realpathSync` and `fileURLToPath(import.meta.url)` before comparing.
+
+This broke every `hscli <command>` invocation on every version since the
+first publish (v0.5.3). It was masked locally because `npm run dev` /
+`node dist/cli.js` don't go through the symlink. Anyone on npm installs
+should upgrade immediately.
+
 ## 0.8.0 - 2026-04-22
 
 **MCP compatibility surface + extension tools.** HubSpot promoted their hosted Remote MCP server at `mcp.hubspot.com` to GA on 2026-04-13. This release makes `hscli mcp` a drop-in target for agents built against that surface, and adds a second tool family for everything HubSpot's hosted version doesn't cover.
