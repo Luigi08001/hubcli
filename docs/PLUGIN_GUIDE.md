@@ -1,6 +1,6 @@
 # Plugin Guide
 
-hubcli supports plugins that add new command groups without modifying the core codebase.
+hscli supports plugins that add new command groups without modifying the core codebase.
 
 ## Plugin Contract
 
@@ -8,7 +8,7 @@ A plugin is an ESM module that exports a `register` function:
 
 ```typescript
 import type { Command } from "commander";
-import type { PluginContext } from "hubcli/plugins";
+import type { PluginContext } from "hscli/plugins";
 
 export function register(program: Command, ctx: PluginContext): void {
   const analytics = program.command("analytics").description("Analytics commands");
@@ -60,32 +60,32 @@ analytics
 
 ### 1. npm packages (automatic)
 
-Create an npm package with `"hubcli-plugin"` in its `keywords`:
+Create an npm package with `"hscli-plugin"` in its `keywords`:
 
 ```json
 {
-  "name": "hubcli-plugin-analytics",
-  "keywords": ["hubcli-plugin"],
+  "name": "hscli-plugin-analytics",
+  "keywords": ["hscli-plugin"],
   "type": "module",
   "main": "index.js",
   "exports": { ".": "./index.js" }
 }
 ```
 
-Install it alongside hubcli:
+Install it alongside hscli:
 
 ```bash
-npm install hubcli-plugin-analytics
+npm install hscli-plugin-analytics
 ```
 
-hubcli scans `node_modules` at startup and loads any package with the `hubcli-plugin` keyword.
+hscli scans `node_modules` at startup and loads any package with the `hscli-plugin` keyword.
 
-### 2. HUBCLI_PLUGINS env var (manual)
+### 2. HSCLI_PLUGINS env var (manual)
 
 For local development or private plugins:
 
 ```bash
-HUBCLI_PLUGINS=./my-plugin,/opt/plugins/custom hubcli analytics report
+HSCLI_PLUGINS=./my-plugin,/opt/plugins/custom hscli analytics report
 ```
 
 Comma-separated list of paths (relative to cwd) or npm package names.
@@ -93,8 +93,8 @@ Comma-separated list of paths (relative to cwd) or npm package names.
 ## Local Development
 
 ```bash
-mkdir hubcli-plugin-analytics
-cd hubcli-plugin-analytics
+mkdir hscli-plugin-analytics
+cd hscli-plugin-analytics
 
 cat > index.js << 'EOF'
 export function register(program, ctx) {
@@ -109,13 +109,13 @@ export function register(program, ctx) {
 }
 EOF
 
-cd /path/to/hubcli
-HUBCLI_PLUGINS=../hubcli-plugin-analytics hubcli analytics hello
+cd /path/to/hscli
+HSCLI_PLUGINS=../hscli-plugin-analytics hscli analytics hello
 ```
 
 ## Error Handling
 
-- Throw `ctx.CliError` for structured errors that follow hubcli's error format.
+- Throw `ctx.CliError` for structured errors that follow hscli's error format.
 - Plugin load failures are logged to stderr but never crash the CLI.
 - If a plugin's `register()` throws, it is skipped and the rest of the CLI works normally.
 
@@ -134,11 +134,11 @@ For TypeScript plugins, target `ES2022` / `NodeNext` to match the host:
 }
 ```
 
-Import types from hubcli:
+Import types from hscli:
 
 ```typescript
-import type { PluginContext, HubcliPlugin } from "hubcli/plugins";
-import type { CliContext } from "hubcli/output";
+import type { PluginContext, HubcliPlugin } from "hscli/plugins";
+import type { CliContext } from "hscli/output";
 ```
 
 ## Limitations

@@ -69,8 +69,8 @@ export function decryptVault(encrypted: Buffer, passphrase: string): string {
 /**
  * Check if the vault is encrypted (auth.enc exists).
  */
-export function isVaultEncrypted(hubcliHome: string): boolean {
-  return existsSync(join(hubcliHome, AUTH_ENC));
+export function isVaultEncrypted(hscliHome: string): boolean {
+  return existsSync(join(hscliHome, AUTH_ENC));
 }
 
 /**
@@ -87,9 +87,9 @@ export function getVaultPassphrase(): string | undefined {
  * Priority: if auth.enc exists and passphrase is available, decrypt it.
  * Otherwise, fall back to auth.json.
  */
-export function readVaultData(hubcliHome: string, passphrase?: string): object {
-  const encPath = join(hubcliHome, AUTH_ENC);
-  const jsonPath = join(hubcliHome, AUTH_JSON);
+export function readVaultData(hscliHome: string, passphrase?: string): object {
+  const encPath = join(hscliHome, AUTH_ENC);
+  const jsonPath = join(hscliHome, AUTH_JSON);
 
   if (existsSync(encPath)) {
     const pp = passphrase ?? getVaultPassphrase();
@@ -111,10 +111,10 @@ export function readVaultData(hubcliHome: string, passphrase?: string): object {
 /**
  * Write vault data — encrypted if passphrase is provided, plain JSON otherwise.
  */
-export function writeVaultData(hubcliHome: string, data: object, passphrase?: string): void {
+export function writeVaultData(hscliHome: string, data: object, passphrase?: string): void {
   const pp = passphrase ?? getVaultPassphrase();
-  const jsonPath = join(hubcliHome, AUTH_JSON);
-  const encPath = join(hubcliHome, AUTH_ENC);
+  const jsonPath = join(hscliHome, AUTH_JSON);
+  const encPath = join(hscliHome, AUTH_ENC);
 
   if (pp) {
     const plaintext = JSON.stringify(data, null, 2);
@@ -132,22 +132,22 @@ export function writeVaultData(hubcliHome: string, data: object, passphrase?: st
 /**
  * Encrypt existing auth.json → auth.enc and remove the plain file.
  */
-export function encryptExistingVault(hubcliHome: string, passphrase: string): void {
-  const jsonPath = join(hubcliHome, AUTH_JSON);
+export function encryptExistingVault(hscliHome: string, passphrase: string): void {
+  const jsonPath = join(hscliHome, AUTH_JSON);
   if (!existsSync(jsonPath)) {
     throw new Error("No auth.json found to encrypt.");
   }
   const data = readFileSync(jsonPath, "utf8");
   const encrypted = encryptVault(data, passphrase);
-  writeFileSync(join(hubcliHome, AUTH_ENC), encrypted);
+  writeFileSync(join(hscliHome, AUTH_ENC), encrypted);
   unlinkSync(jsonPath);
 }
 
 /**
  * Decrypt auth.enc → auth.json and remove the encrypted file.
  */
-export function decryptExistingVault(hubcliHome: string, passphrase: string): void {
-  const encPath = join(hubcliHome, AUTH_ENC);
+export function decryptExistingVault(hscliHome: string, passphrase: string): void {
+  const encPath = join(hscliHome, AUTH_ENC);
   if (!existsSync(encPath)) {
     throw new Error("No auth.enc found to decrypt.");
   }
@@ -155,6 +155,6 @@ export function decryptExistingVault(hubcliHome: string, passphrase: string): vo
   const plaintext = decryptVault(encrypted, passphrase);
   // Validate it's valid JSON
   JSON.parse(plaintext);
-  writeFileSync(join(hubcliHome, AUTH_JSON), plaintext, "utf8");
+  writeFileSync(join(hscliHome, AUTH_JSON), plaintext, "utf8");
   unlinkSync(encPath);
 }

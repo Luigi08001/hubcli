@@ -5,7 +5,7 @@
 Complete configuration guide for HubSpot CMS Hub settings. Covers domains, templates, blog, pages, file management, and developer tools.
 
 **Prerequisites:**
-- Portal authenticated (`hubcli auth whoami`)
+- Portal authenticated (`hscli auth whoami`)
 - Private App scopes: `content`, `cms.domains.read/write`
 - Domain DNS access (see [PORTAL_SETUP.md](./PORTAL_SETUP.md))
 
@@ -38,16 +38,16 @@ Complete configuration guide for HubSpot CMS Hub settings. Covers domains, templ
 
 > **API:** URL redirects can be managed via the URL Redirects API.
 
-**hubcli:**
+**hscli:**
 ```bash
 # List domains
-hubcli cms domains list
+hscli cms domains list
 
 # List URL redirects
-hubcli cms url-redirects list --limit 20
+hscli cms url-redirects list --limit 20
 
 # Create a URL redirect
-hubcli cms url-redirects create --data '{
+hscli cms url-redirects create --data '{
   "routePrefix": "/old-page",
   "destination": "/new-page",
   "redirectStyle": 301
@@ -121,16 +121,16 @@ hubcli cms url-redirects create --data '{
 | Featured image | Required for social sharing | Social media cards |
 | Structured data | Article schema (auto by HubSpot) | Rich search results |
 
-**hubcli:**
+**hscli:**
 ```bash
 # List blog posts
-hubcli cms blog-posts list --limit 20
+hscli cms blog-posts list --limit 20
 
 # Get blog post details
-hubcli cms blog-posts get <blogPostId>
+hscli cms blog-posts get <blogPostId>
 
 # Create a blog post
-hubcli cms blog-posts create --data '{
+hscli cms blog-posts create --data '{
   "name": "How to Get Started",
   "slug": "how-to-get-started",
   "contentGroupId": "<blogId>",
@@ -168,13 +168,13 @@ hubcli cms blog-posts create --data '{
 | Lazy loading | Auto-enabled for images | Page speed |
 | Minification | Auto CSS/JS minification | Page speed |
 
-**hubcli:**
+**hscli:**
 ```bash
 # List website pages
-hubcli cms pages list --limit 20
+hscli cms pages list --limit 20
 
 # Get page details
-hubcli cms pages get <pageId>
+hscli cms pages get <pageId>
 ```
 
 ---
@@ -203,16 +203,16 @@ hubcli cms pages get <pageId>
 | Audio | MP3, WAV | 300 MB |
 | Code | JS, CSS | 300 MB |
 
-**hubcli:**
+**hscli:**
 ```bash
 # List files
-hubcli cms files list --limit 20
+hscli cms files list --limit 20
 
 # Upload a file
-hubcli cms files upload --file ./logo.png --folder-path /images/branding
+hscli cms files upload --file ./logo.png --folder-path /images/branding
 
 # Get file details
-hubcli cms files get <fileId>
+hscli cms files get <fileId>
 ```
 
 ---

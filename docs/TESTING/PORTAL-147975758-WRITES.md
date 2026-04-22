@@ -1,6 +1,6 @@
 # Portal Write Probe — 147975758 (EU1, DEVELOPER_TEST)
 
-Generated: 2026-04-21T19:07:46.658Z  •  hubcli @ f97fdd4  •  profile: `default`  •  runSuffix: `zvzeb`  •  HUBCLI_DEV_APP_ID: `37336308`
+Generated: 2026-04-21T19:07:46.658Z  •  hscli @ f97fdd4  •  profile: `default`  •  runSuffix: `zvzeb`  •  HSCLI_DEV_APP_ID: `37336308`
 
 Probed 742 write endpoints (POST non-search + PUT + PATCH + DELETE) of 1180 total HubSpot API endpoints.
 
@@ -36,7 +36,7 @@ Probed 742 write endpoints (POST non-search + PUT + PATCH + DELETE) of 1180 tota
 ## Headless accessibility
 
 - **Directly succeeding**: 58 / 742 (7.8%)
-- **Reachable via hubcli** (PASS + CONFLICT + VALIDATION): 204 / 742 (27.5%)
+- **Reachable via hscli** (PASS + CONFLICT + VALIDATION): 204 / 742 (27.5%)
 
 The headless accessibility rate treats VALIDATION responses as "reachable" because they confirm the endpoint authenticates the call and HubSpot accepted the path — what's missing is just richer payload data which is the user's domain, not the CLI's.
 

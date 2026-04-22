@@ -75,7 +75,14 @@ export function createProgram(): { program: Command; getCtx: () => CliContext } 
 
   program
     .name("hscli")
-    .description("Agentic HubSpot CLI + MCP server")
+    .description(
+      // Brand banner — rendered at the top of `hscli --help`. ASCII art
+      // matches the bracketed monogram in brand/logo-monogram.svg so the
+      // CLI, avatar, and docs all share the same visual identity.
+      "  ┌──┐\n"
+      + "  │hs│  hscli · agentic HubSpot CLI + MCP server\n"
+      + "  └──┘  @revfleet/hscli · MIT · github.com/revfleet/hscli",
+    )
     .version(pkg.version)
     .option("--profile <name>", "Auth profile", "default")
     .option("--json", "JSON output")

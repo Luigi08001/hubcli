@@ -65,14 +65,13 @@ interface AuthFile {
   profiles: Record<string, AuthProfile>;
 }
 
-export function getHubcliHomeDir(): string {
-  // New primary location: ~/.revfleet/ (avoids colliding with @hubspot/cli's
-  // own ~/.hscli/ config dir). If a legacy ~/.hubcli/ install exists and
-  // the new location is empty, fall back to the legacy so users who
-  // upgrade from pre-0.5.4 hubcli/hscli don't silently lose their auth.
-  // We don't auto-migrate (write to new location) on read — that'd be a
-  // destructive side-effect from a read call. `hscli auth login` will
-  // write to the new location going forward.
+export function getHscliHomeDir(): string {
+  // Primary location: ~/.revfleet/ (avoids colliding with @hubspot/cli
+  // which stores its config at ~/.hscli/). If a user installed a
+  // pre-rename build and has `~/.hubcli/auth.json`, fall back to it
+  // so the upgrade doesn't silently lose their auth. We don't
+  // auto-migrate on read (that would be a destructive side-effect);
+  // `hscli auth login` writes to the primary location going forward.
   const explicit = process.env.HSCLI_HOME?.trim();
   if (explicit) return explicit;
   const primary = join(homedir(), ".revfleet");
@@ -83,7 +82,9 @@ export function getHubcliHomeDir(): string {
     existsSync(join(primary, "auth.json"))
     || existsSync(join(primary, "auth.enc"))
   ) return primary;
-  // Fallback to legacy ~/.hubcli if it still has the only auth store.
+  // Backward-compat: keep reading ~/.hubcli if a pre-rename install
+  // left credentials there. This is intentionally the ONE remaining
+  // reference to the old name — do not remove without a migration plan.
   const legacy = join(homedir(), ".hubcli");
   if (
     existsSync(join(legacy, "auth.json"))
@@ -91,6 +92,10 @@ export function getHubcliHomeDir(): string {
   ) return legacy;
   return primary;
 }
+
+// Legacy alias — kept so external plugins that imported the old name
+// keep working through one release cycle. Remove in a future major.
+export const getHubcliHomeDir = getHscliHomeDir;
 
 function authPaths(): { dir: string; file: string } {
   const root = getHubcliHomeDir();
@@ -105,7 +110,7 @@ function readAuthFile(): AuthFile {
     if (!passphrase) {
       throw new CliError(
         "VAULT_PASSPHRASE_REQUIRED",
-        "Vault is encrypted (auth.enc exists) but HSCLI_VAULT_PASSPHRASE is not set. Set the env var or run 'hubcli auth decrypt' first.",
+        "Vault is encrypted (auth.enc exists) but HSCLI_VAULT_PASSPHRASE is not set. Set the env var or run 'hscli auth decrypt' first.",
       );
     }
     return readVaultData(dir, passphrase) as AuthFile;
@@ -127,7 +132,7 @@ function writeAuthFile(data: AuthFile): void {
     if (!passphrase) {
       throw new CliError(
         "VAULT_PASSPHRASE_REQUIRED",
-        "Vault is encrypted (auth.enc exists) but HSCLI_VAULT_PASSPHRASE is not set. Set the env var or run 'hubcli auth decrypt' first.",
+        "Vault is encrypted (auth.enc exists) but HSCLI_VAULT_PASSPHRASE is not set. Set the env var or run 'hscli auth decrypt' first.",
       );
     }
     writeVaultData(dir, data, passphrase);
@@ -157,7 +162,7 @@ export function getToken(profile: string): string {
   const file = readAuthFile();
   const token = file.profiles[profile]?.token;
   if (!token) {
-    throw new CliError("AUTH_PROFILE_NOT_FOUND", `No token found for profile '${profile}'. Run 'hubcli auth login --token <token>'.`);
+    throw new CliError("AUTH_PROFILE_NOT_FOUND", `No token found for profile '${profile}'. Run 'hscli auth login --token <token>'.`);
   }
   return token;
 }

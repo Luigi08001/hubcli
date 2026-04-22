@@ -10,7 +10,7 @@ import { appendOptional, encodePathSegment, maybeWrite, parseJsonPayload, parseN
  * HubSpot keeps many older endpoints alive alongside the v3/v4 APIs because portals
  * with long-running integrations (Zapier recipes, custom middleware, old apps) still
  * hit them. Each legacy module is registered as its own top-level command so users
- * who need these paths don't have to fall back to `hubcli api request`.
+ * who need these paths don't have to fall back to `hscli api request`.
  *
  * All covered paths come from the HubSpot dev-doc scrape at
  *   ~/Desktop/vault/HubSpot Audit/api-mapping/endpoints.json

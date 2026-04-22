@@ -8,8 +8,8 @@ function setupHomeWithToken(
   token = "test-token",
   extras: Record<string, unknown> = {},
 ): string {
-  const home = mkdtempSync(join(tmpdir(), "hubcli-hublet-"));
-  const dir = join(home, ".hubcli");
+  const home = mkdtempSync(join(tmpdir(), "hscli-hublet-"));
+  const dir = join(home, ".hscli");
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "auth.json"), JSON.stringify({ profiles: { [profile]: { token, ...extras } } }));
   process.env.HSCLI_HOME = dir;
@@ -191,7 +191,7 @@ describe("hublet detection and routing", () => {
     } as never);
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "--json", "crm", "contacts", "list", "--limit", "1"]);
+    await run(["node", "hscli", "--json", "crm", "contacts", "list", "--limit", "1"]);
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     const [url] = fetchSpy.mock.calls[0];
@@ -202,8 +202,8 @@ describe("hublet detection and routing", () => {
   // auth login saves hublet + apiDomain
   // -----------------------------------------------------------------------
   it("auth login auto-detects EU1 and saves hublet/apiDomain", async () => {
-    const home = mkdtempSync(join(tmpdir(), "hubcli-login-hublet-"));
-    const dir = join(home, ".hubcli");
+    const home = mkdtempSync(join(tmpdir(), "hscli-login-hublet-"));
+    const dir = join(home, ".hscli");
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "auth.json"), JSON.stringify({ profiles: {} }));
     process.env.HSCLI_HOME = dir;
@@ -224,7 +224,7 @@ describe("hublet detection and routing", () => {
     });
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "--json", "auth", "login", "--token", "pat-eu1-test-abc-123"]);
+    await run(["node", "hscli", "--json", "auth", "login", "--token", "pat-eu1-test-abc-123"]);
 
     const output = JSON.parse(String(logSpy.mock.calls[0][0]));
     expect(output.ok).toBe(true);
@@ -272,7 +272,7 @@ describe("hublet detection and routing", () => {
       const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
       const { run } = await import("../src/cli.js");
-      await run(["node", "hubcli", "--json", "doctor", "hublet-check"]);
+      await run(["node", "hscli", "--json", "doctor", "hublet-check"]);
 
       const output = JSON.parse(String(logSpy.mock.calls[0][0]));
       expect(output.ok).toBe(true);
@@ -290,7 +290,7 @@ describe("hublet detection and routing", () => {
       const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
       const { run } = await import("../src/cli.js");
-      await run(["node", "hubcli", "--json", "doctor", "hublet-check"]);
+      await run(["node", "hscli", "--json", "doctor", "hublet-check"]);
 
       const output = JSON.parse(String(logSpy.mock.calls[0][0]));
       expect(output.ok).toBe(true);
@@ -299,19 +299,19 @@ describe("hublet detection and routing", () => {
     });
 
     it("reports error when profile not found", async () => {
-      const home = mkdtempSync(join(tmpdir(), "hubcli-noauth-"));
-      process.env.HSCLI_HOME = join(home, ".hubcli");
+      const home = mkdtempSync(join(tmpdir(), "hscli-noauth-"));
+      process.env.HSCLI_HOME = join(home, ".hscli");
       process.env.HOME = home;
 
       const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
       const { run } = await import("../src/cli.js");
-      await run(["node", "hubcli", "--json", "doctor", "hublet-check"]);
+      await run(["node", "hscli", "--json", "doctor", "hublet-check"]);
 
       const output = JSON.parse(String(logSpy.mock.calls[0][0]));
       expect(output.ok).toBe(true);
       expect(output.data.overallStatus).toBe("ERRORS_FOUND");
-      expect(output.data.checks.some((c: any) => c.check === "hubcli_profile" && c.status === "error")).toBe(true);
+      expect(output.data.checks.some((c: any) => c.check === "hscli_profile" && c.status === "error")).toBe(true);
     });
   });
 

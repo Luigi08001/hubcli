@@ -1,0 +1,3 @@
+  ┌──┐
+  │hs│  hscli · agentic HubSpot CLI + MCP server
+  └──┘  @revfleet/hscli · MIT · github.com/revfleet/hscli

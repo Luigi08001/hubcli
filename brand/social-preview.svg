@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640">
+  <title>hscli social preview</title>
+  <defs>
+    <pattern id="dots" x="16" y="16" width="32" height="32" patternUnits="userSpaceOnUse">
+      <circle cx="0" cy="0" r="1.5" fill="#22D3EE" fill-opacity="0.08"></circle>
+    </pattern>
+  </defs>
+  <rect width="1280" height="640" fill="#0F172A"></rect>
+  <rect width="1280" height="640" fill="url(#dots)"></rect>
+
+  
+  
+
+  
+  <g transform="translate(560,140)">
+    <rect width="160" height="160" rx="28.8" fill="#0F172A" stroke="#22D3EE" stroke-width="2" stroke-opacity="0.4"></rect>
+    <text x="80" y="80" font-family="&#39;JetBrains Mono&#39;, &#39;Berkeley Mono&#39;, ui-monospace, monospace" font-weight="700" font-size="68" letter-spacing="-2" fill="#22D3EE" text-anchor="middle" dominant-baseline="central">[hs]</text>
+  </g>
+
+  
+  <text x="640" y="380" font-family="&#39;JetBrains Mono&#39;, &#39;Berkeley Mono&#39;, ui-monospace, monospace" font-weight="700" font-size="96" letter-spacing="-3" fill="#F8FAFC" text-anchor="middle" dominant-baseline="central">hscli</text>
+
+  
+  <text x="640" y="450" font-family="&#39;JetBrains Mono&#39;, &#39;Berkeley Mono&#39;, ui-monospace, monospace" font-weight="400" font-size="24" letter-spacing="0.5" fill="#22D3EE" text-anchor="middle" dominant-baseline="central">agentic HubSpot CLI  ·  MCP-ready  ·  self-hosted</text>
+
+  
+  <text x="32" y="608" font-family="&#39;JetBrains Mono&#39;, &#39;Berkeley Mono&#39;, ui-monospace, monospace" font-weight="400" font-size="18" fill="#475569">@revfleet/hscli</text>
+
+  
+  <text x="1248" y="608" font-family="&#39;JetBrains Mono&#39;, &#39;Berkeley Mono&#39;, ui-monospace, monospace" font-weight="400" font-size="18" fill="#475569" text-anchor="end">github.com/revfleet/hscli</text>
+</svg>

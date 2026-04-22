@@ -8,8 +8,8 @@ function setupHomeWithToken(
   token = "pat-na1-test-abc-123",
   extra: Record<string, unknown> = {},
 ): string {
-  const home = mkdtempSync(join(tmpdir(), "hubcli-perm-"));
-  const dir = join(home, ".hubcli");
+  const home = mkdtempSync(join(tmpdir(), "hscli-perm-"));
+  const dir = join(home, ".hscli");
   mkdirSync(dir, { recursive: true });
   writeFileSync(
     join(dir, "auth.json"),
@@ -88,9 +88,9 @@ describe("permission profiles", () => {
 
     vi.spyOn(console, "log").mockImplementation(() => {});
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "--json", "auth", "set-mode", "myprofile", "read-only"]);
+    await run(["node", "hscli", "--json", "auth", "set-mode", "myprofile", "read-only"]);
 
-    const auth = JSON.parse(readFileSync(join(home, ".hubcli", "auth.json"), "utf8"));
+    const auth = JSON.parse(readFileSync(join(home, ".hscli", "auth.json"), "utf8"));
     expect(auth.profiles.myprofile.mode).toBe("read-only");
   });
 
@@ -100,7 +100,7 @@ describe("permission profiles", () => {
     vi.spyOn(console, "log").mockImplementation(() => {});
     const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "--json", "auth", "set-mode", "default", "admin"]);
+    await run(["node", "hscli", "--json", "auth", "set-mode", "default", "admin"]);
 
     const allOutput = [...errSpy.mock.calls.flat()].join("");
     expect(allOutput).toContain("INVALID_MODE");

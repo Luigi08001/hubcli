@@ -5,7 +5,7 @@
 Complete configuration guide for HubSpot reporting and analytics. Covers dashboards, custom reports, attribution, analytics tools, and report sharing.
 
 **Prerequisites:**
-- Portal authenticated (`hubcli auth whoami`)
+- Portal authenticated (`hscli auth whoami`)
 - Users & Teams configured (see [PORTAL_SETUP.md](./PORTAL_SETUP.md))
 - CRM data populated (contacts, deals, tickets, etc.)
 

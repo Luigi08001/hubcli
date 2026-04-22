@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Report a problem with hubcli
+about: Report a problem with hscli
 title: '[BUG] '
 labels: bug
 ---
@@ -14,11 +14,11 @@ labels: bug
 ## Reproduction
 ```bash
 # The exact command you ran (redact any tokens!)
-hubcli ...
+hscli ...
 ```
 
 ## Environment
-- hubcli version: `hubcli --version`
+- hscli version: `hscli --version`
 - Node version: `node --version`
 - OS: (macOS / Linux / Windows + version)
 - HubSpot tier (if relevant): Free / Starter / Pro / Enterprise

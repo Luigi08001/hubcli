@@ -93,26 +93,26 @@ export async function seedMarketing(ctx: SeedContext, result: SeedResult): Promi
   // --- Custom property group + property on contacts ---
   try {
     const rec = await safeCreate(client, "/crm/v3/properties/contacts/groups", {
-      name: "hubcli_seed_group",
+      name: "hscli_seed_group",
       label: "HubCLI Seed",
       displayOrder: -1,
     });
-    if (rec) result.created.push({ type: "property_group", name: "hubcli_seed_group", id: "hubcli_seed_group" });
+    if (rec) result.created.push({ type: "property_group", name: "hscli_seed_group", id: "hscli_seed_group" });
   } catch (err) {
-    result.skipped.push({ type: "property_group", name: "hubcli_seed_group", reason: errorReason(err) });
+    result.skipped.push({ type: "property_group", name: "hscli_seed_group", reason: errorReason(err) });
   }
   try {
     const rec = await safeCreate(client, "/crm/v3/properties/contacts", {
-      name: "hubcli_seed_tag",
+      name: "hscli_seed_tag",
       label: "HubCLI Seed Tag",
       type: "string",
       fieldType: "text",
-      groupName: "hubcli_seed_group",
-      description: "Tag set by hubcli seed command for testing.",
+      groupName: "hscli_seed_group",
+      description: "Tag set by hscli seed command for testing.",
     });
-    if (rec) result.created.push({ type: "property", name: "hubcli_seed_tag", id: "hubcli_seed_tag" });
+    if (rec) result.created.push({ type: "property", name: "hscli_seed_tag", id: "hscli_seed_tag" });
   } catch (err) {
-    result.skipped.push({ type: "property", name: "hubcli_seed_tag", reason: errorReason(err) });
+    result.skipped.push({ type: "property", name: "hscli_seed_tag", reason: errorReason(err) });
   }
 
   // --- Marketing email (draft) ---
@@ -125,7 +125,7 @@ export async function seedMarketing(ctx: SeedContext, result: SeedResult): Promi
       subcategory: "batch",
       sendOnPublish: false,
       useRssHeadlineAsSubject: false,
-      content: { html: "<p>Test content from hubcli seed.</p>" },
+      content: { html: "<p>Test content from hscli seed.</p>" },
       subscriptionDetails: { subscriptionId: 0 },
     });
     if (rec) result.created.push({ type: "marketing_email", name: mktgEmailName, id: rec.id });
@@ -139,14 +139,14 @@ export async function seedMarketing(ctx: SeedContext, result: SeedResult): Promi
       method: "POST",
       body: {
         access: "PUBLIC_NOT_INDEXABLE",
-        name: `hubcli-seed-${runSuffix}.ico`,
+        name: `hscli-seed-${runSuffix}.ico`,
         url: "https://www.hubspot.com/favicon.ico",
-        folderPath: "/hubcli-seed",
+        folderPath: "/hscli-seed",
       },
     }) as { id?: string };
-    if (rec?.id) result.created.push({ type: "file_import_task", name: `hubcli-seed-${runSuffix}.ico`, id: rec.id });
+    if (rec?.id) result.created.push({ type: "file_import_task", name: `hscli-seed-${runSuffix}.ico`, id: rec.id });
   } catch (err) {
-    result.skipped.push({ type: "file_import_task", name: "hubcli-seed file", reason: errorReason(err) });
+    result.skipped.push({ type: "file_import_task", name: "hscli-seed file", reason: errorReason(err) });
   }
 
   // --- Transactional SMTP token (Marketing Hub Pro+; expected fail on Free) ---

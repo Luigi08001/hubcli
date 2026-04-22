@@ -121,7 +121,7 @@ export function parseResponse<T>(
     );
   }
 
-  console.warn(`[hubcli] Schema warning${label}:\n${issues}`);
+  console.warn(`[hscli] Schema warning${label}:\n${issues}`);
   return data as T;
 }
 

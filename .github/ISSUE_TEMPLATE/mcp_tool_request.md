@@ -18,4 +18,4 @@ labels: mcp, enhancement
 <!-- Read-only? Write? What gates apply? -->
 
 ## Related CLI command
-<!-- Is there an equivalent hubcli CLI command? -->
+<!-- Is there an equivalent hscli CLI command? -->

@@ -13,8 +13,8 @@ import {
 } from "../src/core/vault.js";
 
 function makeTmpHome(): string {
-  const home = mkdtempSync(join(tmpdir(), "hubcli-vault-"));
-  const dir = join(home, ".hubcli");
+  const home = mkdtempSync(join(tmpdir(), "hscli-vault-"));
+  const dir = join(home, ".hscli");
   mkdirSync(dir, { recursive: true });
   return dir;
 }

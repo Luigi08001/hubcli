@@ -19,8 +19,8 @@ function setupHomeWithToken(
   token = "test-token",
   extra: Record<string, string> = {},
 ): string {
-  const home = mkdtempSync(join(tmpdir(), "hubcli-mcp-test-"));
-  const dir = join(home, ".hubcli");
+  const home = mkdtempSync(join(tmpdir(), "hscli-mcp-test-"));
+  const dir = join(home, ".hscli");
   mkdirSync(dir, { recursive: true });
   writeFileSync(
     join(dir, "auth.json"),

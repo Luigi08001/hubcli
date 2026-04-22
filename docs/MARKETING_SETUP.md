@@ -2,10 +2,10 @@
 
 > See also: [[PORTAL_SETUP]] · [[SALES_SETUP]] · [[REPORTING_SETUP]] · [[hubspot-rules]]
 
-Complete configuration guide for HubSpot Marketing Hub settings. Covers email, campaigns, forms, ads, social, SEO, lead scoring, and ABM. Each section shows the UI path, settings, and hubcli commands where API support exists.
+Complete configuration guide for HubSpot Marketing Hub settings. Covers email, campaigns, forms, ads, social, SEO, lead scoring, and ABM. Each section shows the UI path, settings, and hscli commands where API support exists.
 
 **Prerequisites:**
-- Portal authenticated (`hubcli auth whoami`)
+- Portal authenticated (`hscli auth whoami`)
 - Private App scopes: `marketing-email`, `marketing.campaigns.read/write`, `forms`, `content`
 - Domain and email authentication complete (see [PORTAL_SETUP.md](./PORTAL_SETUP.md) Phase 2)
 
@@ -23,7 +23,7 @@ Complete configuration guide for HubSpot Marketing Hub settings. Covers email, c
 | DKIM/SPF records | DNS records provided by HubSpot | Proves email authenticity, improves deliverability |
 | DMARC policy | TXT record at your DNS registrar | Controls what happens when authentication fails |
 
-> **API:** Domain verification is UI + DNS only. No hubcli command.
+> **API:** Domain verification is UI + DNS only. No hscli command.
 
 ### 1.2 Subscription Types
 
@@ -83,16 +83,16 @@ Complete configuration guide for HubSpot Marketing Hub settings. Covers email, c
 | Saved sections | Reusable content blocks (headers, footers, CTAs) | Speeds up email creation |
 | Global modules | Shared modules across templates | Single update propagates everywhere |
 
-**hubcli:**
+**hscli:**
 ```bash
 # List email templates
-hubcli marketing emails list --limit 20
+hscli marketing emails list --limit 20
 
 # Get email details
-hubcli marketing emails get <emailId>
+hscli marketing emails get <emailId>
 
 # Create an email (requires template ID)
-hubcli marketing emails create --data '{
+hscli marketing emails create --data '{
   "name": "March Newsletter",
   "subject": "Your Monthly Update",
   "type": "REGULAR"
@@ -118,16 +118,16 @@ Campaigns are containers that group related marketing assets (emails, landing pa
 | Budget | Planned spend | ROI calculation |
 | Associated assets | Emails, landing pages, forms, CTAs, blog posts, social posts | All attributed to this campaign |
 
-**hubcli:**
+**hscli:**
 ```bash
 # List campaigns
-hubcli marketing campaigns list --limit 20
+hscli marketing campaigns list --limit 20
 
 # Get campaign details
-hubcli marketing campaigns get <campaignId>
+hscli marketing campaigns get <campaignId>
 
 # Create a campaign
-hubcli marketing campaigns create --data '{
+hscli marketing campaigns create --data '{
   "name": "Q1 Product Launch",
   "type": "CONTENT_CAMPAIGN"
 }' --force
@@ -150,15 +150,15 @@ hubcli marketing campaigns create --data '{
 | A/B testing | Enable variation testing | Optimize conversion rates |
 | Stylesheets | Global CSS for landing pages | Consistent design without per-page styling |
 
-> **API:** Landing pages are a subset of CMS pages. Use the Pages API with `content` scope. hubcli `cms pages` commands can manage landing pages.
+> **API:** Landing pages are a subset of CMS pages. Use the Pages API with `content` scope. hscli `cms pages` commands can manage landing pages.
 
-**hubcli:**
+**hscli:**
 ```bash
 # List landing pages
-hubcli cms pages list --limit 10
+hscli cms pages list --limit 10
 
 # Get a specific page
-hubcli cms pages get <pageId>
+hscli cms pages get <pageId>
 ```
 
 ---
@@ -199,16 +199,16 @@ hubcli cms pages get <pageId>
 | Queued questions | Fields shown only when known fields are already populated | Gathers more data over time without long forms |
 | Max queued per visit | How many progressive fields per submission | Balances data collection with user experience |
 
-**hubcli:**
+**hscli:**
 ```bash
 # List all forms
-hubcli forms list --limit 20
+hscli forms list --limit 20
 
 # Get form details (fields, configuration)
-hubcli forms get <formId>
+hscli forms get <formId>
 
 # Create a form
-hubcli forms create --data '{
+hscli forms create --data '{
   "name": "Contact Us",
   "formType": "HUBSPOT",
   "configuration": {
@@ -329,13 +329,13 @@ hubcli forms create --data '{
 
 > **API:** Lead score is a contact property (`hubspotscore`). Readable via API but scoring rules are configured in UI only.
 
-**hubcli:**
+**hscli:**
 ```bash
 # Read a contact's lead score
-hubcli crm contacts get <contactId> --json
+hscli crm contacts get <contactId> --json
 
 # Search for MQLs with score above threshold
-hubcli crm contacts search --data '{
+hscli crm contacts search --data '{
   "filterGroups": [{
     "filters": [{
       "propertyName": "hubspotscore",
@@ -381,10 +381,10 @@ hubcli crm contacts search --data '{
 
 > **API:** Company properties are fully manageable via API. Target account designation is a company property.
 
-**hubcli:**
+**hscli:**
 ```bash
 # Search for Tier 1 target accounts
-hubcli crm companies search --data '{
+hscli crm companies search --data '{
   "filterGroups": [{
     "filters": [{
       "propertyName": "icp_tier",
@@ -396,7 +396,7 @@ hubcli crm companies search --data '{
 }'
 
 # Create ICP tier property
-hubcli crm properties create companies --data '{
+hscli crm properties create companies --data '{
   "name": "icp_tier",
   "label": "ICP Tier",
   "type": "enumeration",

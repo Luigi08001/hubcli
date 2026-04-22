@@ -1,6 +1,6 @@
 # Portal Setup Guide
 
-How to set up a new HubSpot portal from scratch for use with hubcli, in the correct order. Each phase builds on the previous one — skip nothing, follow the sequence.
+How to set up a new HubSpot portal from scratch for use with hscli, in the correct order. Each phase builds on the previous one — skip nothing, follow the sequence.
 
 Use the **Setup Checklist** at the bottom to audit an existing portal and find what's missing.
 
@@ -172,10 +172,10 @@ Users who can own CRM records appear as "owners." After inviting users, verify t
 
 ```bash
 # List all owners in the portal
-hubcli crm owners list
+hscli crm owners list
 
 # Filter by email
-hubcli crm owners list --email "user@yourcompany.com"
+hscli crm owners list --email "user@yourcompany.com"
 ```
 
 > **Important:** Note owner IDs — you'll need them for record creation, imports, and bulk operations.
@@ -189,10 +189,10 @@ hubcli crm owners list --email "user@yourcompany.com"
 **Where:** Settings > Integrations > Private Apps (or Legacy Apps)
 
 1. Click **Create legacy app** (or **Create a private app**)
-2. Name it (e.g., `hubcli`)
+2. Name it (e.g., `hscli`)
 3. Grant the required scopes:
 
-**Minimum scopes for full hubcli functionality:**
+**Minimum scopes for full hscli functionality:**
 
 | Category | Scopes |
 |----------|--------|
@@ -218,21 +218,21 @@ hubcli crm owners list --email "user@yourcompany.com"
 - US: `pat-na1-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX`
 - EU: `pat-eu1-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX`
 
-### 4.2 Authenticate hubcli
+### 4.2 Authenticate hscli
 
 ```bash
-# Build hubcli (first time only)
-cd hubcli-main && npm install && npm run build
+# Build hscli (first time only)
+cd hscli-main && npm install && npm run build
 
 # Authenticate (pipe to avoid token in shell history)
-printf '%s' 'pat-eu1-XXXX' | hubcli auth login --token-stdin
+printf '%s' 'pat-eu1-XXXX' | hscli auth login --token-stdin
 
 # Verify
-hubcli auth whoami
-hubcli auth token-info
+hscli auth whoami
+hscli auth token-info
 
 # Check capabilities
-hubcli doctor capabilities --refresh
+hscli doctor capabilities --refresh
 ```
 
 **Expected `auth whoami` output:** Portal ID, hublet, uiDomain, authenticated user email.
@@ -247,21 +247,21 @@ Properties define the fields on each CRM object. Standard properties exist by de
 
 ```bash
 # List properties per object type
-hubcli crm properties list contacts
-hubcli crm properties list companies
-hubcli crm properties list deals
-hubcli crm properties list tickets
+hscli crm properties list contacts
+hscli crm properties list companies
+hscli crm properties list deals
+hscli crm properties list tickets
 
 # Full schema introspection (includes metadata)
-hubcli crm describe contacts
-hubcli crm describe deals
+hscli crm describe contacts
+hscli crm describe deals
 ```
 
 ### 5.2 Create custom properties
 
 ```bash
 # Example: dropdown property on contacts
-hubcli crm properties create contacts --data '{
+hscli crm properties create contacts --data '{
   "name": "lead_source_detail",
   "label": "Lead Source Detail",
   "type": "enumeration",
@@ -275,7 +275,7 @@ hubcli crm properties create contacts --data '{
 }' --force
 
 # Example: number property on deals
-hubcli crm properties create deals --data '{
+hscli crm properties create deals --data '{
   "name": "mrr",
   "label": "Monthly Recurring Revenue",
   "type": "number",
@@ -289,7 +289,7 @@ hubcli crm properties create deals --data '{
 ### 5.3 Update existing properties
 
 ```bash
-hubcli crm properties update contacts --data '{
+hscli crm properties update contacts --data '{
   "name": "lead_source_detail",
   "label": "Lead Source (Detailed)",
   "options": [
@@ -339,12 +339,12 @@ Design your statuses:
 
 ```bash
 # List pipelines and their stages
-hubcli crm pipelines list deals
-hubcli crm pipelines list tickets
+hscli crm pipelines list deals
+hscli crm pipelines list tickets
 
 # Get detailed pipeline info (stage IDs, probabilities)
-hubcli crm pipelines get deals
-hubcli crm pipelines get tickets
+hscli crm pipelines get deals
+hscli crm pipelines get tickets
 ```
 
 > **Note:** The Pipelines API (`/crm/v3/pipelines`) supports full CRUD. Pipelines can also be created via API if you have the `crm.pipelines.orders.read/write` scope.
@@ -358,13 +358,13 @@ Custom objects extend the CRM beyond contacts, companies, deals, and tickets.
 ### 7.1 List existing schemas
 
 ```bash
-hubcli crm custom-objects schemas list
+hscli crm custom-objects schemas list
 ```
 
 ### 7.2 Create a custom object
 
 ```bash
-hubcli crm custom-objects schemas create --data '{
+hscli crm custom-objects schemas create --data '{
   "name": "project",
   "labels": {"singular": "Project", "plural": "Projects"},
   "primaryDisplayProperty": "project_name",
@@ -393,7 +393,7 @@ Before importing data at scale, create one record of each type to verify the dat
 
 ```bash
 # Dry-run first
-hubcli crm contacts create --data '{
+hscli crm contacts create --data '{
   "properties": {
     "email": "setup-test@example.com",
     "firstname": "Setup",
@@ -403,7 +403,7 @@ hubcli crm contacts create --data '{
 }'
 
 # Execute
-hubcli crm contacts create --data '{
+hscli crm contacts create --data '{
   "properties": {
     "email": "setup-test@example.com",
     "firstname": "Setup",
@@ -417,15 +417,15 @@ hubcli crm contacts create --data '{
 
 ```bash
 # Create a company
-hubcli crm companies create --data '{
+hscli crm companies create --data '{
   "properties": {"name": "Test Company", "domain": "testco.com"}
 }' --force
 
 # Associate contact → company
-hubcli crm associations create contacts <contactId> companies <companyId> --force
+hscli crm associations create contacts <contactId> companies <companyId> --force
 
 # Create a deal in the pipeline
-hubcli crm deals create --data '{
+hscli crm deals create --data '{
   "properties": {
     "dealname": "Test Deal",
     "pipeline": "<pipelineId>",
@@ -436,15 +436,15 @@ hubcli crm deals create --data '{
 }' --force
 
 # Associate deal → contact and deal → company
-hubcli crm associations create deals <dealId> contacts <contactId> --force
-hubcli crm associations create deals <dealId> companies <companyId> --force
+hscli crm associations create deals <dealId> contacts <contactId> --force
+hscli crm associations create deals <dealId> companies <companyId> --force
 ```
 
 ### 8.3 Validate data
 
 ```bash
 # Validate a payload against the schema before creating
-hubcli crm validate contacts --data '{
+hscli crm validate contacts --data '{
   "properties": {"email": "test@example.com", "firstname": "Test"}
 }'
 ```
@@ -458,14 +458,14 @@ Once the data model is validated, import your data.
 ### 9.1 Single records
 
 ```bash
-hubcli crm contacts create --data '{...}' --force
-hubcli crm companies create --data '{...}' --force
+hscli crm contacts create --data '{...}' --force
+hscli crm companies create --data '{...}' --force
 ```
 
 ### 9.2 Batch operations
 
 ```bash
-hubcli crm contacts batch-upsert --data '{
+hscli crm contacts batch-upsert --data '{
   "inputs": [
     {"properties": {"email": "alice@example.com", "firstname": "Alice"}, "idProperty": "email"},
     {"properties": {"email": "bob@example.com", "firstname": "Bob"}, "idProperty": "email"}
@@ -476,12 +476,12 @@ hubcli crm contacts batch-upsert --data '{
 ### 9.3 CSV imports
 
 ```bash
-hubcli crm imports create --data '<import-payload>' --force
+hscli crm imports create --data '<import-payload>' --force
 
 # Check import status
-hubcli crm imports list
-hubcli crm imports get <importId>
-hubcli crm imports errors <importId>
+hscli crm imports list
+hscli crm imports get <importId>
+hscli crm imports errors <importId>
 ```
 
 ### Import safety rules
@@ -510,10 +510,10 @@ hubcli crm imports errors <importId>
 
 ```bash
 # List existing forms
-hubcli forms list
+hscli forms list
 
 # Create a form
-hubcli forms create --data '{...}' --force
+hscli forms create --data '{...}' --force
 ```
 
 ### 10.3 Workflows
@@ -522,7 +522,7 @@ hubcli forms create --data '{...}' --force
 
 ```bash
 # List workflows
-hubcli workflows flows list
+hscli workflows flows list
 ```
 
 ---
@@ -555,15 +555,15 @@ Use this to verify a new portal or audit an existing one. Items are in dependenc
 ```
 [ ] Users invited with correct seats and permissions
 [ ] Teams created (if using team-based segmentation)
-[ ] Owners verified: hubcli crm owners list
+[ ] Owners verified: hscli crm owners list
 ```
 
 ### Phase 4 — CLI Authentication
 ```
 [ ] Private App created with required scopes
-[ ] hubcli authenticated: hubcli auth whoami
-[ ] Token info verified: hubcli auth token-info
-[ ] Capabilities checked: hubcli doctor capabilities --refresh
+[ ] hscli authenticated: hscli auth whoami
+[ ] Token info verified: hscli auth token-info
+[ ] Capabilities checked: hscli doctor capabilities --refresh
 ```
 
 ### Phase 5 — Properties (CLI)
@@ -578,7 +578,7 @@ Use this to verify a new portal or audit an existing one. Items are in dependenc
 ```
 [ ] Deal pipeline stages configured with probabilities
 [ ] Ticket pipeline statuses configured (open/closed)
-[ ] Pipelines verified: hubcli crm pipelines list deals
+[ ] Pipelines verified: hscli crm pipelines list deals
 ```
 
 ### Phase 7 — Custom Objects (CLI, if needed)
@@ -620,36 +620,36 @@ Run this to quickly assess what's configured in an existing portal:
 ```bash
 #!/bin/bash
 echo "=== Auth & Connectivity ==="
-hubcli auth whoami
-hubcli doctor capabilities --refresh
+hscli auth whoami
+hscli doctor capabilities --refresh
 
 echo "=== Owners ==="
-hubcli crm owners list
+hscli crm owners list
 
 echo "=== Pipelines ==="
-hubcli crm pipelines list deals
-hubcli crm pipelines list tickets
+hscli crm pipelines list deals
+hscli crm pipelines list tickets
 
 echo "=== Property Counts ==="
-hubcli crm properties list contacts --json 2>/dev/null | grep -c '"name"' || echo "contacts: error"
-hubcli crm properties list companies --json 2>/dev/null | grep -c '"name"' || echo "companies: error"
-hubcli crm properties list deals --json 2>/dev/null | grep -c '"name"' || echo "deals: error"
-hubcli crm properties list tickets --json 2>/dev/null | grep -c '"name"' || echo "tickets: error"
+hscli crm properties list contacts --json 2>/dev/null | grep -c '"name"' || echo "contacts: error"
+hscli crm properties list companies --json 2>/dev/null | grep -c '"name"' || echo "companies: error"
+hscli crm properties list deals --json 2>/dev/null | grep -c '"name"' || echo "deals: error"
+hscli crm properties list tickets --json 2>/dev/null | grep -c '"name"' || echo "tickets: error"
 
 echo "=== Custom Objects ==="
-hubcli crm custom-objects schemas list
+hscli crm custom-objects schemas list
 
 echo "=== Record Counts ==="
-hubcli crm contacts search --data '{"filterGroups":[], "limit": 1}' --json 2>/dev/null
-hubcli crm companies search --data '{"filterGroups":[], "limit": 1}' --json 2>/dev/null
-hubcli crm deals search --data '{"filterGroups":[], "limit": 1}' --json 2>/dev/null
+hscli crm contacts search --data '{"filterGroups":[], "limit": 1}' --json 2>/dev/null
+hscli crm companies search --data '{"filterGroups":[], "limit": 1}' --json 2>/dev/null
+hscli crm deals search --data '{"filterGroups":[], "limit": 1}' --json 2>/dev/null
 ```
 
 ---
 
 ## API vs UI Reference
 
-| Step | What | API support | hubcli command |
+| Step | What | API support | hscli command |
 |------|------|-------------|----------------|
 | Account defaults | Name, timezone, currency | Read-only | — |
 | Branding | Logo, colors, fonts | None | — |
@@ -658,22 +658,22 @@ hubcli crm deals search --data '{"filterGroups":[], "limit": 1}' --json 2>/dev/n
 | Tracking code | JS snippet | Push events only | — |
 | Privacy/consent | GDPR, cookie banner | Partial | — |
 | Users | Invite, permissions | Full CRUD | — |
-| Owners | List portal owners | Read | `hubcli crm owners list` |
-| Properties | Object fields | Full CRUD | `hubcli crm properties list/create/update` |
-| Pipelines | Deal/ticket stages | Full CRUD | `hubcli crm pipelines list/get` |
-| Custom objects | Schema + records | Full CRUD | `hubcli crm custom-objects schemas list/create` |
-| Data import | Bulk CSV | Full | `hubcli crm imports create` |
-| Records | CRUD + search | Full | `hubcli crm <object> list/get/create/update/delete` |
-| Associations | Record linking | Full | `hubcli crm associations create/list/remove` |
-| Forms | Lead capture | Full CRUD | `hubcli forms list/create` |
-| Workflows | Automation | Limited | `hubcli workflows flows list` |
-| Marketing | Email, campaigns | Partial | `hubcli marketing emails/campaigns list` |
+| Owners | List portal owners | Read | `hscli crm owners list` |
+| Properties | Object fields | Full CRUD | `hscli crm properties list/create/update` |
+| Pipelines | Deal/ticket stages | Full CRUD | `hscli crm pipelines list/get` |
+| Custom objects | Schema + records | Full CRUD | `hscli crm custom-objects schemas list/create` |
+| Data import | Bulk CSV | Full | `hscli crm imports create` |
+| Records | CRUD + search | Full | `hscli crm <object> list/get/create/update/delete` |
+| Associations | Record linking | Full | `hscli crm associations create/list/remove` |
+| Forms | Lead capture | Full CRUD | `hscli forms list/create` |
+| Workflows | Automation | Limited | `hscli workflows flows list` |
+| Marketing | Email, campaigns | Partial | `hscli marketing emails/campaigns list` |
 
 ---
 
 ## Hublet Reference
 
-hubcli auto-detects the hublet from the token prefix and routes API calls to the correct endpoint.
+hscli auto-detects the hublet from the token prefix and routes API calls to the correct endpoint.
 
 | Hublet | Token prefix | API base URL | UI domain |
 |--------|-------------|-------------|-----------|

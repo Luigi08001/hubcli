@@ -1,6 +1,6 @@
 ---
 name: Endpoint not working
-about: An endpoint that hubcli exposes returns unexpected errors on your portal
+about: An endpoint that hscli exposes returns unexpected errors on your portal
 title: '[ENDPOINT] /path/to/endpoint — short description'
 labels: endpoint-issue
 ---
@@ -8,7 +8,7 @@ labels: endpoint-issue
 ## What command failed
 
 ```bash
-hubcli ... # the exact command, tokens redacted
+hscli ... # the exact command, tokens redacted
 ```
 
 ## HubSpot portal context

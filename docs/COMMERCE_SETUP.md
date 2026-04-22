@@ -5,7 +5,7 @@
 Complete configuration guide for HubSpot Commerce Hub settings. Covers products, payment processing, payment links, quotes, invoices, subscriptions, tax, and commerce automation.
 
 **Prerequisites:**
-- Portal authenticated (`hubcli auth whoami`)
+- Portal authenticated (`hscli auth whoami`)
 - Private App scopes: `e-commerce`, `crm.objects.line_items.read/write`
 - HubSpot Payments enabled (US only) or Stripe integration connected
 
@@ -27,13 +27,13 @@ Complete configuration guide for HubSpot Commerce Hub settings. Covers products,
 | Cost of goods sold | COGS per unit | Margin and profitability reporting |
 | Product image | Product photo/icon | Visual on quotes and payment links |
 
-**hubcli:**
+**hscli:**
 ```bash
 # List all products
-hubcli crm products list --limit 50
+hscli crm products list --limit 50
 
 # Create a product
-hubcli crm products create --data '{
+hscli crm products create --data '{
   "properties": {
     "name": "Professional Plan",
     "description": "Monthly professional subscription",
@@ -45,7 +45,7 @@ hubcli crm products create --data '{
 }' --force
 
 # Update a product
-hubcli crm products update <productId> --data '{
+hscli crm products update <productId> --data '{
   "properties": {
     "price": "109.00"
   }
@@ -129,13 +129,13 @@ hubcli crm products update <productId> --data '{
 | Billing address | Require billing address collection |
 | Shipping address | Require shipping address (physical products) |
 
-**hubcli:**
+**hscli:**
 ```bash
 # List payment links
-hubcli commerce payment-links list --limit 20
+hscli commerce payment-links list --limit 20
 
 # Create a payment link
-hubcli commerce payment-links create --data '{
+hscli commerce payment-links create --data '{
   "name": "Pro Plan Monthly",
   "lineItems": [
     {"productId": "<productId>", "quantity": 1}
@@ -206,16 +206,16 @@ Create Quote → Add Line Items → Apply Discounts → Add Terms
 | Invoice overdue > 30 days | Escalate to manager | Escalated collections |
 | Payment received | Send receipt, update deal | Confirmation and bookkeeping |
 
-**hubcli:**
+**hscli:**
 ```bash
 # List invoices
-hubcli commerce invoices list --limit 20
+hscli commerce invoices list --limit 20
 
 # Get invoice details
-hubcli commerce invoices get <invoiceId>
+hscli commerce invoices get <invoiceId>
 
 # Create an invoice
-hubcli commerce invoices create --data '{
+hscli commerce invoices create --data '{
   "properties": {
     "hs_invoice_date": "2026-03-15",
     "hs_due_date": "2026-04-14",

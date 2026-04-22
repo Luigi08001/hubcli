@@ -1,4 +1,4 @@
-# CLAUDE.md — hubcli
+# CLAUDE.md — hscli
 
 ## What This Is
 CLI tool for HubSpot API. 77 subcommands across 26 modules covering ~95% of HubSpot's public API surface.
@@ -12,15 +12,15 @@ CLI tool for HubSpot API. 77 subcommands across 26 modules covering ~95% of HubS
 - `src/commands/seed.ts` — portal seeder for testing
 
 ## Key Commands
-- `hubcli crm contacts list` — list contacts
-- `hubcli crm deals list` — list deals
-- `hubcli marketing emails list` — list marketing emails
-- `hubcli settings users list` — list users
-- `hubcli mcp` — start MCP server
-- `hubcli seed --all` — seed test portal
+- `hscli crm contacts list` — list contacts
+- `hscli crm deals list` — list deals
+- `hscli marketing emails list` — list marketing emails
+- `hscli settings users list` — list users
+- `hscli mcp` — start MCP server
+- `hscli seed --all` — seed test portal
 
 ## Auth
-- Config: `~/.hubcli/auth.json`
+- Config: `~/.hscli/auth.json`
 - Private App token (EU1 portal 147975758 for testing)
 - EU1 API base: `https://api.hubapi.com` (same as US, HubSpot routes internally)
 

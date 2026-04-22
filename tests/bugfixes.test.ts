@@ -19,8 +19,8 @@ describe("vault passphrase enforcement in auth", () => {
   });
 
   function makeEncryptedHome(): string {
-    const home = mkdtempSync(join(tmpdir(), "hubcli-vault-enforce-"));
-    const dir = join(home, ".hubcli");
+    const home = mkdtempSync(join(tmpdir(), "hscli-vault-enforce-"));
+    const dir = join(home, ".hscli");
     mkdirSync(dir, { recursive: true });
     // Create an auth.enc to signal vault is encrypted
     // Also create auth.json to verify it does NOT fall back to it
@@ -78,8 +78,8 @@ describe("404 record-not-found vs endpoint unavailable", () => {
   });
 
   function setupHome(): void {
-    const home = mkdtempSync(join(tmpdir(), "hubcli-404-"));
-    const dir = join(home, ".hubcli");
+    const home = mkdtempSync(join(tmpdir(), "hscli-404-"));
+    const dir = join(home, ".hscli");
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "auth.json"), JSON.stringify({
       profiles: { default: { token: "test-token" } },
@@ -98,7 +98,7 @@ describe("404 record-not-found vs endpoint unavailable", () => {
     } as never);
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "crm", "contacts", "get", "99999999"]);
+    await run(["node", "hscli", "crm", "contacts", "get", "99999999"]);
 
     const errors = errSpy.mock.calls.map((c) => String(c[0]));
     const hasHttpError = errors.some((e) => e.includes("HTTP_ERROR"));
@@ -118,7 +118,7 @@ describe("404 record-not-found vs endpoint unavailable", () => {
     } as never);
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "marketing", "emails", "list"]);
+    await run(["node", "hscli", "marketing", "emails", "list"]);
 
     const errors = errSpy.mock.calls.map((c) => String(c[0]));
     expect(errors.some((e) => e.includes("ENDPOINT_NOT_AVAILABLE"))).toBe(true);
@@ -135,7 +135,7 @@ describe("404 record-not-found vs endpoint unavailable", () => {
     } as never);
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "crm", "contacts", "get", "123"]);
+    await run(["node", "hscli", "crm", "contacts", "get", "123"]);
 
     const errors = errSpy.mock.calls.map((c) => String(c[0]));
     expect(errors.some((e) => e.includes("ENDPOINT_NOT_AVAILABLE"))).toBe(true);
@@ -154,8 +154,8 @@ describe("safeJson handles non-JSON responses", () => {
   });
 
   it("returns HTML body as message when response is not JSON", async () => {
-    const home = mkdtempSync(join(tmpdir(), "hubcli-safejson-"));
-    const dir = join(home, ".hubcli");
+    const home = mkdtempSync(join(tmpdir(), "hscli-safejson-"));
+    const dir = join(home, ".hscli");
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "auth.json"), JSON.stringify({
       profiles: { default: { token: "test-token" } },
@@ -173,7 +173,7 @@ describe("safeJson handles non-JSON responses", () => {
     } as never);
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "crm", "contacts", "list"]);
+    await run(["node", "hscli", "crm", "contacts", "list"]);
 
     // Should NOT throw TypeError: Body is unusable
     // Should show HTTP_ERROR with the HTML message
@@ -195,8 +195,8 @@ describe("sync state persistence", () => {
   });
 
   function setupSyncTest(): { dir: string; stateFile: string } {
-    const home = mkdtempSync(join(tmpdir(), "hubcli-sync-"));
-    const dir = join(home, ".hubcli");
+    const home = mkdtempSync(join(tmpdir(), "hscli-sync-"));
+    const dir = join(home, ".hscli");
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "auth.json"), JSON.stringify({
       profiles: { default: { token: "test-token" } },
@@ -217,7 +217,7 @@ describe("sync state persistence", () => {
     } as never);
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "crm", "sync", "pull", "contacts", "--state-file", stateFile, "--max-pages", "1"]);
+    await run(["node", "hscli", "crm", "sync", "pull", "contacts", "--state-file", stateFile, "--max-pages", "1"]);
 
     const state = JSON.parse(readFileSync(stateFile, "utf8"));
     expect(state.mode).toBe("list");
@@ -235,7 +235,7 @@ describe("sync state persistence", () => {
     } as never);
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "crm", "sync", "pull", "contacts", "--state-file", stateFile, "--since", "2026-01-01T00:00:00Z", "--max-pages", "1"]);
+    await run(["node", "hscli", "crm", "sync", "pull", "contacts", "--state-file", stateFile, "--since", "2026-01-01T00:00:00Z", "--max-pages", "1"]);
 
     const state = JSON.parse(readFileSync(stateFile, "utf8"));
     expect(state.mode).toBe("since");
@@ -262,7 +262,7 @@ describe("sync state persistence", () => {
 
     const { run } = await import("../src/cli.js");
     // Run WITHOUT --since — should NOT use the since-cursor
-    await run(["node", "hubcli", "crm", "sync", "pull", "contacts", "--state-file", stateFile, "--max-pages", "1"]);
+    await run(["node", "hscli", "crm", "sync", "pull", "contacts", "--state-file", stateFile, "--max-pages", "1"]);
 
     const [url] = fetchSpy.mock.calls[0];
     // Should not contain the old since cursor

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Portal coverage probe — read-only smoke test of every scraped HubSpot endpoint
-// against the connected portal (defaults to the `default` profile in ~/.hubcli).
+// against the connected portal (defaults to the `default` profile in ~/.hscli).
 //
 // Usage:
 //   node scripts/test-portal-coverage.mjs > report.md
@@ -34,7 +34,7 @@ const TIMEOUT_MS = 20_000;
 // their own scrape via HSCLI_ENDPOINTS_JSON env var.
 const ENDPOINTS_JSON = process.env.HSCLI_ENDPOINTS_JSON || `${homedir()}/Desktop/vault/HubSpot Audit/api-mapping/endpoints.json`;
 
-const authPath = `${homedir()}/.hubcli/auth.json`;
+const authPath = `${homedir()}/.hscli/auth.json`;
 const auth = JSON.parse(fs.readFileSync(authPath, "utf8"));
 const profile = auth.profiles ? auth.profiles[PORTAL_PROFILE] : auth[PORTAL_PROFILE] || auth.default || auth;
 const token = profile.token || profile.accessToken;
@@ -172,7 +172,7 @@ const KNOWN_SUBS = {
   "{functionType}": "PRE_FETCH_OPTIONS",
   "{functionId}": "primary",
   "{cardId}": "0",
-  "{flagName}": "__hubcli_probe_flag",
+  "{flagName}": "__hscli_probe_flag",
   "{fromObjectType}": "contacts",
   "{toObjectType}": "companies",
   "{fromObjectId}": "0",
@@ -241,7 +241,7 @@ const KNOWN_SUBS = {
   "{path}": "theme/css/main.css",
   "{environment}": "published",
   "{utk}": "0",
-  "{email}": "probe@hubcli-probe.invalid",
+  "{email}": "probe@hscli-probe.invalid",
   "{created}": String(Date.now()),
   "{channelAccountId}": "0",
   "{broadcastId}": "0",
@@ -393,7 +393,7 @@ async function main() {
 
   let md = "";
   md += `# Portal Coverage Probe — 147975758 (EU1, free tier)\n\n`;
-  md += `Generated: ${now}  •  hubcli @ ${gitSha}  •  profile: \`${PORTAL_PROFILE}\`\n\n`;
+  md += `Generated: ${now}  •  hscli @ ${gitSha}  •  profile: \`${PORTAL_PROFILE}\`\n\n`;
   md += `Probed ${results.length} read-only endpoints of ${eps.length} total HubSpot API endpoints (only GET + safe POST /search).\n\n`;
   md += `## Summary\n\n| Category | Count | % |\n|---|---:|---:|\n`;
   for (const k of ORDER) {

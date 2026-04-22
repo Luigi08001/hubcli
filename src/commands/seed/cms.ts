@@ -11,8 +11,8 @@ export async function seedCms(ctx: SeedContext, result: SeedResult): Promise<voi
   // --- URL redirect ---
   try {
     const rec = await safeCreate(client, "/cms/v3/url-redirects", {
-      routePrefix: "/hubcli-seed-redirect",
-      destination: "https://hubcli.dev",
+      routePrefix: "/hscli-seed-redirect",
+      destination: "https://hscli.dev",
       redirectStyle: 301,
       precedence: 100,
       isOnlyAfterNotFound: false,
@@ -24,9 +24,9 @@ export async function seedCms(ctx: SeedContext, result: SeedResult): Promise<voi
       updated: Date.now(),
       created: Date.now(),
     });
-    if (rec) result.created.push({ type: "url_redirect", name: "/hubcli-seed-redirect", id: rec.id });
+    if (rec) result.created.push({ type: "url_redirect", name: "/hscli-seed-redirect", id: rec.id });
   } catch (err) {
-    result.skipped.push({ type: "url_redirect", name: "/hubcli-seed-redirect", reason: errorReason(err) });
+    result.skipped.push({ type: "url_redirect", name: "/hscli-seed-redirect", reason: errorReason(err) });
   }
 
   // --- Site page ---
@@ -34,9 +34,9 @@ export async function seedCms(ctx: SeedContext, result: SeedResult): Promise<voi
     const pageName = `HubCLI Seed Site Page ${runSuffix}`;
     const rec = await safeCreate(client, "/cms/v3/pages/site-pages", {
       name: pageName,
-      slug: `hubcli-seed-${runSuffix}`,
+      slug: `hscli-seed-${runSuffix}`,
       htmlTitle: "HubCLI Seed Page",
-      metaDescription: "A sample site page created by hubcli seed for testing.",
+      metaDescription: "A sample site page created by hscli seed for testing.",
       language: "en",
     });
     if (rec) result.created.push({ type: "site_page", name: pageName, id: rec.id });
@@ -49,7 +49,7 @@ export async function seedCms(ctx: SeedContext, result: SeedResult): Promise<voi
     const lpName = `HubCLI Seed Landing Page ${runSuffix}`;
     const rec = await safeCreate(client, "/cms/v3/pages/landing-pages", {
       name: lpName,
-      slug: `hubcli-seed-lp-${runSuffix}`,
+      slug: `hscli-seed-lp-${runSuffix}`,
       htmlTitle: "HubCLI Seed Landing Page",
       language: "en",
     });
@@ -66,7 +66,7 @@ export async function seedCms(ctx: SeedContext, result: SeedResult): Promise<voi
       const postName = `HubCLI Seed Blog Post ${runSuffix}`;
       const rec = await safeCreate(client, "/cms/v3/blogs/posts", {
         name: postName,
-        slug: `hubcli-seed-post-${runSuffix}`,
+        slug: `hscli-seed-post-${runSuffix}`,
         contentGroupId: blogId,
         language: "en",
       });
@@ -82,7 +82,7 @@ export async function seedCms(ctx: SeedContext, result: SeedResult): Promise<voi
   try {
     const rec = await safeCreate(client, "/cms/v3/blogs/authors", {
       fullName: `HubCLI Seed Author ${runSuffix}`,
-      email: `hubcli-seed-${runSuffix}@example.com`,
+      email: `hscli-seed-${runSuffix}@example.com`,
     });
     if (rec) result.created.push({ type: "blog_author", name: `HubCLI Seed Author ${runSuffix}`, id: rec.id });
   } catch (err) {
@@ -92,11 +92,11 @@ export async function seedCms(ctx: SeedContext, result: SeedResult): Promise<voi
   // --- Blog tag ---
   try {
     const rec = await safeCreate(client, "/cms/v3/blogs/tags", {
-      name: `hubcli-seed-tag-${runSuffix}`,
-      slug: `hubcli-seed-tag-${runSuffix}`,
+      name: `hscli-seed-tag-${runSuffix}`,
+      slug: `hscli-seed-tag-${runSuffix}`,
       language: "en",
     });
-    if (rec) result.created.push({ type: "blog_tag", name: `hubcli-seed-tag-${runSuffix}`, id: rec.id });
+    if (rec) result.created.push({ type: "blog_tag", name: `hscli-seed-tag-${runSuffix}`, id: rec.id });
   } catch (err) {
     result.skipped.push({ type: "blog_tag", name: "HubCLI Seed Tag", reason: errorReason(err) });
   }
@@ -104,7 +104,7 @@ export async function seedCms(ctx: SeedContext, result: SeedResult): Promise<voi
   // --- HubDB table + rows + publish ---
   try {
     const tableRec = await safeCreate(client, "/cms/v3/hubdb/tables", {
-      name: `hubcli_seed_table_${runSuffix}`,
+      name: `hscli_seed_table_${runSuffix}`,
       label: `HubCLI Seed Table ${runSuffix}`,
       useForPages: false,
       columns: [
@@ -113,7 +113,7 @@ export async function seedCms(ctx: SeedContext, result: SeedResult): Promise<voi
       ],
     });
     if (tableRec) {
-      result.created.push({ type: "hubdb_table", name: `hubcli_seed_table_${runSuffix}`, id: tableRec.id });
+      result.created.push({ type: "hubdb_table", name: `hscli_seed_table_${runSuffix}`, id: tableRec.id });
       try {
         const rowRec = await safeCreate(client, `/cms/v3/hubdb/tables/${tableRec.id}/rows/draft/batch/create`, {
           inputs: [{ values: { key: "sample-key", value: "sample-value" } }],
@@ -126,7 +126,7 @@ export async function seedCms(ctx: SeedContext, result: SeedResult): Promise<voi
       } catch { /* ignore publish failure */ }
     }
   } catch (err) {
-    result.skipped.push({ type: "hubdb_table", name: "hubcli_seed_table", reason: errorReason(err) });
+    result.skipped.push({ type: "hubdb_table", name: "hscli_seed_table", reason: errorReason(err) });
   }
 
   // --- Revisions + push-live for site-pages/landing-pages ---
@@ -137,7 +137,7 @@ export async function seedCms(ctx: SeedContext, result: SeedResult): Promise<voi
       try {
         await client.request(`/cms/v3/pages/site-pages/${sp.id}/draft`, {
           method: "PATCH",
-          body: { metaDescription: `Revised by hubcli seed at ${nowIso()}` },
+          body: { metaDescription: `Revised by hscli seed at ${nowIso()}` },
         });
         result.created.push({ type: "revision:site_page", name: sp.name || sp.id, id: sp.id });
         try {
@@ -154,7 +154,7 @@ export async function seedCms(ctx: SeedContext, result: SeedResult): Promise<voi
       try {
         await client.request(`/cms/v3/pages/landing-pages/${lp.id}/draft`, {
           method: "PATCH",
-          body: { metaDescription: `Revised by hubcli seed at ${nowIso()}` },
+          body: { metaDescription: `Revised by hscli seed at ${nowIso()}` },
         });
         result.created.push({ type: "revision:landing_page", name: lp.name || lp.id, id: lp.id });
         try {
@@ -172,7 +172,7 @@ export async function seedCms(ctx: SeedContext, result: SeedResult): Promise<voi
       try {
         await client.request("/content/api/v2/blogs", {
           method: "POST",
-          body: { name: `HubCLI Seed Blog ${runSuffix}`, slug: `hubcli-seed-blog-${runSuffix}` },
+          body: { name: `HubCLI Seed Blog ${runSuffix}`, slug: `hscli-seed-blog-${runSuffix}` },
         });
         result.created.push({ type: "blog", name: `HubCLI Seed Blog ${runSuffix}`, id: "new" });
       } catch (err) {
@@ -180,7 +180,7 @@ export async function seedCms(ctx: SeedContext, result: SeedResult): Promise<voi
           ? "no connected domain (connect one in HubSpot Settings → Website → Domains first)"
           : errorReason(err);
         result.skipped.push({ type: "blog", name: "HubCLI Seed Blog", reason });
-        result.tips.push("Blog creation requires a connected domain. Go to HubSpot Settings → Website → Domains & URLs → Connect a domain, then re-run hubcli seed to create a blog + blog posts automatically.");
+        result.tips.push("Blog creation requires a connected domain. Go to HubSpot Settings → Website → Domains & URLs → Connect a domain, then re-run hscli seed to create a blog + blog posts automatically.");
       }
     }
   } catch { /* ignore */ }

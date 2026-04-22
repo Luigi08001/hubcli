@@ -100,7 +100,7 @@ export async function loadCrmObjectSchema(options: LoadCrmObjectSchemaOptions): 
     if (!existing) {
       throw new CliError(
         "SCHEMA_CACHE_MISS",
-        `No cached schema found for '${objectType}'. Run 'hubcli crm describe ${objectType}' online first.`,
+        `No cached schema found for '${objectType}'. Run 'hscli crm describe ${objectType}' online first.`,
       );
     }
     return {

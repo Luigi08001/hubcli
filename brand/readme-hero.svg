@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 240" width="1280" height="240">
+  <title>hscli readme hero</title>
+  <rect width="1280" height="240" fill="#0F172A"></rect>
+
+  
+  <g transform="translate(48,72)">
+    <rect width="96" height="96" rx="17.3" fill="#0F172A" stroke="#22D3EE" stroke-width="1.5" stroke-opacity="0.35"></rect>
+    <text x="48" y="48" font-family="&#39;JetBrains Mono&#39;, &#39;Berkeley Mono&#39;, ui-monospace, monospace" font-weight="700" font-size="41" letter-spacing="-1" fill="#22D3EE" text-anchor="middle" dominant-baseline="central">[hs]</text>
+  </g>
+
+  
+  
+  <text x="168" y="104" font-family="&#39;JetBrains Mono&#39;, &#39;Berkeley Mono&#39;, ui-monospace, monospace" font-weight="700" font-size="72" letter-spacing="-2" fill="#F8FAFC" dominant-baseline="central">hscli</text>
+  <text x="168" y="160" font-family="&#39;JetBrains Mono&#39;, &#39;Berkeley Mono&#39;, ui-monospace, monospace" font-weight="400" font-size="20" letter-spacing="0.3" fill="#22D3EE" dominant-baseline="central">agentic HubSpot CLI + MCP server</text>
+
+  
+  
+  
+  <g transform="translate(918,96)">
+    <rect width="146" height="48" rx="6" fill="#0F172A" stroke="#475569" stroke-width="1"></rect>
+    <rect width="58" height="48" rx="6" fill="#1E293B"></rect>
+    <text x="29" y="24" font-family="&#39;JetBrains Mono&#39;, ui-monospace, monospace" font-weight="400" font-size="13" fill="#F8FAFC" text-anchor="middle" dominant-baseline="central">npm</text>
+    <text x="102" y="24" font-family="&#39;JetBrains Mono&#39;, ui-monospace, monospace" font-weight="700" font-size="13" fill="#22D3EE" text-anchor="middle" dominant-baseline="central">v0.8.1</text>
+  </g>
+  
+  <g transform="translate(1076,96)">
+    <rect width="96" height="48" rx="6" fill="#0F172A" stroke="#475569" stroke-width="1"></rect>
+    <rect width="60" height="48" rx="6" fill="#1E293B"></rect>
+    <text x="30" y="24" font-family="&#39;JetBrains Mono&#39;, ui-monospace, monospace" font-weight="400" font-size="13" fill="#F8FAFC" text-anchor="middle" dominant-baseline="central">license</text>
+    <text x="78" y="24" font-family="&#39;JetBrains Mono&#39;, ui-monospace, monospace" font-weight="700" font-size="13" fill="#22D3EE" text-anchor="middle" dominant-baseline="central">MIT</text>
+  </g>
+  
+  <g transform="translate(918,156)">
+    <rect width="146" height="44" rx="6" fill="#0F172A" stroke="#475569" stroke-width="1"></rect>
+    <rect width="58" height="44" rx="6" fill="#1E293B"></rect>
+    <text x="29" y="22" font-family="&#39;JetBrains Mono&#39;, ui-monospace, monospace" font-weight="400" font-size="12" fill="#F8FAFC" text-anchor="middle" dominant-baseline="central">node</text>
+    <text x="102" y="22" font-family="&#39;JetBrains Mono&#39;, ui-monospace, monospace" font-weight="700" font-size="12" fill="#22D3EE" text-anchor="middle" dominant-baseline="central">&gt;=20</text>
+  </g>
+</svg>

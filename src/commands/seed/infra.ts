@@ -58,13 +58,13 @@ export async function seedInfra(ctx: SeedContext, result: SeedResult): Promise<v
   // --- Timeline event template + one event (best-effort; dev-only in practice) ---
   try {
     const tmplRec = await safeCreate(client, "/crm/v3/timeline/event-templates", {
-      name: "hubcli_seed_event",
+      name: "hscli_seed_event",
       objectType: "contacts",
       headerTemplate: "HubCLI Seed Event",
-      detailTemplate: "Event created by hubcli seed for testing.",
+      detailTemplate: "Event created by hscli seed for testing.",
     });
     if (tmplRec) {
-      result.created.push({ type: "timeline_template", name: "hubcli_seed_event", id: tmplRec.id });
+      result.created.push({ type: "timeline_template", name: "hscli_seed_event", id: tmplRec.id });
       if (ctx.contactIds[0]) {
         try {
           const evRec = await safeCreate(client, "/crm/v3/timeline/events", {
@@ -77,7 +77,7 @@ export async function seedInfra(ctx: SeedContext, result: SeedResult): Promise<v
       }
     }
   } catch (err) {
-    result.skipped.push({ type: "timeline_template", name: "hubcli_seed_event", reason: errorReason(err) });
+    result.skipped.push({ type: "timeline_template", name: "hscli_seed_event", reason: errorReason(err) });
   }
 
   // --- Webhook subscription (dev-app context required) ---
@@ -95,21 +95,21 @@ export async function seedInfra(ctx: SeedContext, result: SeedResult): Promise<v
   // --- Integrators timeline template (app-dev; best-effort) ---
   try {
     const rec = await safeCreate(client, `/integrators/timeline/v3/${runSuffix}/event/templates`, {
-      name: `hubcli_seed_template_${runSuffix}`,
+      name: `hscli_seed_template_${runSuffix}`,
       objectType: "contacts",
       headerTemplate: "HubCLI Seed Event",
-      detailTemplate: "Event emitted by hubcli seed.",
+      detailTemplate: "Event emitted by hscli seed.",
     });
-    if (rec) result.created.push({ type: "integrator_timeline_template", name: `hubcli_seed_template_${runSuffix}`, id: rec.id });
+    if (rec) result.created.push({ type: "integrator_timeline_template", name: `hscli_seed_template_${runSuffix}`, id: rec.id });
   } catch (err) {
-    result.skipped.push({ type: "integrator_timeline_template", name: "hubcli_seed_template", reason: errorReason(err) });
+    result.skipped.push({ type: "integrator_timeline_template", name: "hscli_seed_template", reason: errorReason(err) });
   }
 
   // --- Custom object schema (if none exist on portal) ---
   if (ctx.customSchemas.length === 0) {
     try {
       const rec = await safeCreate(client, "/crm/v3/schemas", {
-        name: `hubcli_seed_object_${runSuffix}`,
+        name: `hscli_seed_object_${runSuffix}`,
         labels: { singular: `Seed Object ${runSuffix}`, plural: `Seed Objects ${runSuffix}` },
         primaryDisplayProperty: "name",
         requiredProperties: ["name"],
@@ -118,16 +118,16 @@ export async function seedInfra(ctx: SeedContext, result: SeedResult): Promise<v
         associatedObjects: ["CONTACT"],
       });
       if (rec) {
-        result.created.push({ type: "custom_object_schema", name: `hubcli_seed_object_${runSuffix}`, id: rec.id });
+        result.created.push({ type: "custom_object_schema", name: `hscli_seed_object_${runSuffix}`, id: rec.id });
         try {
-          const objRec = await safeCreate(client, `/crm/v3/objects/hubcli_seed_object_${runSuffix}`, {
+          const objRec = await safeCreate(client, `/crm/v3/objects/hscli_seed_object_${runSuffix}`, {
             properties: { name: `Sample ${runSuffix}` },
           });
-          if (objRec) result.created.push({ type: `custom:hubcli_seed_object_${runSuffix}`, name: `Sample ${runSuffix}`, id: objRec.id });
+          if (objRec) result.created.push({ type: `custom:hscli_seed_object_${runSuffix}`, name: `Sample ${runSuffix}`, id: objRec.id });
         } catch { /* skip */ }
       }
     } catch (err) {
-      result.skipped.push({ type: "custom_object_schema", name: "hubcli_seed_object", reason: errorReason(err) });
+      result.skipped.push({ type: "custom_object_schema", name: "hscli_seed_object", reason: errorReason(err) });
     }
   }
 
@@ -147,7 +147,7 @@ export async function seedInfra(ctx: SeedContext, result: SeedResult): Promise<v
         if (status === "ok") {
           result.associations.push({ from: `${schema.name}:${rec.id}`, to: `company:${ctx.companyIds[0]}`, status });
         } else {
-          result.tips.push(`Association ${schema.name} ↔ companies not configured. Create it in HubSpot Settings → Data Management → Associations, then run: hubcli crm associations create ${schema.name} ${rec.id} companies ${ctx.companyIds[0]} --force`);
+          result.tips.push(`Association ${schema.name} ↔ companies not configured. Create it in HubSpot Settings → Data Management → Associations, then run: hscli crm associations create ${schema.name} ${rec.id} companies ${ctx.companyIds[0]} --force`);
         }
       }
     }

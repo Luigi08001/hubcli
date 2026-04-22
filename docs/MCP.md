@@ -1,8 +1,8 @@
-# MCP Support (`hubcli mcp`)
+# MCP Support (`hscli mcp`)
 
 > See also: [[ARCHITECTURE]] · [[SAFETY_MODEL]] · [[COMMAND_TREE]] · [[tooling]]
 
-`hubcli` now exposes a Model Context Protocol (MCP) server over **stdio**.
+`hscli` now exposes a Model Context Protocol (MCP) server over **stdio**.
 
 ## Run
 
@@ -14,12 +14,12 @@ node dist/cli.js mcp
 Or if installed globally:
 
 ```bash
-hubcli mcp
+hscli mcp
 ```
 
 ## Profile isolation and safety defaults
 
-- **Profile isolation**: set `HUBCLI_MCP_PROFILE=<profile>` to hard-lock the MCP server to one auth profile.
+- **Profile isolation**: set `HSCLI_MCP_PROFILE=<profile>` to hard-lock the MCP server to one auth profile.
   - If a tool call requests a different profile, the server rejects it.
 - **Write tools are dry-run by default**:
   - `force: true` is required to execute actual writes.
@@ -40,25 +40,25 @@ Add a server entry in your Claude Desktop MCP config:
 ```json
 {
   "mcpServers": {
-    "hubcli": {
+    "hscli": {
       "command": "node",
-      "args": ["/absolute/path/to/hubcli/dist/cli.js", "mcp"],
+      "args": ["/absolute/path/to/hscli/dist/cli.js", "mcp"],
       "env": {
-        "HUBCLI_HOME": "/absolute/path/to/.hubcli",
-        "HUBCLI_MCP_PROFILE": "default"
+        "HSCLI_HOME": "/absolute/path/to/.hscli",
+        "HSCLI_MCP_PROFILE": "default"
       }
     }
   }
 }
 ```
 
-If `hubcli` is on your PATH you can use:
+If `hscli` is on your PATH you can use:
 
 ```json
 {
   "mcpServers": {
-    "hubcli": {
-      "command": "hubcli",
+    "hscli": {
+      "command": "hscli",
       "args": ["mcp"]
     }
   }
@@ -69,13 +69,13 @@ If `hubcli` is on your PATH you can use:
 
 Use a stdio server command equivalent to:
 
-- command: `hubcli`
+- command: `hscli`
 - args: `mcp`
 
 If your client accepts env vars, set:
 
-- `HUBCLI_HOME` to the auth profile directory containing `auth.json`
-- `HUBCLI_MCP_PROFILE` to force strict profile isolation
+- `HSCLI_HOME` to the auth profile directory containing `auth.json`
+- `HSCLI_MCP_PROFILE` to force strict profile isolation
 
 ## Tool catalog
 

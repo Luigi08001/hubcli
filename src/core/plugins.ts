@@ -1,9 +1,9 @@
 /**
- * Plugin system for hubcli.
+ * Plugin system for hscli.
  *
  * Plugins are discovered from:
  * 1. HSCLI_PLUGINS env var (comma-separated paths or package names)
- * 2. node_modules packages with "hubcli-plugin" in keywords
+ * 2. node_modules packages with "hscli-plugin" in keywords
  *
  * Each plugin must export: register(program: Command, context: PluginContext)
  */
@@ -43,7 +43,7 @@ export interface HubcliPlugin {
 }
 
 /**
- * Discover plugin package names from node_modules with "hubcli-plugin" keyword.
+ * Discover plugin package names from node_modules with "hscli-plugin" keyword.
  */
 function discoverFromNodeModules(): string[] {
   const pkgRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
@@ -67,7 +67,7 @@ function discoverFromNodeModules(): string[] {
       .filter((name) => {
         try {
           const pj = JSON.parse(readFileSync(join(nmDir, name, "package.json"), "utf8"));
-          return Array.isArray(pj.keywords) && pj.keywords.includes("hubcli-plugin");
+          return Array.isArray(pj.keywords) && pj.keywords.includes("hscli-plugin");
         } catch {
           return false;
         }
