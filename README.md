@@ -8,9 +8,13 @@
 
 **The headless HubSpot CLI + MCP server. 100% public API coverage (1,180 endpoints, 55+ command domains), enterprise safety rails, self-hosted.**
 
-![hscli demo — blank → full CRUD → blank, on a real HubSpot portal](docs/demo.gif)
+![hscli — blank → CREATE + associate → READ → UPDATE → ARCHIVE → blank, in the terminal](docs/demo-terminal.gif)
 
-> 58-second screen recording of a real run against HubSpot EU1 portal `147975758`. Source: [`scripts/demo.sh`](scripts/demo.sh) + [`scripts/demo.tape`](scripts/demo.tape).
+> hscli taking a portal through a full CRUD + associations round-trip: 1 company, 2 contacts, 1 deal, 3 associations. [Source script](scripts/demo.sh) · [recording config](scripts/demo.tape)
+
+![The same records, rendered in the HubSpot UI — company detail page with associated contacts + closed-won deal](docs/demo-hubspot.gif)
+
+> Same fixture viewed in HubSpot's own web UI — the records are real on a live portal. [Capture script](scripts/capture-hubspot.py) · [how the recordings are made](scripts/README.md)
 
 ## Get started in 30 seconds
 

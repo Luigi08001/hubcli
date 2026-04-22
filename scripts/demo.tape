@@ -1,15 +1,11 @@
-# vhs tape — renders scripts/demo.sh into docs/demo.gif (and .mp4)
+# vhs tape — renders scripts/demo.sh into docs/demo-terminal.{gif,mp4}
 #
 # Usage:  vhs scripts/demo.tape
 #
-# Produces:
-#   docs/demo.gif   — for README + social embeds
-#   docs/demo.mp4   — for longer-form / landing page
-#
 # Re-run to refresh when demo.sh changes.
 
-Output docs/demo.gif
-Output docs/demo.mp4
+Output docs/demo-terminal.gif
+Output docs/demo-terminal.mp4
 
 Set Shell "bash"
 Set FontSize 14
@@ -32,6 +28,6 @@ Show
 Type "./scripts/demo.sh"
 Enter
 
-# demo.sh runs ~50s on a warm HubSpot EU1 portal; 60s gives ~10s buffer
-# on the final summary frame before the GIF loops.
-Sleep 60s
+# demo.sh now does CRUD + 5 associations; runs ~80s on a warm portal.
+# 90s gives ~10s buffer on the final summary frame before the GIF loops.
+Sleep 90s
