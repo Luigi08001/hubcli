@@ -44,7 +44,7 @@
     "type": "git",
     "url": "git+https://github.com/revfleet/hscli.git"
   },
-  "author": "Luigi Vermeulen (revfleet)",
+  "author": "revfleet",
   "exports": {
     ".": "./dist/cli.js",
     "./plugins": "./dist/core/plugins.js",

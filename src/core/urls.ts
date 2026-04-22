@@ -43,8 +43,8 @@ export function getObjectTypeId(objectTypeName: string): string | undefined {
 /**
  * Build a URL to a CRM record in the HubSpot web UI.
  *
- * Standard objects: https://app-eu1.hubspot.com/contacts/147975758/record/0-1/12345
- * Custom objects:   https://app-eu1.hubspot.com/contacts/147975758/record/2-199622513/12345
+ * Standard objects: https://app-eu1.hubspot.com/contacts/12345678/record/0-1/12345
+ * Custom objects:   https://app-eu1.hubspot.com/contacts/12345678/record/2-199622513/12345
  */
 export function buildRecordUrl(
   portal: PortalContext,
@@ -57,7 +57,7 @@ export function buildRecordUrl(
 /**
  * Build a URL to the object-type settings page for a custom object.
  *
- * Example: https://app-eu1.hubspot.com/object-type-settings/147975758/object/2-199622513
+ * Example: https://app-eu1.hubspot.com/object-type-settings/12345678/object/2-199622513
  */
 export function buildObjectSettingsUrl(
   portal: PortalContext,
@@ -69,7 +69,7 @@ export function buildObjectSettingsUrl(
 /**
  * Build a URL to the pipeline board in the HubSpot web UI.
  *
- * Example: https://app-eu1.hubspot.com/contacts/147975758/objects/0-3/views/all/board
+ * Example: https://app-eu1.hubspot.com/contacts/12345678/objects/0-3/views/all/board
  */
 export function buildPipelineUrl(
   portal: PortalContext,

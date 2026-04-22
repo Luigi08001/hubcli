@@ -100,7 +100,7 @@ Legacy v1/v2 API support lives under `hscli contacts-v1`, `hscli companies-v2`, 
 
 ## HubSpot API coverage
 
-**Total endpoints covered:** 1,180 (verified against an automated scrape of HubSpot's developer documentation — see [docs/TESTING/PORTAL-147975758-COVERAGE.md](TESTING/PORTAL-147975758-COVERAGE.md)).
+**Total endpoints covered:** 1,180 (verified against an automated scrape of HubSpot's developer documentation + live probe runs against multiple tier profiles).
 
 Whether an endpoint returns 2xx on a given portal depends on HubSpot's tier gates:
 
