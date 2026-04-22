@@ -43,7 +43,7 @@ export function resolveProfile(requested?: string): string {
   // 1. HSCLI_MCP_PROFILE — hard lock (any other profile request throws)
   // 2. Explicit `profile` arg on the tool call
   // 3. HSCLI_PROFILE — set by the CLI's preAction hook when user passes
-  //    `hubcli --profile prod mcp`. Without this, launching MCP with
+  //    `hscli --profile prod mcp`. Without this, launching MCP with
   //    `--profile prod` silently fell back to "default" and could send
   //    reads/writes to the wrong portal.
   // 4. "default"
@@ -119,7 +119,7 @@ export async function executeTool(args: McpBaseArgs, fn: (ctx: CliContext, clien
 
 /**
  * Wrap `server.registerTool` so every MCP handler runs with
- * HUBCLI_MCP_TOOL_NAME set to this tool's name. The HTTP layer reads this
+ * HSCLI_MCP_TOOL_NAME set to this tool's name. The HTTP layer reads this
  * env var to tag trace/telemetry events, so `hscli trace stats` and
  * `hscli audit by-tool` can break activity down by MCP tool.
  *
@@ -131,11 +131,11 @@ export async function executeTool(args: McpBaseArgs, fn: (ctx: CliContext, clien
 export function registerMcpTool(server: McpServer, name: string, config: any, handler: (...args: any[]) => any): void {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const wrapped = (...handlerArgs: any[]): any => {
-    const previous = process.env.HUBCLI_MCP_TOOL_NAME;
-    process.env.HUBCLI_MCP_TOOL_NAME = name;
+    const previous = process.env.HSCLI_MCP_TOOL_NAME;
+    process.env.HSCLI_MCP_TOOL_NAME = name;
     const restore = () => {
-      if (previous === undefined) delete process.env.HUBCLI_MCP_TOOL_NAME;
-      else process.env.HUBCLI_MCP_TOOL_NAME = previous;
+      if (previous === undefined) delete process.env.HSCLI_MCP_TOOL_NAME;
+      else process.env.HSCLI_MCP_TOOL_NAME = previous;
     };
     try {
       const result = handler(...handlerArgs);
@@ -831,7 +831,7 @@ export function registerHubSpotTools(server: McpServer): void {
 }
 
 export function createMcpServer(): McpServer {
-  const server = new McpServer({ name: "hubcli", version: "0.1.0" });
+  const server = new McpServer({ name: "hscli", version: "0.1.0" });
   registerHubSpotTools(server);
   return server;
 }

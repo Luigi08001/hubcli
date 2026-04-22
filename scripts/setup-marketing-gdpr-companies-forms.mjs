@@ -10,14 +10,14 @@
  *      - Gonzalo's MCP form: firstname, lastname, email, mcp_server, mcp_attribution, industry
  *      - Louis's LvnCLI form: firstname, lastname, email, cli_language, cli_rules, position
  *
- * Usage: HSCLI_HOME=~/.hubcli node scripts/setup-marketing-gdpr-companies-forms.mjs
+ * Usage: HSCLI_HOME=~/.hscli node scripts/setup-marketing-gdpr-companies-forms.mjs
  */
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
 
-const HSCLI_HOME = process.env.HSCLI_HOME || join(homedir(), ".hubcli");
+const HSCLI_HOME = process.env.HSCLI_HOME || join(homedir(), ".hscli");
 const authFile = JSON.parse(readFileSync(join(HSCLI_HOME, "auth.json"), "utf8"));
 const TOKEN = authFile.profiles.default.token;
 const HEADERS = { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" };

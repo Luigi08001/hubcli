@@ -93,7 +93,7 @@ const ENDPOINT_CAPABILITIES: EndpointCapabilityDefinition[] = [
     requiredScopes: ["crm.objects.contacts.read"],
     scopeHints: ["crm.objects.contacts.read", "crm.objects.companies.read", "crm.objects.deals.read"],
     tierHint: "Available on most HubSpot tiers with CRM object access",
-    fallbackCommand: "hubcli auth token-info",
+    fallbackCommand: "hscli auth token-info",
   },
   {
     id: "marketing-emails",
@@ -104,7 +104,7 @@ const ENDPOINT_CAPABILITIES: EndpointCapabilityDefinition[] = [
     requiredScopes: [],
     scopeHints: ["content", "content.read", "automation"],
     tierHint: "Often depends on Marketing Hub enablement and subscription tier",
-    fallbackCommand: "hubcli crm contacts list --limit 5",
+    fallbackCommand: "hscli crm contacts list --limit 5",
   },
   {
     id: "marketing-campaigns",
@@ -115,7 +115,7 @@ const ENDPOINT_CAPABILITIES: EndpointCapabilityDefinition[] = [
     requiredScopes: [],
     scopeHints: ["campaigns", "content", "content.read"],
     tierHint: "May require Marketing Hub tier and campaign tooling enabled",
-    fallbackCommand: "hubcli crm deals list --limit 5",
+    fallbackCommand: "hscli crm deals list --limit 5",
   },
   {
     id: "forms-v3",
@@ -126,7 +126,7 @@ const ENDPOINT_CAPABILITIES: EndpointCapabilityDefinition[] = [
     requiredScopes: [],
     scopeHints: ["forms", "forms-uploaded-files"],
     tierHint: "May vary with marketing/forms product availability",
-    fallbackCommand: "hubcli crm contacts list --limit 5",
+    fallbackCommand: "hscli crm contacts list --limit 5",
   },
   {
     id: "files-v3",
@@ -137,7 +137,7 @@ const ENDPOINT_CAPABILITIES: EndpointCapabilityDefinition[] = [
     requiredScopes: [],
     scopeHints: ["files", "files.ui_hidden.read"],
     tierHint: "Depends on Files tooling and app permissions",
-    fallbackCommand: "hubcli crm contacts list --limit 5",
+    fallbackCommand: "hscli crm contacts list --limit 5",
   },
   {
     id: "cms-pages",
@@ -148,7 +148,7 @@ const ENDPOINT_CAPABILITIES: EndpointCapabilityDefinition[] = [
     requiredScopes: [],
     scopeHints: ["content", "content.read", "cms.pages.read"],
     tierHint: "Typically requires CMS Hub features in the target portal",
-    fallbackCommand: "hubcli marketing campaigns list --limit 5",
+    fallbackCommand: "hscli marketing campaigns list --limit 5",
   },
   {
     id: "cms-blogs",
@@ -159,7 +159,7 @@ const ENDPOINT_CAPABILITIES: EndpointCapabilityDefinition[] = [
     requiredScopes: [],
     scopeHints: ["content", "content.read", "cms.blogs.read"],
     tierHint: "May require CMS Hub / blog tooling in portal",
-    fallbackCommand: "hubcli marketing emails list --limit 5",
+    fallbackCommand: "hscli marketing emails list --limit 5",
   },
   {
     id: "workflows-flows",
@@ -170,7 +170,7 @@ const ENDPOINT_CAPABILITIES: EndpointCapabilityDefinition[] = [
     requiredScopes: [],
     scopeHints: ["automation", "workflows"],
     tierHint: "Depends on workflow automation access by tier/product",
-    fallbackCommand: "hubcli crm contacts list --limit 5",
+    fallbackCommand: "hscli crm contacts list --limit 5",
   },
   {
     id: "service-conversations",
@@ -181,7 +181,7 @@ const ENDPOINT_CAPABILITIES: EndpointCapabilityDefinition[] = [
     requiredScopes: [],
     scopeHints: ["conversations.read", "tickets", "crm.objects.tickets.read"],
     tierHint: "Depends on Service Hub channels/conversations setup",
-    fallbackCommand: "hubcli crm tickets list --limit 5",
+    fallbackCommand: "hscli crm tickets list --limit 5",
   },
   {
     id: "service-feedback",
@@ -192,7 +192,7 @@ const ENDPOINT_CAPABILITIES: EndpointCapabilityDefinition[] = [
     requiredScopes: [],
     scopeHints: ["crm.objects.feedback_submissions.read", "service"],
     tierHint: "Service Hub feedback tooling may be required",
-    fallbackCommand: "hubcli crm tickets list --limit 5",
+    fallbackCommand: "hscli crm tickets list --limit 5",
   },
 ];
 
@@ -461,7 +461,7 @@ function recordCapability(profileName: string, capabilityId: string, statusCode:
 }
 
 function formatCapabilityMessage(definition: EndpointCapabilityDefinition): string {
-  return `Endpoint '${definition.pathPrefix}' appears unavailable for this portal/tier setup. Try '${definition.fallbackCommand}' or run 'hubcli doctor capabilities --refresh'.`;
+  return `Endpoint '${definition.pathPrefix}' appears unavailable for this portal/tier setup. Try '${definition.fallbackCommand}' or run 'hscli doctor capabilities --refresh'.`;
 }
 
 export function preflightEndpointCapability(options: {
@@ -476,7 +476,7 @@ export function preflightEndpointCapability(options: {
   if (options.strict && scopeState === "missing") {
     throw new CliError(
       "CAPABILITY_SCOPE_MISSING",
-      `Token scopes do not satisfy '${definition.id}'. Run 'hubcli auth token-info' and then 'hubcli doctor capabilities --refresh'.`,
+      `Token scopes do not satisfy '${definition.id}'. Run 'hscli auth token-info' and then 'hscli doctor capabilities --refresh'.`,
       undefined,
       {
         capabilityId: definition.id,
@@ -512,7 +512,7 @@ export function preflightEndpointCapability(options: {
   if (options.strict && cached.status !== "supported") {
     throw new CliError(
       "CAPABILITY_UNKNOWN",
-      `Capability '${definition.id}' is unknown for this portal. Run 'hubcli doctor capabilities --refresh' first.`,
+      `Capability '${definition.id}' is unknown for this portal. Run 'hscli doctor capabilities --refresh' first.`,
       undefined,
       {
         capabilityId: definition.id,

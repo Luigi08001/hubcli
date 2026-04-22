@@ -26,10 +26,10 @@ This roadmap defines execution from foundational CLI to production-ready HubSpot
   - `--policy-file` profile-based write/delete rules
   - `--change-ticket` enforcement where required
 - JSON output consistency and redaction controls
-- Profile isolation support via `HUBCLI_HOME` (environment-isolated auth store)
+- Profile isolation support via `HSCLI_HOME` (environment-isolated auth store)
 - OAuth-oriented auth tooling (`oauth-url`, `oauth-exchange`, token introspection)
 - Request telemetry + correlation ID support
-- Zod response schema validation with graceful degradation (`HUBCLI_STRICT_SCHEMAS=1` for strict mode)
+- Zod response schema validation with graceful degradation (`HSCLI_STRICT_SCHEMAS=1` for strict mode)
 - ESLint with typescript-eslint (0 errors, integrated into `release:verify`)
 
 ## Phase 2 (✅ Complete): Reliability and Operational Hardening
@@ -40,15 +40,15 @@ This roadmap defines execution from foundational CLI to production-ready HubSpot
 - Rate limit observation (rolling + daily quotas, pacing, daily exhaustion guard)
 - Idempotency keys auto-generated for all write operations
 - Encrypted token vault (AES-256-GCM, PBKDF2 600k iterations) — transparent via auth.ts
-  - `hubcli auth encrypt` / `hubcli auth decrypt` CLI commands
-  - `HUBCLI_VAULT_PASSPHRASE` env var for automated workflows
-- Permission profiles (`hubcli auth set-mode <profile> read-only|read-write`)
+  - `hscli auth encrypt` / `hscli auth decrypt` CLI commands
+  - `HSCLI_VAULT_PASSPHRASE` env var for automated workflows
+- Permission profiles (`hscli auth set-mode <profile> read-only|read-write`)
   - Enforced at HTTP client level before any request
 - Hardened test matrix: 155 tests across 9 suites
   - Unit: hublet detection, schemas, permissions, vault
   - Bugfix regression: vault bypass, 404 remap, safeJson, sync state
   - Integration: MCP tools (32 tests), CLI commands (34 tests)
-  - Contract: sandbox smoke tests (10, opt-in via `HUBCLI_ENABLE_SANDBOX_CONTRACT=1`)
+  - Contract: sandbox smoke tests (10, opt-in via `HSCLI_ENABLE_SANDBOX_CONTRACT=1`)
 - `npm audit` integrated into release:verify
 
 ### Exit criteria status
@@ -69,7 +69,7 @@ This roadmap defines execution from foundational CLI to production-ready HubSpot
 - Supply-chain automation (Dependabot: npm weekly + GitHub Actions weekly)
 - P1/P2 bug fixes: vault bypass enforcement, 404 record-vs-endpoint disambiguation, safeJson body handling, sync cursor/mode isolation
 - Plugin/extension interface (`src/core/plugins.ts`, `docs/PLUGIN_GUIDE.md`)
-  - HUBCLI_PLUGINS env var + node_modules keyword discovery
+  - HSCLI_PLUGINS env var + node_modules keyword discovery
   - PluginContext exposes createClient, maybeWrite, printResult, CliError
   - Safety gates (dry-run/force/policy) enforced for plugin writes
 - Operational playbooks for incident response (`docs/OPERATIONAL_PLAYBOOKS.md`)

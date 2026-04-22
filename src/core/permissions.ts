@@ -25,6 +25,6 @@ export function enforcePermissionProfile(profile: string, method: string): void 
 
   throw new CliError(
     "PERMISSION_DENIED",
-    `Profile '${profile}' is configured as read-only. Write operations (${method}) are not allowed. Use 'hubcli auth set-mode ${profile} read-write' to enable writes.`,
+    `Profile '${profile}' is configured as read-only. Write operations (${method}) are not allowed. Use 'hscli auth set-mode ${profile} read-write' to enable writes.`,
   );
 }

@@ -111,55 +111,55 @@ export function registerDoctor(program: Command, getCtx: () => CliContext): void
 
   doctor
     .command("hublet-check")
-    .description("Verify hublet configuration consistency between hubcli and @hubspot/cli")
+    .description("Verify hublet configuration consistency between hscli and @hubspot/cli")
     .action(async (_opts) => {
       const ctx = getCtx();
       const profile = ctx.profile;
       const checks: Array<{ check: string; status: "ok" | "warning" | "error"; detail: string }> = [];
 
-      // 1. Check hubcli profile exists and has hublet info
-      let hubcliHublet: string | undefined;
-      let hubcliPortalId: string | undefined;
-      let hubcliApiDomain: string | undefined;
+      // 1. Check hscli profile exists and has hublet info
+      let hscliHublet: string | undefined;
+      let hscliPortalId: string | undefined;
+      let hscliApiDomain: string | undefined;
       try {
         const profileData = getProfile(profile);
-        hubcliHublet = detectHublet(profileData);
-        hubcliPortalId = profileData.portalId;
-        hubcliApiDomain = profileData.apiDomain;
+        hscliHublet = detectHublet(profileData);
+        hscliPortalId = profileData.portalId;
+        hscliApiDomain = profileData.apiDomain;
 
-        if (hubcliHublet) {
+        if (hscliHublet) {
           checks.push({
-            check: "hubcli_hublet_detected",
+            check: "hscli_hublet_detected",
             status: "ok",
-            detail: `Hublet '${hubcliHublet}' detected for profile '${profile}'`,
+            detail: `Hublet '${hscliHublet}' detected for profile '${profile}'`,
           });
         } else {
           checks.push({
-            check: "hubcli_hublet_detected",
+            check: "hscli_hublet_detected",
             status: "warning",
-            detail: `No hublet detected for profile '${profile}'. API calls use global routing (api.hubapi.com). Re-run 'hubcli auth login' to auto-detect.`,
+            detail: `No hublet detected for profile '${profile}'. API calls use global routing (api.hubapi.com). Re-run 'hscli auth login' to auto-detect.`,
           });
         }
 
-        if (hubcliApiDomain) {
+        if (hscliApiDomain) {
           checks.push({
-            check: "hubcli_api_domain",
+            check: "hscli_api_domain",
             status: "ok",
-            detail: `API domain: ${hubcliApiDomain}`,
+            detail: `API domain: ${hscliApiDomain}`,
           });
         } else {
-          const resolved = resolveApiDomain(hubcliHublet);
+          const resolved = resolveApiDomain(hscliHublet);
           checks.push({
-            check: "hubcli_api_domain",
-            status: hubcliHublet ? "warning" : "ok",
-            detail: `No apiDomain saved in profile. Resolved dynamically: ${resolved}. Re-run 'hubcli auth login' to persist.`,
+            check: "hscli_api_domain",
+            status: hscliHublet ? "warning" : "ok",
+            detail: `No apiDomain saved in profile. Resolved dynamically: ${resolved}. Re-run 'hscli auth login' to persist.`,
           });
         }
       } catch {
         checks.push({
-          check: "hubcli_profile",
+          check: "hscli_profile",
           status: "error",
-          detail: `Profile '${profile}' not found. Run 'hubcli auth login --token <token>'.`,
+          detail: `Profile '${profile}' not found. Run 'hscli auth login --token <token>'.`,
         });
       }
 
@@ -179,32 +179,32 @@ export function registerDoctor(program: Command, getCtx: () => CliContext): void
         });
 
         // Find matching account by portal ID
-        const matchingAccount = hubcliPortalId
-          ? hsConfig.accounts?.find((a) => String(a.accountId) === hubcliPortalId)
+        const matchingAccount = hscliPortalId
+          ? hsConfig.accounts?.find((a) => String(a.accountId) === hscliPortalId)
           : undefined;
 
         if (matchingAccount) {
           const hsEnv = matchingAccount.env || "prod";
-          const expectedEnv = hubcliHublet || "prod";
+          const expectedEnv = hscliHublet || "prod";
 
-          if (hsEnv === expectedEnv || (hsEnv === "prod" && !hubcliHublet)) {
+          if (hsEnv === expectedEnv || (hsEnv === "prod" && !hscliHublet)) {
             checks.push({
               check: "hscli_env_match",
               status: "ok",
-              detail: `@hubspot/cli env '${hsEnv}' matches hubcli hublet for portal ${hubcliPortalId}.`,
+              detail: `@hubspot/cli env '${hsEnv}' matches hscli hublet for portal ${hscliPortalId}.`,
             });
           } else {
             checks.push({
               check: "hscli_env_match",
               status: "error",
-              detail: `MISMATCH: @hubspot/cli has env '${hsEnv}' but hubcli detected hublet '${expectedEnv}' for portal ${hubcliPortalId}. Fix ~/.hscli/config.yml to set env: ${expectedEnv}`,
+              detail: `MISMATCH: @hubspot/cli has env '${hsEnv}' but hscli detected hublet '${expectedEnv}' for portal ${hscliPortalId}. Fix ~/.hscli/config.yml to set env: ${expectedEnv}`,
             });
           }
-        } else if (hubcliPortalId) {
+        } else if (hscliPortalId) {
           checks.push({
             check: "hscli_portal_match",
             status: "warning",
-            detail: `Portal ${hubcliPortalId} not found in @hubspot/cli accounts. 'hs project upload' may need --account=${hubcliPortalId}.`,
+            detail: `Portal ${hscliPortalId} not found in @hubspot/cli accounts. 'hs project upload' may need --account=${hscliPortalId}.`,
           });
         }
       }
@@ -215,11 +215,11 @@ export function registerDoctor(program: Command, getCtx: () => CliContext): void
         const tokenMatch = token.match(/^pat-([a-z0-9]+)-/);
         if (tokenMatch) {
           const tokenHublet = tokenMatch[1] === "na1" ? undefined : tokenMatch[1];
-          if (tokenHublet && hubcliHublet && tokenHublet !== hubcliHublet) {
+          if (tokenHublet && hscliHublet && tokenHublet !== hscliHublet) {
             checks.push({
               check: "token_hublet_consistency",
               status: "error",
-              detail: `Token prefix indicates hublet '${tokenHublet}' but profile has hublet '${hubcliHublet}'.`,
+              detail: `Token prefix indicates hublet '${tokenHublet}' but profile has hublet '${hscliHublet}'.`,
             });
           } else {
             checks.push({
@@ -238,9 +238,9 @@ export function registerDoctor(program: Command, getCtx: () => CliContext): void
 
       printResult(ctx, {
         profile,
-        hublet: hubcliHublet ?? "na (global)",
-        apiDomain: hubcliApiDomain ?? resolveApiDomain(hubcliHublet),
-        portalId: hubcliPortalId ?? null,
+        hublet: hscliHublet ?? "na (global)",
+        apiDomain: hscliApiDomain ?? resolveApiDomain(hscliHublet),
+        portalId: hscliPortalId ?? null,
         overallStatus: hasErrors ? "ERRORS_FOUND" : hasWarnings ? "WARNINGS" : "ALL_OK",
         checks,
       });

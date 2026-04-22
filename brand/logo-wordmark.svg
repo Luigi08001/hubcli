@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 180" width="640" height="180">
+  <title>hscli wordmark</title>
+  
+  <g transform="translate(24,42)">
+    <rect width="96" height="96" rx="17.3" fill="#0F172A"></rect>
+    <text x="48" y="48" font-family="&#39;JetBrains Mono&#39;, &#39;Berkeley Mono&#39;, ui-monospace, monospace" font-weight="700" font-size="41" letter-spacing="-1" fill="#22D3EE" text-anchor="middle" dominant-baseline="central">[hs]</text>
+  </g>
+  
+  <text x="144" y="90" font-family="&#39;JetBrains Mono&#39;, &#39;Berkeley Mono&#39;, ui-monospace, monospace" font-weight="700" font-size="72" letter-spacing="-2" fill="#0F172A" dominant-baseline="central">hscli</text>
+</svg>

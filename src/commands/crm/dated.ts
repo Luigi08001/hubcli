@@ -7,7 +7,7 @@ import { appendOptional, encodePathSegment, maybeWrite, parseJsonPayload, parseN
 /**
  * Dated API (2025-09) — HubSpot's newer schema-versioned paths alongside v3.
  * Same functional surface as /crm/v3/objects/{type} but with fixed behaviour for
- * schema changes. Exposed under `hubcli crm dated ...` so v3 and the dated
+ * schema changes. Exposed under `hscli crm dated ...` so v3 and the dated
  * version stay side-by-side without collision.
  */
 export function registerDatedApi(crm: Command, getCtx: () => CliContext): void {

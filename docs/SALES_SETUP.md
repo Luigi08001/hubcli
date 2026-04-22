@@ -5,7 +5,7 @@
 Complete configuration guide for HubSpot Sales Hub settings. Covers deals pipeline, quotes, meetings, sequences, playbooks, forecasting, and sales automation.
 
 **Prerequisites:**
-- Portal authenticated (`hubcli auth whoami`)
+- Portal authenticated (`hscli auth whoami`)
 - Private App scopes: `crm.objects.deals.read/write`, `sales-email-read`, `crm.schemas.deals.read/write`
 - Users & Teams configured (see [PORTAL_SETUP.md](./PORTAL_SETUP.md))
 
@@ -25,16 +25,16 @@ Complete configuration guide for HubSpot Sales Hub settings. Covers deals pipeli
 | Stage requirements | Required properties before moving to next stage | Data quality and process enforcement |
 | Multiple pipelines | Separate pipelines for different deal types | Each sales motion has unique stages |
 
-**hubcli:**
+**hscli:**
 ```bash
 # List all pipelines
-hubcli crm pipelines list deals
+hscli crm pipelines list deals
 
 # Get pipeline details (stages, probabilities)
-hubcli crm pipelines get deals <pipelineId>
+hscli crm pipelines get deals <pipelineId>
 
 # Create a new pipeline
-hubcli crm pipelines create deals --data '{
+hscli crm pipelines create deals --data '{
   "label": "New Business",
   "displayOrder": 0,
   "stages": [
@@ -49,7 +49,7 @@ hubcli crm pipelines create deals --data '{
 }' --force
 
 # Update a pipeline stage
-hubcli crm pipelines stages update deals <pipelineId> <stageId> --data '{
+hscli crm pipelines stages update deals <pipelineId> <stageId> --data '{
   "label": "Negotiation",
   "metadata": {"probability": "0.85"}
 }' --force
@@ -67,10 +67,10 @@ hubcli crm pipelines stages update deals <pipelineId> <stageId> --data '{
 | `hubspot_owner_id` | Owner | Assigned sales rep |
 | `deal_currency_code` | Select | Currency (if multi-currency enabled) |
 
-**hubcli:**
+**hscli:**
 ```bash
 # Create custom deal property
-hubcli crm properties create deals --data '{
+hscli crm properties create deals --data '{
   "name": "deal_source",
   "label": "Deal Source",
   "type": "enumeration",
@@ -115,13 +115,13 @@ hubcli crm properties create deals --data '{
 | Terms & conditions | Default legal terms on quotes | Legal compliance |
 | Countersignature | Require internal countersign | Approval process for large deals |
 
-**hubcli:**
+**hscli:**
 ```bash
 # List quotes
-hubcli crm quotes list --limit 20
+hscli crm quotes list --limit 20
 
 # Get quote details
-hubcli crm quotes get <quoteId>
+hscli crm quotes get <quoteId>
 ```
 
 ---
@@ -130,13 +130,13 @@ hubcli crm quotes get <quoteId>
 
 **Where:** Settings > Objects > Products
 
-**hubcli:**
+**hscli:**
 ```bash
 # List products
-hubcli crm products list --limit 50
+hscli crm products list --limit 50
 
 # Create a product
-hubcli crm products create --data '{
+hscli crm products create --data '{
   "properties": {
     "name": "Enterprise License",
     "description": "Annual enterprise software license",
@@ -147,7 +147,7 @@ hubcli crm products create --data '{
 }' --force
 
 # Create a line item (associated with a deal)
-hubcli crm line-items create --data '{
+hscli crm line-items create --data '{
   "properties": {
     "name": "Enterprise License",
     "quantity": "1",

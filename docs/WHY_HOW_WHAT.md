@@ -3,7 +3,7 @@
 > See also: [[ARCHITECTURE]] · [[SAFETY_MODEL]] · [[ROADMAP_PHASE1_TO_3]]
 
 ## WHY this CLI exists
-`hubcli` exists to give operators a safe, automatable, production-grade command interface to HubSpot APIs without needing to write code each time. It solves three operational problems:
+`hscli` exists to give operators a safe, automatable, production-grade command interface to HubSpot APIs without needing to write code each time. It solves three operational problems:
 - **Speed:** repetitive CRM operations become scriptable and repeatable.
 - **Safety:** write controls prevent accidental destructive mutations.
 - **Reliability:** consistent output + retry behavior reduce brittle ad-hoc scripts.
@@ -36,7 +36,7 @@
   - write gate (`--force`) + dry-run preview
   - policy middleware for writes/deletes
   - secret redaction in output/error serialization
-  - profile environment isolation via `HUBCLI_HOME`
+  - profile environment isolation via `HSCLI_HOME`
   - request scope guard, timeout, retries, and correlation id
 - Auth model expansion:
   - profile listing/inspection
@@ -65,7 +65,7 @@
 - **Policy guardrail pathway:** optional policy file can block writes/deletes or require change tickets by profile.
 - **No plaintext token logs:** token values are never intentionally printed.
 - **Redaction pipeline:** output and error payloads are sanitized for token/authorization/secret-like keys and bearer strings.
-- **Profile isolation:** `HUBCLI_HOME` can isolate credentials per environment/workload.
+- **Profile isolation:** `HSCLI_HOME` can isolate credentials per environment/workload.
 
 ## Reliability controls
 - Retry policy for rate-limit and transient server failures with request timeout.

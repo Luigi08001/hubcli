@@ -14,7 +14,7 @@ How to cut a new release of `@revfleet/hscli` on npm. Written for the maintainer
 ### 1. Land all changes on a feature branch
 
 ```bash
-cd /Users/louisv/Pro-Desktop/Projets/hubcli-main
+cd /Users/louisv/Pro-Desktop/Projets/hscli-main
 git checkout -b <branch-name>
 # ... commits ...
 git push -u origin <branch-name>

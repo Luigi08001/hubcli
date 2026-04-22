@@ -11,14 +11,14 @@
  *   30 contacts → MCP_LVN (brand=mcp_lvn, owner=Gonzalo 44551336, company 419725867199)
  *   20 contacts → unassigned (no brand, no company)
  *
- * Usage: HSCLI_HOME=~/.hubcli node scripts/seed-contacts.mjs
+ * Usage: HSCLI_HOME=~/.hscli node scripts/seed-contacts.mjs
  */
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
 
-const HSCLI_HOME = process.env.HSCLI_HOME || join(homedir(), ".hubcli");
+const HSCLI_HOME = process.env.HSCLI_HOME || join(homedir(), ".hscli");
 const authFile = JSON.parse(readFileSync(join(HSCLI_HOME, "auth.json"), "utf8"));
 const TOKEN = authFile.profiles.default.token;
 const HEADERS = { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" };

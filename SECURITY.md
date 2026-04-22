@@ -14,7 +14,7 @@
 - JSON mode is preferred for machine handling to avoid ad-hoc parsing leaks.
 
 ## Secret Storage Policy
-- Tokens are stored in profile-based auth file under `HUBCLI_HOME` or default `~/.hubcli`.
+- Tokens are stored in profile-based auth file under `HSCLI_HOME` or default `~/.hscli`.
 - File permissions are locked to owner-only (`0700` dir, `0600` auth file).
 - Prefer `auth login --token-stdin` over inline `--token` to reduce shell-history/process-list exposure.
 - No token echo in CLI responses.

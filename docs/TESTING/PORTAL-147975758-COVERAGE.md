@@ -1,6 +1,6 @@
 # Portal Coverage Probe — 147975758 (EU1, free tier)
 
-Generated: 2026-04-21T19:06:34.284Z  •  hubcli @ f97fdd4  •  profile: `default`
+Generated: 2026-04-21T19:06:34.284Z  •  hscli @ f97fdd4  •  profile: `default`
 
 Probed 438 read-only endpoints of 1180 total HubSpot API endpoints (only GET + safe POST /search).
 

@@ -5,7 +5,7 @@
 Complete configuration guide for HubSpot Operations Hub settings. Covers data sync, data quality, workflows, datasets, custom properties, and data management.
 
 **Prerequisites:**
-- Portal authenticated (`hubcli auth whoami`)
+- Portal authenticated (`hscli auth whoami`)
 - Private App scopes: `crm.objects.contacts.read/write`, `crm.schemas.contacts.read`
 - Operations Hub license (Starter/Professional/Enterprise for advanced features)
 
@@ -73,10 +73,10 @@ Complete configuration guide for HubSpot Operations Hub settings. Covers data sy
 | Trim whitespace | Remove leading/trailing spaces | Clean data entry |
 | Standardize state | "calif." → "California" | Consistent address data |
 
-**hubcli:**
+**hscli:**
 ```bash
 # Search for contacts with data issues (e.g., missing email)
-hubcli crm contacts search --data '{
+hscli crm contacts search --data '{
   "filterGroups": [{
     "filters": [{
       "propertyName": "email",
@@ -87,7 +87,7 @@ hubcli crm contacts search --data '{
 }'
 
 # Bulk update to fix formatting
-hubcli crm contacts batch update --data '{
+hscli crm contacts batch update --data '{
   "inputs": [
     {"id": "123", "properties": {"firstname": "John"}},
     {"id": "456", "properties": {"firstname": "Jane"}}
@@ -212,13 +212,13 @@ exports.main = async (event, callback) => {
 | Field validation | Use appropriate field types and validation | Prevent bad data at entry |
 | Documentation | Maintain a property dictionary | Team knows what each property means |
 
-**hubcli:**
+**hscli:**
 ```bash
 # List all contact properties
-hubcli crm properties list contacts --limit 100
+hscli crm properties list contacts --limit 100
 
 # Create a custom property
-hubcli crm properties create contacts --data '{
+hscli crm properties create contacts --data '{
   "name": "ops_data_source",
   "label": "Data Source",
   "type": "enumeration",
@@ -233,7 +233,7 @@ hubcli crm properties create contacts --data '{
 }' --force
 
 # Delete a property (careful!)
-hubcli crm properties delete contacts <propertyName> --force
+hscli crm properties delete contacts <propertyName> --force
 ```
 
 ### 5.2 Custom Objects (Enterprise)
@@ -248,13 +248,13 @@ hubcli crm properties delete contacts <propertyName> --force
 | Associations | Links to standard objects (contacts, companies, deals) | Relational data |
 | Pipelines | Optional pipeline for status tracking | Process management |
 
-**hubcli:**
+**hscli:**
 ```bash
 # List custom objects (schemas)
-hubcli crm schemas list
+hscli crm schemas list
 
 # Create a custom object
-hubcli crm schemas create --data '{
+hscli crm schemas create --data '{
   "name": "project",
   "labels": {"singular": "Project", "plural": "Projects"},
   "primaryDisplayProperty": "project_name",
@@ -296,13 +296,13 @@ hubcli crm schemas create --data '{
 | Remove duplicates in source file | Don't create duplicate CRM records |
 | Back up before large imports | Safety net |
 
-**hubcli:**
+**hscli:**
 ```bash
 # Import contacts from CSV
-hubcli crm imports create --file ./contacts.csv --object contacts --force
+hscli crm imports create --file ./contacts.csv --object contacts --force
 
 # Check import status
-hubcli crm imports list --limit 10
+hscli crm imports list --limit 10
 ```
 
 ---

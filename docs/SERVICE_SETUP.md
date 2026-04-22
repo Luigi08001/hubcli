@@ -5,7 +5,7 @@
 Complete configuration guide for HubSpot Service Hub settings. Covers tickets, knowledge base, customer portal, feedback surveys, SLAs, and service automation.
 
 **Prerequisites:**
-- Portal authenticated (`hubcli auth whoami`)
+- Portal authenticated (`hscli auth whoami`)
 - Private App scopes: `tickets`, `crm.schemas.tickets.read/write`
 - Users & Teams configured (see [PORTAL_SETUP.md](./PORTAL_SETUP.md))
 
@@ -25,16 +25,16 @@ Complete configuration guide for HubSpot Service Hub settings. Covers tickets, k
 | Conditional properties | Required properties per status | Data quality at each stage |
 | Multiple pipelines | Different pipelines for different support tiers or request types | Tailored processes |
 
-**hubcli:**
+**hscli:**
 ```bash
 # List ticket pipelines
-hubcli crm pipelines list tickets
+hscli crm pipelines list tickets
 
 # Get pipeline details
-hubcli crm pipelines get tickets <pipelineId>
+hscli crm pipelines get tickets <pipelineId>
 
 # Create a support pipeline
-hubcli crm pipelines create tickets --data '{
+hscli crm pipelines create tickets --data '{
   "label": "Customer Support",
   "displayOrder": 0,
   "stages": [
@@ -61,10 +61,10 @@ hubcli crm pipelines create tickets --data '{
 | `hs_pipeline_stage` | Select | Current status |
 | `source_type` | Select | How ticket was created (Email, Chat, Form, Phone) |
 
-**hubcli:**
+**hscli:**
 ```bash
 # Create custom ticket property
-hubcli crm properties create tickets --data '{
+hscli crm properties create tickets --data '{
   "name": "ticket_product_area",
   "label": "Product Area",
   "type": "enumeration",
@@ -79,7 +79,7 @@ hubcli crm properties create tickets --data '{
 }' --force
 
 # Search tickets by priority
-hubcli crm tickets search --data '{
+hscli crm tickets search --data '{
   "filterGroups": [{
     "filters": [{
       "propertyName": "hs_ticket_priority",

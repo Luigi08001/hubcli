@@ -5,7 +5,7 @@
 Complete configuration guide for HubSpot integrations, marketplace apps, notifications, user preferences, and account-wide settings.
 
 **Prerequisites:**
-- Portal authenticated (`hubcli auth whoami`)
+- Portal authenticated (`hscli auth whoami`)
 - Super Admin access for account-wide settings
 - See [PORTAL_SETUP.md](./PORTAL_SETUP.md) for initial portal configuration
 
@@ -57,13 +57,13 @@ Complete configuration guide for HubSpot integrations, marketplace apps, notific
 | Access token | Generated token for API calls | Authentication |
 | Webhook subscriptions | Events to listen for | Real-time triggers |
 
-**hubcli:**
+**hscli:**
 ```bash
 # Verify current authentication
-hubcli auth whoami
+hscli auth whoami
 
 # Test API access
-hubcli crm contacts list --limit 1
+hscli crm contacts list --limit 1
 ```
 
 ---

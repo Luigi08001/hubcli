@@ -243,7 +243,7 @@ describe("MCP telemetry — toolName tagging", () => {
     vi.resetModules();
     delete process.env.HSCLI_HOME;
     delete process.env.HSCLI_TELEMETRY_FILE;
-    delete process.env.HUBCLI_MCP_TOOL_NAME;
+    delete process.env.HSCLI_MCP_TOOL_NAME;
   });
 
   function setupMcpHome(): string {
@@ -286,7 +286,7 @@ describe("MCP telemetry — toolName tagging", () => {
     expect(event.toolName).toBe("crm_contacts_list");
   });
 
-  it("HUBCLI_MCP_TOOL_NAME is cleared after the handler returns", async () => {
+  it("HSCLI_MCP_TOOL_NAME is cleared after the handler returns", async () => {
     setupMcpHome();
     vi.spyOn(global, "fetch" as never).mockResolvedValue({
       ok: true,
@@ -300,7 +300,7 @@ describe("MCP telemetry — toolName tagging", () => {
      
     registerHubSpotTools(mock as any);
     await mock.tools.get("crm_contacts_list")!({ limit: 1 });
-    expect(process.env.HUBCLI_MCP_TOOL_NAME).toBeUndefined();
+    expect(process.env.HSCLI_MCP_TOOL_NAME).toBeUndefined();
   });
 });
 
@@ -314,7 +314,7 @@ describe("trace session — scope + includeBodies enforcement", () => {
     delete process.env.HSCLI_HOME;
     delete process.env.HSCLI_TELEMETRY_FILE;
     delete process.env.HSCLI_TRACE_BODIES;
-    delete process.env.HUBCLI_MCP_TOOL_NAME;
+    delete process.env.HSCLI_MCP_TOOL_NAME;
   });
 
   function setup(sessionExtras: Record<string, unknown>): { dir: string; traceFile: string } {

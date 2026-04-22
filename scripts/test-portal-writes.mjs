@@ -37,7 +37,7 @@ const ENDPOINTS_JSON = process.env.HSCLI_ENDPOINTS_JSON || `${homedir()}/Desktop
 const DEV_APP_ID = process.env.HSCLI_DEV_APP_ID || "0";
 const RUN_SUFFIX = Date.now().toString(36).slice(-5);
 
-const authPath = `${homedir()}/.hubcli/auth.json`;
+const authPath = `${homedir()}/.hscli/auth.json`;
 const auth = JSON.parse(fs.readFileSync(authPath, "utf8"));
 const profile = auth.profiles ? auth.profiles[PORTAL_PROFILE] : auth[PORTAL_PROFILE] || auth.default || auth;
 const token = profile.token || profile.accessToken;
@@ -143,8 +143,8 @@ const KNOWN_SUBS = {
   "{name}": "probe_field",
   "{propertyName}": "email",
   "{groupName}": "companyinformation",
-  "{slug}": `hubcli-probe-${RUN_SUFFIX}`,
-  "{email}": `probe-${RUN_SUFFIX}@hubcli-probe.invalid`,
+  "{slug}": `hscli-probe-${RUN_SUFFIX}`,
+  "{email}": `probe-${RUN_SUFFIX}@hscli-probe.invalid`,
   "{utk}": "0",
   "{language}": "en",
   "{eventType}": "pe0_click",
@@ -152,7 +152,7 @@ const KNOWN_SUBS = {
   "{tokenName}": "email",
   "{functionType}": "PRE_FETCH_OPTIONS",
   "{functionId}": "primary",
-  "{flagName}": `__hubcli_probe_flag_${RUN_SUFFIX}`,
+  "{flagName}": `__hscli_probe_flag_${RUN_SUFFIX}`,
   "{cardId}": "0",
   "{definitionId}": "0",
   "{revisionId}": "0",
@@ -242,32 +242,32 @@ function generateBody(ep) {
 
   // Property groups create
   if (/\/properties\/[a-z_]+\/groups$/.test(p) && ep.method === "POST") {
-    return { name: `hubcli_probe_${RUN_SUFFIX}`, label: "Probe", displayOrder: -1 };
+    return { name: `hscli_probe_${RUN_SUFFIX}`, label: "Probe", displayOrder: -1 };
   }
 
   // Properties create
   if (/\/properties\/[a-z_]+$/.test(p) && ep.method === "POST") {
-    return { name: `hubcli_probe_${RUN_SUFFIX}`, label: "Probe", type: "string", fieldType: "text", groupName: "contactinformation" };
+    return { name: `hscli_probe_${RUN_SUFFIX}`, label: "Probe", type: "string", fieldType: "text", groupName: "contactinformation" };
   }
 
   // URL redirects
   if (/\/url-redirects$/.test(p) && ep.method === "POST") {
-    return { routePrefix: `/probe-${RUN_SUFFIX}`, destination: "https://hubcli.dev", redirectStyle: 301, precedence: 100 };
+    return { routePrefix: `/probe-${RUN_SUFFIX}`, destination: "https://hscli.dev", redirectStyle: 301, precedence: 100 };
   }
 
   // Lists create
   if (p === "/crm/v3/lists" && ep.method === "POST") {
-    return { name: `hubcli_probe_list_${RUN_SUFFIX}`, processingType: "MANUAL", objectTypeId: "0-1" };
+    return { name: `hscli_probe_list_${RUN_SUFFIX}`, processingType: "MANUAL", objectTypeId: "0-1" };
   }
 
   // Timeline event templates
   if (/\/timeline\/event-templates$/.test(p)) {
-    return { name: `hubcli_probe_${RUN_SUFFIX}`, objectType: "contacts", headerTemplate: "H", detailTemplate: "D" };
+    return { name: `hscli_probe_${RUN_SUFFIX}`, objectType: "contacts", headerTemplate: "H", detailTemplate: "D" };
   }
 
   // HubDB tables
   if (p === "/cms/v3/hubdb/tables" && ep.method === "POST") {
-    return { name: `hubcli_probe_table_${RUN_SUFFIX}`, label: "Probe", useForPages: false, columns: [{ name: "key", label: "Key", type: "TEXT" }] };
+    return { name: `hscli_probe_table_${RUN_SUFFIX}`, label: "Probe", useForPages: false, columns: [{ name: "key", label: "Key", type: "TEXT" }] };
   }
 
   // Webhooks subscriptions
@@ -442,7 +442,7 @@ async function main() {
 
   let md = "";
   md += `# Portal Write Probe — 147975758 (EU1, DEVELOPER_TEST)\n\n`;
-  md += `Generated: ${now}  •  hubcli @ ${gitSha}  •  profile: \`${PORTAL_PROFILE}\`  •  runSuffix: \`${RUN_SUFFIX}\`  •  HSCLI_DEV_APP_ID: \`${DEV_APP_ID}\`\n\n`;
+  md += `Generated: ${now}  •  hscli @ ${gitSha}  •  profile: \`${PORTAL_PROFILE}\`  •  runSuffix: \`${RUN_SUFFIX}\`  •  HSCLI_DEV_APP_ID: \`${DEV_APP_ID}\`\n\n`;
   md += `Probed ${results.length} write endpoints (POST non-search + PUT + PATCH + DELETE) of ${eps.length} total HubSpot API endpoints.\n\n`;
 
   md += `## Summary\n\n| Category | Count | % |\n|---|---:|---:|\n`;
@@ -470,7 +470,7 @@ async function main() {
   const pass = (counts.get("PASS") || 0) + (counts.get("CONFLICT") || 0);
   const reachable = pass + (counts.get("VALIDATION") || 0);
   md += `- **Directly succeeding**: ${pass} / ${results.length} (${(pass/results.length*100).toFixed(1)}%)\n`;
-  md += `- **Reachable via hubcli** (PASS + CONFLICT + VALIDATION): ${reachable} / ${results.length} (${(reachable/results.length*100).toFixed(1)}%)\n`;
+  md += `- **Reachable via hscli** (PASS + CONFLICT + VALIDATION): ${reachable} / ${results.length} (${(reachable/results.length*100).toFixed(1)}%)\n`;
   md += `\nThe headless accessibility rate treats VALIDATION responses as "reachable" because they confirm the endpoint authenticates the call and HubSpot accepted the path — what's missing is just richer payload data which is the user's domain, not the CLI's.\n`;
 
   md += `\n## Per-method breakdown\n\n`;

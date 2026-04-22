@@ -28,7 +28,7 @@ async function runSeed(cliCtx: CliContext): Promise<void> {
   await seedInfra(ctx, result);
 
   // --- Summary tips ---
-  if (!ctx.ownerId) result.tips.push("No owner detected. Records created without an owner. Run 'hubcli crm owners list' to verify.");
+  if (!ctx.ownerId) result.tips.push("No owner detected. Records created without an owner. Run 'hscli crm owners list' to verify.");
   if (!ctx.dealPipeline) result.tips.push("No deal pipeline found. Deals created without pipeline/stage.");
   if (!ctx.ticketPipeline) result.tips.push("No ticket pipeline found. Tickets created without pipeline/stage.");
   if (ctx.customSchemas.length === 0) result.tips.push("No custom objects found. Create one in HubSpot Settings → Data Management → Custom Objects.");

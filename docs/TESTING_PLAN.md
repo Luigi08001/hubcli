@@ -18,7 +18,7 @@
 ### End-to-end tests
 - **Sandbox first:** run against HubSpot developer sandbox only.
 - **Production testing:** read-only smoke checks unless explicit manual approval window.
-- `tests/contract.sandbox.test.ts` is opt-in and enabled with `HUBCLI_ENABLE_SANDBOX_CONTRACT=1`.
+- `tests/contract.sandbox.test.ts` is opt-in and enabled with `HSCLI_ENABLE_SANDBOX_CONTRACT=1`.
 
 ## Sandbox vs Production Policy
 - Sandbox is mandatory for all mutation tests.

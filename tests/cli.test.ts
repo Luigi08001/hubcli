@@ -9,15 +9,15 @@ function setupHomeWithToken(
   token = "test-token",
   extras: Record<string, unknown> = {},
 ): string {
-  const home = mkdtempSync(join(tmpdir(), "hubcli-test-"));
-  const dir = join(home, ".hubcli");
+  const home = mkdtempSync(join(tmpdir(), "hscli-test-"));
+  const dir = join(home, ".hscli");
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "auth.json"), JSON.stringify({ profiles: { [profile]: { token, ...extras } } }));
   process.env.HSCLI_HOME = dir;
   return home;
 }
 
-describe("hubcli", () => {
+describe("hscli", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.resetModules();
@@ -40,7 +40,7 @@ describe("hubcli", () => {
     } as never);
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "--json", "--profile", "team", "crm", "contacts", "list", "--limit", "1"]);
+    await run(["node", "hscli", "--json", "--profile", "team", "crm", "contacts", "list", "--limit", "1"]);
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(logSpy).toHaveBeenCalled();
@@ -62,7 +62,7 @@ describe("hubcli", () => {
     const { run } = await import("../src/cli.js");
     await run([
       "node",
-      "hubcli",
+      "hscli",
       "crm",
       "contacts",
       "list",
@@ -96,7 +96,7 @@ describe("hubcli", () => {
     } as never);
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "crm", "tickets", "list", "--limit", "2"]);
+    await run(["node", "hscli", "crm", "tickets", "list", "--limit", "2"]);
 
     const [url] = fetchSpy.mock.calls[0];
     expect(String(url)).toContain("/crm/v3/objects/tickets?");
@@ -115,7 +115,7 @@ describe("hubcli", () => {
     } as never);
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "forms", "list", "--limit", "2"]);
+    await run(["node", "hscli", "forms", "list", "--limit", "2"]);
 
     const [url] = fetchSpy.mock.calls[0];
     expect(String(url)).toContain("/marketing/v3/forms?");
@@ -129,7 +129,7 @@ describe("hubcli", () => {
     const fetchSpy = vi.spyOn(global, "fetch" as never);
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "--strict-capabilities", "marketing", "emails", "list"]);
+    await run(["node", "hscli", "--strict-capabilities", "marketing", "emails", "list"]);
 
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(errSpy.mock.calls.some((c) => String(c[0]).includes("CAPABILITY_UNKNOWN"))).toBe(true);
@@ -167,7 +167,7 @@ describe("hubcli", () => {
     const fetchSpy = vi.spyOn(global, "fetch" as never);
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "marketing", "emails", "list"]);
+    await run(["node", "hscli", "marketing", "emails", "list"]);
 
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(errSpy.mock.calls.some((c) => String(c[0]).includes("CAPABILITY_UNSUPPORTED"))).toBe(true);
@@ -196,7 +196,7 @@ describe("hubcli", () => {
     });
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "--json", "doctor", "capabilities", "--refresh"]);
+    await run(["node", "hscli", "--json", "doctor", "capabilities", "--refresh"]);
 
     expect(fetchSpy.mock.calls.length).toBeGreaterThan(1);
     const output = JSON.parse(String(logSpy.mock.calls[0][0]));
@@ -220,7 +220,7 @@ describe("hubcli", () => {
     } as never);
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "marketing", "emails", "list"]);
+    await run(["node", "hscli", "marketing", "emails", "list"]);
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(errSpy.mock.calls.some((c) => String(c[0]).includes("ENDPOINT_NOT_AVAILABLE"))).toBe(true);
@@ -235,7 +235,7 @@ describe("hubcli", () => {
     const { run } = await import("../src/cli.js");
     await run([
       "node",
-      "hubcli",
+      "hscli",
       "--dry-run",
       "crm",
       "contacts",
@@ -260,7 +260,7 @@ describe("hubcli", () => {
     const { run } = await import("../src/cli.js");
     await run([
       "node",
-      "hubcli",
+      "hscli",
       "--dry-run",
       "crm",
       "properties",
@@ -281,7 +281,7 @@ describe("hubcli", () => {
     const fetchSpy = vi.spyOn(global, "fetch" as never);
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "crm", "pipelines", "list", "contacts"]);
+    await run(["node", "hscli", "crm", "pipelines", "list", "contacts"]);
 
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(errSpy.mock.calls.some((c) => String(c[0]).includes("UNSUPPORTED_OBJECT_TYPE"))).toBe(true);
@@ -294,7 +294,7 @@ describe("hubcli", () => {
     const fetchSpy = vi.spyOn(global, "fetch" as never);
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "crm", "contacts", "get", "../bad-id"]);
+    await run(["node", "hscli", "crm", "contacts", "get", "../bad-id"]);
 
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(errSpy.mock.calls.some((c) => String(c[0]).includes("INVALID_PATH_SEGMENT"))).toBe(true);
@@ -307,7 +307,7 @@ describe("hubcli", () => {
     const fetchSpy = vi.spyOn(global, "fetch" as never);
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "crm", "contacts", "create", "--data", '{"properties":{"email":"x@example.com"}}']);
+    await run(["node", "hscli", "crm", "contacts", "create", "--data", '{"properties":{"email":"x@example.com"}}']);
 
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(errSpy.mock.calls.some((c) => String(c[0]).includes("WRITE_CONFIRMATION_REQUIRED"))).toBe(true);
@@ -325,7 +325,7 @@ describe("hubcli", () => {
     } as never);
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "--force", "crm", "contacts", "create", "--data", '{"properties":{"email":"x@example.com"}}']);
+    await run(["node", "hscli", "--force", "crm", "contacts", "create", "--data", '{"properties":{"email":"x@example.com"}}']);
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
@@ -337,7 +337,7 @@ describe("hubcli", () => {
     const fetchSpy = vi.spyOn(global, "fetch" as never);
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "--dry-run", "api", "request", "--method", "POST", "--path", "/marketing/v3/forms", "--data", '{"name":"x"}']);
+    await run(["node", "hscli", "--dry-run", "api", "request", "--method", "POST", "--path", "/marketing/v3/forms", "--data", '{"name":"x"}']);
 
     expect(fetchSpy).not.toHaveBeenCalled();
     const output = String(logSpy.mock.calls[0][0]);
@@ -355,7 +355,7 @@ describe("hubcli", () => {
     const fetchSpy = vi.spyOn(global, "fetch" as never);
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "--force", "--policy-file", policyPath, "crm", "contacts", "delete", "1"]);
+    await run(["node", "hscli", "--force", "--policy-file", policyPath, "crm", "contacts", "delete", "1"]);
 
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(errSpy.mock.calls.some((c) => String(c[0]).includes("POLICY_DELETE_BLOCKED"))).toBe(true);
@@ -368,7 +368,7 @@ describe("hubcli", () => {
     const fetchSpy = vi.spyOn(global, "fetch" as never);
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "--dry-run", "crm", "associations", "remove", "contacts", "1", "companies", "2"]);
+    await run(["node", "hscli", "--dry-run", "crm", "associations", "remove", "contacts", "1", "companies", "2"]);
 
     expect(fetchSpy).not.toHaveBeenCalled();
     const output = String(logSpy.mock.calls[0][0]);
@@ -388,7 +388,7 @@ describe("hubcli", () => {
     } as never);
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "crm", "owners", "list", "--limit", "20", "--after", "A1", "--email", "owner@example.com"]);
+    await run(["node", "hscli", "crm", "owners", "list", "--limit", "20", "--after", "A1", "--email", "owner@example.com"]);
 
     const [url] = fetchSpy.mock.calls[0];
     expect(String(url)).toContain("/crm/v3/owners/?");
@@ -409,7 +409,7 @@ describe("hubcli", () => {
     } as never);
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "crm", "imports", "list", "--limit", "25", "--after", "cursor-1"]);
+    await run(["node", "hscli", "crm", "imports", "list", "--limit", "25", "--after", "cursor-1"]);
 
     const [url] = fetchSpy.mock.calls[0];
     expect(String(url)).toContain("/crm/v3/imports?");
@@ -429,7 +429,7 @@ describe("hubcli", () => {
     } as never);
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "crm", "imports", "get", "123"]);
+    await run(["node", "hscli", "crm", "imports", "get", "123"]);
 
     const [url] = fetchSpy.mock.calls[0];
     expect(String(url)).toContain("/crm/v3/imports/123");
@@ -447,7 +447,7 @@ describe("hubcli", () => {
     } as never);
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "crm", "imports", "errors", "123"]);
+    await run(["node", "hscli", "crm", "imports", "errors", "123"]);
 
     const [url] = fetchSpy.mock.calls[0];
     expect(String(url)).toContain("/crm/v3/imports/123/errors");
@@ -460,7 +460,7 @@ describe("hubcli", () => {
     const fetchSpy = vi.spyOn(global, "fetch" as never);
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "crm", "imports", "create", "--dry-run", "--data", '{"name":"import-job"}']);
+    await run(["node", "hscli", "crm", "imports", "create", "--dry-run", "--data", '{"name":"import-job"}']);
 
     expect(fetchSpy).not.toHaveBeenCalled();
     const output = String(logSpy.mock.calls[0][0]);
@@ -481,7 +481,7 @@ describe("hubcli", () => {
     } as never);
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "--format", "csv", "crm", "contacts", "list", "--limit", "1"]);
+    await run(["node", "hscli", "--format", "csv", "crm", "contacts", "list", "--limit", "1"]);
 
     const output = String(logSpy.mock.calls[0][0]);
     expect(output).toContain("id,firstname");
@@ -500,7 +500,7 @@ describe("hubcli", () => {
     } as never);
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "--force", "crm", "contacts", "create", "--data", '{"properties":{"email":"idempotent@example.com"}}']);
+    await run(["node", "hscli", "--force", "crm", "contacts", "create", "--data", '{"properties":{"email":"idempotent@example.com"}}']);
 
     const requestInit = fetchSpy.mock.calls[0][1] as { headers?: Record<string, string> };
     expect(requestInit.headers).toBeDefined();
@@ -519,7 +519,7 @@ describe("hubcli", () => {
     } as never);
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "webhooks", "list", "--app-id", "12345"]);
+    await run(["node", "hscli", "webhooks", "list", "--app-id", "12345"]);
 
     const [url] = fetchSpy.mock.calls[0];
     expect(String(url)).toContain("/webhooks/v3/12345/subscriptions");
@@ -568,7 +568,7 @@ describe("hubcli", () => {
     });
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "--json", "--format", "json", "crm", "describe", "contacts", "--refresh-cache"]);
+    await run(["node", "hscli", "--json", "--format", "json", "crm", "describe", "contacts", "--refresh-cache"]);
 
     expect(fetchSpy).toHaveBeenCalled();
   });
@@ -580,39 +580,39 @@ describe("hubcli", () => {
     const fetchSpy = vi.spyOn(global, "fetch" as never);
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "crm", "imports", "create", "--data", '{"name":"import-job"}']);
+    await run(["node", "hscli", "crm", "imports", "create", "--data", '{"name":"import-job"}']);
 
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(errSpy.mock.calls.some((c) => String(c[0]).includes("WRITE_CONFIRMATION_REQUIRED"))).toBe(true);
   });
 
   it("returns missing-token auth error", async () => {
-    const home = mkdtempSync(join(tmpdir(), "hubcli-no-auth-"));
+    const home = mkdtempSync(join(tmpdir(), "hscli-no-auth-"));
     process.env.HOME = home;
-    process.env.HSCLI_HOME = join(home, ".hubcli");
+    process.env.HSCLI_HOME = join(home, ".hscli");
     const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "crm", "contacts", "list"]);
+    await run(["node", "hscli", "crm", "contacts", "list"]);
 
     expect(errSpy.mock.calls.some((c) => String(c[0]).includes("AUTH_PROFILE_NOT_FOUND"))).toBe(true);
   });
 
   it("requires --token or --token-stdin for auth login", async () => {
-    const home = mkdtempSync(join(tmpdir(), "hubcli-auth-input-"));
+    const home = mkdtempSync(join(tmpdir(), "hscli-auth-input-"));
     process.env.HOME = home;
-    process.env.HSCLI_HOME = join(home, ".hubcli");
+    process.env.HSCLI_HOME = join(home, ".hscli");
     const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "auth", "login"]);
+    await run(["node", "hscli", "auth", "login"]);
 
     expect(errSpy.mock.calls.some((c) => String(c[0]).includes("AUTH_TOKEN_REQUIRED"))).toBe(true);
   });
 
   it("locks HSCLI_HOME directory permissions on auth login", async () => {
-    const home = mkdtempSync(join(tmpdir(), "hubcli-auth-perms-"));
-    const dir = join(home, ".hubcli");
+    const home = mkdtempSync(join(tmpdir(), "hscli-auth-perms-"));
+    const dir = join(home, ".hscli");
     mkdirSync(dir, { recursive: true });
     if (process.platform !== "win32") {
       chmodSync(dir, 0o777);
@@ -622,7 +622,7 @@ describe("hubcli", () => {
     vi.spyOn(console, "log").mockImplementation(() => {});
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "auth", "login", "--token", "perm-test-token"]);
+    await run(["node", "hscli", "auth", "login", "--token", "perm-test-token"]);
 
     if (process.platform !== "win32") {
       expect(statSync(dir).mode & 0o777).toBe(0o700);
@@ -636,7 +636,7 @@ describe("hubcli", () => {
     const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const { run } = await import("../src/cli.js");
-    await run(["node", "hubcli", "--dry-run", "crm", "contacts", "create", "--data", "{bad-json"]);
+    await run(["node", "hscli", "--dry-run", "crm", "contacts", "create", "--data", "{bad-json"]);
 
     expect(errSpy.mock.calls.some((c) => String(c[0]).includes("INVALID_JSON"))).toBe(true);
   });

@@ -1,10 +1,14 @@
-# hscli
+<p align="center">
+  <img src="brand/readme-hero.svg" alt="hscli — agentic HubSpot CLI + MCP server" width="100%">
+</p>
 
-[![CI](https://github.com/revfleet/hscli/actions/workflows/ci.yml/badge.svg)](https://github.com/revfleet/hscli/actions/workflows/ci.yml)
-[![npm version](https://img.shields.io/npm/v/@revfleet/hscli.svg)](https://www.npmjs.com/package/@revfleet/hscli)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Node: >=20](https://img.shields.io/badge/Node-%3E%3D20-brightgreen)](package.json)
-[![HubSpot API coverage: 100%](https://img.shields.io/badge/HubSpot%20API-100%25%20(1180%20endpoints)-7c3aed)](docs/TIERS.md)
+<p align="center">
+  <a href="https://github.com/revfleet/hscli/actions/workflows/ci.yml"><img src="https://github.com/revfleet/hscli/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://www.npmjs.com/package/@revfleet/hscli"><img src="https://img.shields.io/npm/v/@revfleet/hscli.svg?style=flat-square&color=22D3EE&labelColor=0F172A" alt="npm version"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-22D3EE?style=flat-square&labelColor=0F172A" alt="License: MIT"></a>
+  <a href="package.json"><img src="https://img.shields.io/badge/Node-%3E%3D20-22D3EE?style=flat-square&labelColor=0F172A" alt="Node: >=20"></a>
+  <a href="docs/TIERS.md"><img src="https://img.shields.io/badge/HubSpot%20API-100%25%20(1180%20endpoints)-22D3EE?style=flat-square&labelColor=0F172A" alt="HubSpot API coverage: 100%"></a>
+</p>
 
 **The agentic HubSpot CLI + MCP server. 100% public API coverage (1,180 endpoints, 55+ command domains), enterprise safety rails, self-hosted.**
 
@@ -304,7 +308,7 @@ Full threat model: [SECURITY.md](SECURITY.md).
 
 ## Caches
 
-Under `HSCLI_HOME` (default: `~/.revfleet`; legacy `~/.hubcli` is still honored for existing installs):
+Under `HSCLI_HOME` (default: `~/.revfleet`; legacy `~/.hscli` is still honored for existing installs):
 
 - `auth.json` — profile tokens (0600 permissions, 0700 directory)
 - `capabilities.json` — portal/tier capability cache
