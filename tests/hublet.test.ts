@@ -176,7 +176,7 @@ describe("hublet detection and routing", () => {
   // -----------------------------------------------------------------------
   it("CLI contacts list routes to EU1 API when profile has eu1 hublet", async () => {
     setupHomeWithToken("default", "pat-eu1-test-token", {
-      portalId: "147975758",
+      portalId: "12345678",
       uiDomain: "app-eu1.hubspot.com",
       hublet: "eu1",
       apiDomain: "api-eu1.hubapi.com",
@@ -216,7 +216,7 @@ describe("hublet detection and routing", () => {
         return {
           ok: true,
           status: 200,
-          json: async () => ({ portalId: 147975758, uiDomain: "app-eu1.hubspot.com" }),
+          json: async () => ({ portalId: 12345678, uiDomain: "app-eu1.hubspot.com" }),
           headers: new Headers(),
         } as never;
       }
@@ -244,7 +244,7 @@ describe("hublet detection and routing", () => {
   describe("doctor hublet-check", () => {
     it("reports ALL_OK when hublet config is consistent", async () => {
       const home = setupHomeWithToken("default", "pat-eu1-test-abc-123", {
-        portalId: "147975758",
+        portalId: "12345678",
         uiDomain: "app-eu1.hubspot.com",
         hublet: "eu1",
         apiDomain: "api-eu1.hubapi.com",
@@ -254,10 +254,10 @@ describe("hublet detection and routing", () => {
       const hscliDir = join(home, ".hscli");
       mkdirSync(hscliDir, { recursive: true });
       writeFileSync(join(hscliDir, "config.yml"), [
-        "defaultAccount: 147975758",
+        "defaultAccount: 12345678",
         "accounts:",
-        "  - name: '147975758'",
-        "    accountId: 147975758",
+        "  - name: '12345678'",
+        "    accountId: 12345678",
         "    env: eu1",
         "    authType: personalaccesskey",
       ].join("\n"));

@@ -72,8 +72,8 @@ describe("HubSpot Zod schemas", () => {
   });
 
   it("AccountInfo accepts valid info", () => {
-    const data = { portalId: 147975758, uiDomain: "app-eu1.hubspot.com", timeZone: "Europe/Paris" };
-    expect(AccountInfo.parse(data)).toMatchObject({ portalId: 147975758 });
+    const data = { portalId: 12345678, uiDomain: "app-eu1.hubspot.com", timeZone: "Europe/Paris" };
+    expect(AccountInfo.parse(data)).toMatchObject({ portalId: 12345678 });
   });
 
   // -----------------------------------------------------------------------

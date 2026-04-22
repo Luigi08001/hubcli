@@ -392,7 +392,7 @@ async function main() {
   const ORDER = ["PASS", "TIER", "AUTH", "404", "METHOD", "400", "429", "5XX", "SKIP-PARAM", "ERROR"];
 
   let md = "";
-  md += `# Portal Coverage Probe — 147975758 (EU1, free tier)\n\n`;
+  md += `# Portal Coverage Probe\n\n`;
   md += `Generated: ${now}  •  hscli @ ${gitSha}  •  profile: \`${PORTAL_PROFILE}\`\n\n`;
   md += `Probed ${results.length} read-only endpoints of ${eps.length} total HubSpot API endpoints (only GET + safe POST /search).\n\n`;
   md += `## Summary\n\n| Category | Count | % |\n|---|---:|---:|\n`;

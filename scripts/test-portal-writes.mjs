@@ -441,7 +441,7 @@ async function main() {
   })();
 
   let md = "";
-  md += `# Portal Write Probe — 147975758 (EU1, DEVELOPER_TEST)\n\n`;
+  md += `# Portal Write Probe\n\n`;
   md += `Generated: ${now}  •  hscli @ ${gitSha}  •  profile: \`${PORTAL_PROFILE}\`  •  runSuffix: \`${RUN_SUFFIX}\`  •  HSCLI_DEV_APP_ID: \`${DEV_APP_ID}\`\n\n`;
   md += `Probed ${results.length} write endpoints (POST non-search + PUT + PATCH + DELETE) of ${eps.length} total HubSpot API endpoints.\n\n`;
 

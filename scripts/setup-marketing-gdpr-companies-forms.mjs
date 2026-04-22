@@ -495,7 +495,7 @@ async function createForms() {
 
 console.log("╔══════════════════════════════════════════════════════════╗");
 console.log("║  HubSpot Setup: GDPR, Marketing, Companies & Forms     ║");
-console.log("║  Portal: 147975758 (EU1)                               ║");
+console.log("║  Portal: (configured via HSCLI profile)                               ║");
 console.log("╚══════════════════════════════════════════════════════════╝");
 
 try {

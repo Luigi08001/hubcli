@@ -54,7 +54,7 @@ Both scripts:
 - Auto-retry 405 Method Not Allowed with the Allow-header's suggested verb
 - Skip scrape artifacts (paths like `/{0}`)
 
-If your probe run differs significantly from the shipped `docs/TESTING/PORTAL-147975758-COVERAGE.md`, open an issue — it's valuable telemetry.
+If your probe run surfaces endpoints that are reachable on a different tier or region than what hscli's capability cache claims, open an issue — it's valuable telemetry.
 
 ## Development workflow
 
