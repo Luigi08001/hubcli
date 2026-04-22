@@ -6,7 +6,11 @@
 [![Node: >=20](https://img.shields.io/badge/Node-%3E%3D20-brightgreen)](package.json)
 [![HubSpot API coverage: 100%](https://img.shields.io/badge/HubSpot%20API-100%25%20(1180%20endpoints)-7c3aed)](docs/TIERS.md)
 
-**The headless HubSpot CLI + MCP server. 100% public API coverage (1,180 endpoints, 55+ command domains), enterprise safety rails, self-hosted.**
+**The agentic HubSpot CLI + MCP server. 100% public API coverage (1,180 endpoints, 55+ command domains), enterprise safety rails, self-hosted.**
+
+![hscli writing into a HubSpot portal live — records appear in the UI one at a time as hscli creates them](docs/demo-hubspot.gif)
+
+> One script turns a blank account into a populated CRM and tears it back down, while the HubSpot UI reflects every change in real time. 1 company, 2 contacts, 1 deal, 5 associations — create, read, update, archive — all from the CLI.
 
 ## Get started in 30 seconds
 
@@ -217,6 +221,14 @@ hscli audit by-tool                                  # per-MCP-tool call count, 
 Tutorial: [docs/TUTORIALS/audit-portal-writes.md](docs/TUTORIALS/audit-portal-writes.md).
 
 </details>
+
+## What a full session looks like in the terminal
+
+The HubSpot-UI recording at the top of this README shows the *outcome* — the records appearing in HubSpot. Here's the *cause*, from the CLI side: the same fixture built and torn down entirely from a shell, with safety gates on every write.
+
+![hscli terminal walkthrough — blank → CREATE + associate → READ → UPDATE → ARCHIVE → blank](docs/demo-terminal.gif)
+
+> [Source script](scripts/demo.sh) · [recording config](scripts/demo.tape) · [how the recordings are made](scripts/README.md)
 
 ## Output modes
 

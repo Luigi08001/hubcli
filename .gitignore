@@ -4,3 +4,11 @@ dist/
 .DS_Store
 coverage/
 *.log
+
+# scripts/ Python venv + HubSpot session state (must stay local)
+scripts/.venv/
+scripts/uv.lock
+scripts/.hubspot-state.json
+scripts/.video-cache/
+scripts/__pycache__/
+scripts/*.py[cod]

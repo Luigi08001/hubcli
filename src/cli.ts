@@ -75,7 +75,7 @@ export function createProgram(): { program: Command; getCtx: () => CliContext } 
 
   program
     .name("hscli")
-    .description("Headless HubSpot CLI + MCP server")
+    .description("Agentic HubSpot CLI + MCP server")
     .version(pkg.version)
     .option("--profile <name>", "Auth profile", "default")
     .option("--json", "JSON output")
