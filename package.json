@@ -1,7 +1,7 @@
 {
   "name": "@revfleet/hscli",
   "version": "0.8.1",
-  "description": "Headless HubSpot CLI + MCP server. 100% public API coverage (1180 endpoints, 55+ command domains) — full portal, no UI dependency. Enterprise safety rails, self-hosted.",
+  "description": "Agentic HubSpot CLI + MCP server. 100% public API coverage (1180 endpoints, 55+ command domains) — full portal, no UI dependency. Enterprise safety rails, self-hosted.",
   "type": "module",
   "bin": {
     "hscli": "dist/cli.js"

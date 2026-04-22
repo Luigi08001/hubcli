@@ -533,12 +533,24 @@ async def capture_live_tour(portal_id: str | None, ui_domain: str) -> tuple[Path
 
 
 def convert_to_gif(src: Path, dest_gif: Path, dest_mp4: Path) -> None:
+    """Convert Playwright's webm → gif + mp4.
+
+    Crops the top 60 pixels off every frame to hide HubSpot's top
+    navigation bar, which contains the portal name, trial counter,
+    and account switcher — all of which identify the source portal
+    and shouldn't appear in a public demo. The breadcrumb in the
+    cropped row is non-essential; the record tabs (Overview /
+    Activities / etc.) live in the row below and stay visible.
+    """
     dest_gif.parent.mkdir(parents=True, exist_ok=True)
+
+    crop_filter = "crop=iw:ih-60:0:60"
 
     subprocess.run(
         [
             "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
             "-i", str(src),
+            "-vf", crop_filter,
             "-c:v", "libx264", "-pix_fmt", "yuv420p", "-movflags", "+faststart",
             "-crf", "23", "-preset", "medium",
             str(dest_mp4),
@@ -555,7 +567,7 @@ def convert_to_gif(src: Path, dest_gif: Path, dest_mp4: Path) -> None:
         [
             "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
             "-i", str(src),
-            "-vf", "fps=7,scale=850:-1:flags=lanczos,palettegen=max_colors=96",
+            "-vf", f"{crop_filter},fps=7,scale=850:-1:flags=lanczos,palettegen=max_colors=96",
             str(palette),
         ],
         check=True,
@@ -566,7 +578,7 @@ def convert_to_gif(src: Path, dest_gif: Path, dest_mp4: Path) -> None:
             "-i", str(src),
             "-i", str(palette),
             "-lavfi",
-            "fps=7,scale=850:-1:flags=lanczos [x]; [x][1:v] paletteuse=dither=bayer:bayer_scale=5",
+            f"{crop_filter},fps=7,scale=850:-1:flags=lanczos [x]; [x][1:v] paletteuse=dither=bayer:bayer_scale=5",
             str(dest_gif),
         ],
         check=True,
