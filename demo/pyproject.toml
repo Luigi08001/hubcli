@@ -1,0 +1,12 @@
+[project]
+name = "hscli-browser-use-demo"
+version = "0.1.0"
+description = "hscli + browser-use end-to-end demo on HubSpot test portal 147975758"
+requires-python = ">=3.11"
+dependencies = [
+    "browser-use>=0.12.0",
+    "anthropic>=0.40.0",
+]
+
+[tool.uv]
+package = false

@@ -4,3 +4,9 @@ dist/
 .DS_Store
 coverage/
 *.log
+
+# demo/ Python venv + lock
+demo/.venv/
+demo/uv.lock
+demo/__pycache__/
+demo/*.py[cod]
