@@ -23,14 +23,16 @@ import {
   enrichCustomListResponse,
   enrichCustomRecordUrl,
 } from "../core/urls.js";
+import { registerHubspotCompatTools } from "./compat-hubspot.js";
+import { registerExtensionTools } from "./ext-tools.js";
 
-interface McpBaseArgs {
+export interface McpBaseArgs {
   profile?: string;
   force?: boolean;
   dryRun?: boolean;
 }
 
-const baseArgsSchema = {
+export const baseArgsSchema = {
   profile: z.string().min(1).optional(),
   force: z.boolean().optional(),
   dryRun: z.boolean().optional(),
@@ -89,7 +91,7 @@ function textResult(data: unknown): { content: Array<{ type: "text"; text: strin
   };
 }
 
-async function executeTool(args: McpBaseArgs, fn: (ctx: CliContext, client: HubSpotClient) => Promise<unknown>) {
+export async function executeTool(args: McpBaseArgs, fn: (ctx: CliContext, client: HubSpotClient) => Promise<unknown>) {
   try {
     const ctx = mcpContext(args);
     const client = new HubSpotClient(getToken(ctx.profile), {
@@ -126,7 +128,7 @@ async function executeTool(args: McpBaseArgs, fn: (ctx: CliContext, client: HubS
  * config/handler with the right shape.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function registerMcpTool(server: McpServer, name: string, config: any, handler: (...args: any[]) => any): void {
+export function registerMcpTool(server: McpServer, name: string, config: any, handler: (...args: any[]) => any): void {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const wrapped = (...handlerArgs: any[]): any => {
     const previous = process.env.HUBCLI_MCP_TOOL_NAME;
@@ -284,6 +286,15 @@ export function registerHubSpotTools(server: McpServer): void {
   for (const objectType of ENGAGEMENT_OBJECT_TYPES) {
     registerStandardObjectTools(server, objectType);
   }
+
+  // HubSpot Remote MCP drop-in compatibility layer — agents built against
+  // https://mcp.hubspot.com can target `hscli mcp` unchanged.
+  registerHubspotCompatTools(server);
+
+  // Extension surface — MCP tools that HubSpot's hosted server doesn't
+  // expose (workflows, files, forms, webhooks, marketing-emails, CMS writes,
+  // conversations).
+  registerExtensionTools(server);
 
   registerMcpTool(server,"crm_properties_list", {
     description: "List properties for an object type",

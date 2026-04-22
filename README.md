@@ -304,10 +304,13 @@ Under `HSCLI_HOME` (default: `~/.revfleet`; legacy `~/.hubcli` is still honored 
 ## Documentation
 
 - [docs/COMMAND_TREE.md](docs/COMMAND_TREE.md) — full command surface
+- [docs/COMPARISON.md](docs/COMPARISON.md) — capability inventory (MCP tool families, CLI groups, coverage, safety, observability)
 - [docs/WHY_HOW_WHAT.md](docs/WHY_HOW_WHAT.md) — design philosophy
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - [docs/SAFETY_MODEL.md](docs/SAFETY_MODEL.md)
 - [docs/MCP.md](docs/MCP.md) — MCP server tool catalog
+- [docs/ROADMAP-DATE-BASED-API.md](docs/ROADMAP-DATE-BASED-API.md) — migration plan for HubSpot's `/YYYY-MM/` versioning
+- [docs/PUBLISHING.md](docs/PUBLISHING.md) — release runbook (maintainers)
 - [docs/TESTING_PLAN.md](docs/TESTING_PLAN.md)
 - [docs/RELEASE_GOVERNANCE.md](docs/RELEASE_GOVERNANCE.md)
 - [docs/PLUGIN_GUIDE.md](docs/PLUGIN_GUIDE.md) — writing plugins

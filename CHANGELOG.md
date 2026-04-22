@@ -1,5 +1,55 @@
 # Changelog
 
+## 0.8.0 - 2026-04-22
+
+**MCP compatibility surface + extension tools.** HubSpot promoted their hosted Remote MCP server at `mcp.hubspot.com` to GA on 2026-04-13. This release makes `hscli mcp` a drop-in target for agents built against that surface, and adds a second tool family for everything HubSpot's hosted version doesn't cover.
+
+### New: HubSpot Remote MCP compatibility tools ([src/mcp/compat-hubspot.ts](src/mcp/compat-hubspot.ts))
+
+All 11 tool names from `mcp.hubspot.com` are now registered on `hscli mcp`, with matching argument shapes and limits:
+
+- `get_user_details`
+- `search_crm_objects` (max 5 filter groups × 6 filters, max 200/page)
+- `get_crm_objects` (max 100 IDs/call)
+- `manage_crm_objects` — accepts `operation: "create" | "update" | "delete"`. **The `"delete"` operation is an hscli extension**; HubSpot's hosted version only supports create/update.
+- `search_properties` (max 5 keywords)
+- `get_properties`
+- `search_owners` (max 100 results)
+- `get_campaign_analytics`
+- `get_campaign_contacts_by_type`
+- `get_campaign_asset_types`
+- `get_campaign_asset_metrics`
+
+Result: an agent wired to HubSpot Remote MCP can swap its endpoint to `hscli mcp` without changing tool names or argument schemas, and gain `delete`, custom objects, and the full extension family below.
+
+### New: Extension MCP tools ([src/mcp/ext-tools.ts](src/mcp/ext-tools.ts))
+
+Tools for surfaces HubSpot's hosted Remote MCP does not expose:
+
+- **Workflows:** `workflows_list`, `workflows_get`, `workflows_enroll`, `workflows_unenroll`
+- **Files:** `files_list`, `files_get`, `files_delete`, `files_signed_url`
+- **Forms:** `forms_list`, `forms_get`, `forms_submissions`, `forms_submit`
+- **Webhooks:** `webhooks_list_subscriptions`, `webhooks_create_subscription`, `webhooks_delete_subscription`
+- **Marketing emails:** `marketing_emails_list`, `marketing_emails_get`, `marketing_emails_statistics`
+- **HubDB:** `hubdb_tables_list`, `hubdb_rows_list`, `hubdb_row_create`, `hubdb_row_update`, `hubdb_publish`
+- **CMS URL redirects:** `cms_redirects_list`, `cms_redirects_create`, `cms_redirects_delete`
+- **Conversations:** `conversations_inboxes_list`, `conversations_threads_list`, `conversations_messages_send`
+
+All of these already shipped in the CLI surface — this release makes them first-class MCP tools.
+
+### Docs
+
+- **[docs/COMPARISON.md](docs/COMPARISON.md)** — factual inventory of `hscli`'s MCP + CLI surface and the HubSpot API coverage it ships with. No competitive framing — just what's in the box.
+- **[docs/ROADMAP-DATE-BASED-API.md](docs/ROADMAP-DATE-BASED-API.md)** — plan for migrating from `/v3/` to `/YYYY-MM/` endpoints following HubSpot's April 2026 announcement. 3-phase opt-in rollout across v0.8 → v1.0.
+- **[docs/PUBLISHING.md](docs/PUBLISHING.md)** — release runbook, including the passkey-based npm publish gotcha.
+
+### Tests
+
+- **[tests/mcp.compat.test.ts](tests/mcp.compat.test.ts)** (15 tests) — every compat tool: catalog, argument shapes, HubSpot limits (filterGroups ≤ 5, IDs ≤ 100, keywords ≤ 5), path routing, `manage_crm_objects` dry-run default + hscli delete extension.
+- **[tests/mcp.ext.test.ts](tests/mcp.ext.test.ts)** (17 tests) — catalog + routing + dry-run defaults across the extension family.
+
+Full suite: 256 pass / 10 skipped (sandbox opt-in) / 0 fail.
+
 ## 0.7.1 - 2026-04-22
 
 **Stabilization release.** Hardens v0.7.0 with a test suite, tutorials,
