@@ -1,6 +1,6 @@
 # WHY / HOW / WHAT
 
-> See also: [[ARCHITECTURE]] · [[SAFETY_MODEL]] · [[ROADMAP_PHASE1_TO_3]]
+> See also: [ARCHITECTURE.md](ARCHITECTURE.md) · [SAFETY_MODEL.md](SAFETY_MODEL.md) · [ROADMAP_PHASE1_TO_3.md](ROADMAP_PHASE1_TO_3.md)
 
 ## WHY this CLI exists
 `hscli` exists to give operators a safe, automatable, production-grade command interface to HubSpot APIs without needing to write code each time. It solves three operational problems:

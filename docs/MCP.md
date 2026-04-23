@@ -1,6 +1,6 @@
 # MCP Support (`hscli mcp`)
 
-> See also: [[ARCHITECTURE]] · [[SAFETY_MODEL]] · [[COMMAND_TREE]] · [[tooling]]
+> See also: [ARCHITECTURE.md](ARCHITECTURE.md) · [SAFETY_MODEL.md](SAFETY_MODEL.md) · [COMMAND_TREE.md](COMMAND_TREE.md)
 
 `hscli` now exposes a Model Context Protocol (MCP) server over **stdio**.
 

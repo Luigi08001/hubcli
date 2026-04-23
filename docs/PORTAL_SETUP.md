@@ -10,16 +10,16 @@ This guide covers the portal foundation. For hub-specific configuration, see:
 
 | Guide | Covers |
 |-------|--------|
-| [[MARKETING_SETUP]] | Email, campaigns, forms, ads, social, SEO, lead scoring, ABM |
-| [[SALES_SETUP]] | Pipelines, quotes, meetings, sequences, playbooks, forecasting |
-| [[SERVICE_SETUP]] | Tickets, knowledge base, customer portal, SLAs, feedback surveys |
-| [[COMMERCE_SETUP]] | Products, payments, invoices, subscriptions, tax |
-| [[CMS_SETUP]] | Domains, templates, blog, pages, file manager, developer tools |
-| [[OPERATIONS_SETUP]] | Data sync, data quality, datasets, custom objects, imports |
-| [[REPORTING_SETUP]] | Dashboards, custom reports, attribution, analytics, goals |
-| [[INTEGRATIONS_NOTIFICATIONS_SETUP]] | Marketplace apps, webhooks, notifications, security, account defaults |
+| [MARKETING_SETUP.md](MARKETING_SETUP.md) | Email, campaigns, forms, ads, social, SEO, lead scoring, ABM |
+| [SALES_SETUP.md](SALES_SETUP.md) | Pipelines, quotes, meetings, sequences, playbooks, forecasting |
+| [SERVICE_SETUP.md](SERVICE_SETUP.md) | Tickets, knowledge base, customer portal, SLAs, feedback surveys |
+| [COMMERCE_SETUP.md](COMMERCE_SETUP.md) | Products, payments, invoices, subscriptions, tax |
+| [CMS_SETUP.md](CMS_SETUP.md) | Domains, templates, blog, pages, file manager, developer tools |
+| [OPERATIONS_SETUP.md](OPERATIONS_SETUP.md) | Data sync, data quality, datasets, custom objects, imports |
+| [REPORTING_SETUP.md](REPORTING_SETUP.md) | Dashboards, custom reports, attribution, analytics, goals |
+| [INTEGRATIONS_NOTIFICATIONS_SETUP.md](INTEGRATIONS_NOTIFICATIONS_SETUP.md) | Marketplace apps, webhooks, notifications, security, account defaults |
 
-> Also see: [[hubspot-rules]] · [[COMMAND_TREE]] for CLI commands to automate portal setup
+> Also see: [COMMAND_TREE.md](COMMAND_TREE.md) for CLI commands to automate portal setup
 
 ---
 

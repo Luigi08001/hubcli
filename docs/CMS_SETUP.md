@@ -1,6 +1,6 @@
 # CMS Setup Guide
 
-> See also: [[PORTAL_SETUP]] · [[MARKETING_SETUP]] · [[COMMAND_TREE]]
+> See also: [PORTAL_SETUP.md](PORTAL_SETUP.md) · [MARKETING_SETUP.md](MARKETING_SETUP.md) · [COMMAND_TREE.md](COMMAND_TREE.md)
 
 Complete configuration guide for HubSpot CMS Hub settings. Covers domains, templates, blog, pages, file management, and developer tools.
 

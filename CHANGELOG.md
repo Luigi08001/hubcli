@@ -1,5 +1,77 @@
 # Changelog
 
+## 0.8.2 - 2026-04-23
+
+**Brand + polish release.** No runtime behavior changes for end users
+beyond what CI already enforces — this is a pre-launch cut that ships
+everything that's been on `main` since 0.8.1 alongside a consistent
+visual identity and a codebase with zero "hubcli" references.
+
+### Visible change for `npm install -g` users
+
+`hscli --help` now opens with the bracketed monogram banner:
+
+```
+  ┌──┐
+  │hs│  hscli · agentic HubSpot CLI + MCP server
+  └──┘  @revfleet/hscli · MIT · github.com/revfleet/hscli
+```
+
+The banner matches the repo avatar and the `[hs]` monogram used on the
+README hero + social preview. Same safety model, same command surface —
+only the help-screen framing changes.
+
+### Documentation + repo polish
+
+- **README** reworked with a confident headline ("Your HubSpot portal,
+  in one binary.") + three focused badges (npm · MIT · 1,180
+  endpoints). Progressive disclosure via a single `<details>` for the
+  full coverage list.
+- **Brand identity** — `brand/` now contains the monogram, wordmark,
+  hero band, social preview (PNG + SVG), revfleet org avatar, and the
+  ASCII banner.
+- **CODE_OF_CONDUCT.md** — Contributor Covenant v2.1 reference + a
+  short project-specific summary.
+- **Doc cross-refs** — obsolete `[[wiki-link]]` style converted to real
+  markdown links throughout `docs/`. Dead `[[hubspot-rules]]`
+  references dropped.
+- **POLICY_EXAMPLE.json** upgraded to the v2 schema introduced in
+  v0.7.0 (rule-based method+path globs, time windows, change-ticket +
+  approval gates).
+
+### Internal polish
+
+- **ESLint** — stricter rules enabled: `eqeqeq` (safer for HubSpot IDs
+  that look numeric) and `prefer-const`.
+- **Dependabot** — Monday schedule, labels for PR triage, TypeScript
+  major bumps excluded (manual triage, same pattern used for the 5→6
+  breakage).
+- **`src/core/auth.ts`** — the `~/.hubcli/` legacy-fallback path was
+  dropped. The `getHubcliHomeDir` export alias was removed too.
+  Technically a breaking change for any external consumer that
+  imported the old name; none known to exist.
+- **Release-checksums** script documented with a header comment.
+- **Module headers** added to 17 command / core modules.
+
+### Privacy + scrub
+
+- Package author field: `"Luigi Vermeulen (revfleet)"` → `"revfleet"`.
+- Portal ID `147975758` removed from every code path where it
+  appeared as illustration or test fixture (replaced with `12345678`).
+- Deleted `docs/TESTING/PORTAL-147975758-*.md` snapshot files.
+- Deleted `docs/LAUNCH/` — four pre-launch marketing drafts with
+  named-competitor comparisons (Composio, peakmojo, lkm1developer,
+  CData, …) and CRMforge references. The repo now describes hscli on
+  its own terms only.
+- Deleted `.hubcli-sync-contacts.json` (stale local state, last
+  touched 2026-03-19).
+
+Git history was rewritten (49 commits, 10 tags repointed) so zero
+"hubcli" references remain anywhere — code, docs, filenames, commit
+messages, tags.
+
+Tests: 255 pass. Typecheck + lint clean.
+
 ## 0.8.1 - 2026-04-22
 
 **Critical fix — globally-installed `hscli` binary was silent on all commands.**

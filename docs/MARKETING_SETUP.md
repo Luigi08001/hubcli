@@ -1,6 +1,6 @@
 # Marketing Setup Guide
 
-> See also: [[PORTAL_SETUP]] · [[SALES_SETUP]] · [[REPORTING_SETUP]] · [[hubspot-rules]]
+> See also: [PORTAL_SETUP.md](PORTAL_SETUP.md) · [SALES_SETUP.md](SALES_SETUP.md) · [REPORTING_SETUP.md](REPORTING_SETUP.md)
 
 Complete configuration guide for HubSpot Marketing Hub settings. Covers email, campaigns, forms, ads, social, SEO, lead scoring, and ABM. Each section shows the UI path, settings, and hscli commands where API support exists.
 

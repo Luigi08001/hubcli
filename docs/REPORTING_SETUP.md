@@ -1,6 +1,6 @@
 # Reporting & Analytics Setup Guide
 
-> See also: [[PORTAL_SETUP]] · [[MARKETING_SETUP]] · [[SALES_SETUP]] · [[OPERATIONS_SETUP]]
+> See also: [PORTAL_SETUP.md](PORTAL_SETUP.md) · [MARKETING_SETUP.md](MARKETING_SETUP.md) · [SALES_SETUP.md](SALES_SETUP.md) · [OPERATIONS_SETUP.md](OPERATIONS_SETUP.md)
 
 Complete configuration guide for HubSpot reporting and analytics. Covers dashboards, custom reports, attribution, analytics tools, and report sharing.
 
