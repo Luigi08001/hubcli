@@ -66,39 +66,15 @@ interface AuthFile {
 }
 
 export function getHscliHomeDir(): string {
-  // Primary location: ~/.revfleet/ (avoids colliding with @hubspot/cli
-  // which stores its config at ~/.hscli/). If a user installed a
-  // pre-rename build and has `~/.hubcli/auth.json`, fall back to it
-  // so the upgrade doesn't silently lose their auth. We don't
-  // auto-migrate on read (that would be a destructive side-effect);
-  // `hscli auth login` writes to the primary location going forward.
+  // Config dir. Default is ~/.revfleet/ to avoid colliding with
+  // @hubspot/cli which uses ~/.hscli/. Override via $HSCLI_HOME.
   const explicit = process.env.HSCLI_HOME?.trim();
   if (explicit) return explicit;
-  const primary = join(homedir(), ".revfleet");
-  // Primary wins if it has either a plaintext auth.json OR an encrypted
-  // auth.enc. Checking only auth.json would silently route an encrypted-
-  // primary user back to a stale legacy plaintext store.
-  if (
-    existsSync(join(primary, "auth.json"))
-    || existsSync(join(primary, "auth.enc"))
-  ) return primary;
-  // Backward-compat: keep reading ~/.hubcli if a pre-rename install
-  // left credentials there. This is intentionally the ONE remaining
-  // reference to the old name — do not remove without a migration plan.
-  const legacy = join(homedir(), ".hubcli");
-  if (
-    existsSync(join(legacy, "auth.json"))
-    || existsSync(join(legacy, "auth.enc"))
-  ) return legacy;
-  return primary;
+  return join(homedir(), ".revfleet");
 }
 
-// Legacy alias — kept so external plugins that imported the old name
-// keep working through one release cycle. Remove in a future major.
-export const getHubcliHomeDir = getHscliHomeDir;
-
 function authPaths(): { dir: string; file: string } {
-  const root = getHubcliHomeDir();
+  const root = getHscliHomeDir();
   return { dir: root, file: join(root, "auth.json") };
 }
 

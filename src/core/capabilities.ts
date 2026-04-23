@@ -1,6 +1,6 @@
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { getHubcliHomeDir, getProfile, saveProfile, getApiBaseUrl } from "./auth.js";
+import { getHscliHomeDir, getProfile, saveProfile, getApiBaseUrl } from "./auth.js";
 import { CliError } from "./output.js";
 
 type ProbeMethod = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
@@ -213,7 +213,7 @@ function buildCapabilityKey(portalId: string, scopes: string[]): string {
 }
 
 function cachePaths(): { dir: string; file: string } {
-  const dir = getHubcliHomeDir();
+  const dir = getHscliHomeDir();
   return { dir, file: join(dir, CAPABILITY_CACHE_FILENAME) };
 }
 

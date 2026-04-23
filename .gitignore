@@ -5,6 +5,10 @@ dist/
 coverage/
 *.log
 
+# Pre-rename local state files — never recommit
+.hubcli*
+.hscli-sync-*
+
 # scripts/ Python venv + HubSpot session state (must stay local)
 scripts/.venv/
 scripts/uv.lock
