@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.8.3 - 2026-04-23
+
+**Clean-install fix + CI stability.** Two P1 issues surfaced in a
+post-0.8.2 external review blocked anyone trying `npm ci` from a
+fresh clone — and two tests were hitting Vitest's 5 s default timeout
+on slower CI runners. Neither affected end users running
+`npm install -g @revfleet/hscli@0.8.2`.
+
+### Fixes
+
+- **`package-lock.json`** — out of sync with `package.json` on 0.8.2;
+  `npm ci` failed with `Missing: @emnapi/{runtime,core}@1.9.2 from
+  lock file`. Lock regenerated from scratch against the current
+  dependency tree; `npm ci` now passes clean.
+- **`vitest.config.ts`** — new file. Bumps `testTimeout` and
+  `hookTimeout` from the 5 s default to 20 s. The `audit timeline
+  scans a directory of trace-*.jsonl` and the `parses global flags`
+  tests were flaking at 5 s on slower CI runners where the first
+  cold `import("../src/cli.js")` plus a tmpdir directory scan added
+  several seconds of latency before the assertion window opened.
+  20 s gives headroom without hiding real bugs — a legitimately 20-s
+  test would still be a red flag worth investigating.
+
+No runtime behavior change. Tests still 255 / 265 pass; typecheck +
+lint clean.
+
 ## 0.8.2 - 2026-04-23
 
 **Brand + polish release.** No runtime behavior changes for end users
