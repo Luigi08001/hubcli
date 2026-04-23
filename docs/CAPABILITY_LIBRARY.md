@@ -96,11 +96,11 @@ All readable + writable via standard CRM endpoints:
 | Create DRAFT / AUTOMATED_DRAFT email | `hscli marketing emails create --data '{...}'` | ✅ | |
 | List / get / update / archive | `hscli marketing emails list|get|update` | ✅ | |
 | Per-email statistics | via `hscli api request --path "/marketing/v3/emails/statistics/{id}"` | ⚠️ | Per-email stats path `/marketing/v3/emails/{id}/statistics` returns 404. Aggregate stats live under `/email-events/v1/events` — use `hscli email-events campaign <campaignId>`. |
-| **Publish v3 email to send** | `POST /marketing/v3/emails/{id}/publish` via `hscli api request` | ✅ | **Endpoint exists and works** (verified: returned validation errors on malformed email, i.e. the endpoint is live — not 404). No hscli command-level wrapper yet; call via `api request`. |
-| Create in published `AUTOMATED` state directly | n/a | ❌ | API explicitly rejects with *"Creating an email in the published state AUTOMATED is not allowed. Consider using the DRAFT state AUTOMATED_DRAFT."* |
+| **Publish v3 email** | `hscli marketing emails publish <id>` | ✅ | `POST /marketing/v3/emails/{id}/publish`. Verified live. |
+| Create in published `AUTOMATED` state directly | n/a | ❌ | API explicitly rejects with *"Creating an email in the published state AUTOMATED is not allowed. Consider using AUTOMATED_DRAFT."* Use `create` + `publish` instead. |
 | Update state `AUTOMATED_DRAFT` → `AUTOMATED` via PATCH/PUT | n/a | ❌ | PATCH returns 400 "Error validating request"; PUT returns 405. Must use `/publish` endpoint. |
-| Clone v3 email | n/a | ❌ | Verified 404 on `/clone`, `/copies`, `/replicate`, `/clone-email`. Use `hscli marketing-emails-v1 clone <id>` on portals still on v1. |
-| A/B test variant authoring | n/a | ❌ | |
+| **Clone v3 email** | `hscli marketing emails clone <id> --name '<name>'` | ✅ | `POST /marketing/v3/emails/clone` — id goes in the **body**, not the path. Verified live 2026-04-23. Earlier miss (I only tried `/clone`, `/copies`, etc. with id in path). |
+| **A/B test variant authoring** | `hscli marketing emails ab-variant --content-id <id> --name '<name>'` | ✅ | `POST /marketing/v3/emails/ab-test/create-variation` with `{contentId, variationName}` body. Verified live 2026-04-23. Returned email has `isAb: true`. |
 | **Multi-module body via flexAreas** | `content.flexAreas.main.sections + content.widgets` | ⚠️ | Only `@hubspot/rich_text`, `@hubspot/email_footer`, and the `preview_text` widget render in the in-editor iframe. `@hubspot/button`, `@hubspot/divider`, `@hubspot/header`, `@hubspot/linked_image`, `@hubspot/email_linked_image` persist in the DB but silently no-op in the editor canvas. Workaround: compose body as multiple rich_text sections with inline HTML. |
 | **Body image** | inline `<img>` in rich_text, src = HubFS URL | ⚠️ | Renders only in the **webversion preview URL** (`https://{portal}.hubspotpreview-{hublet}.com/_hcms/preview/email/{id}?preview_key=…`). The in-editor iframe sandboxes cross-origin images. First upload the image via `POST /files/v3/files/import-from-url/async` to get a HubFS URL. |
 | Merge-tag chip markup | n/a | ❌ | Chip is an in-edit React overlay, not persistent markup. Tested 5 variants (span + data attrs + various classes) — none reproduce the chip. HubSpot's own UI-created emails also store raw `{{ }}` in their widget HTML. |
@@ -254,7 +254,7 @@ HubSpot exposes TWO public workflow APIs:
 | `LIST_BASED` enrollment criteria on v4 | `enrollmentCriteria.listFilterBranch` | ✅ | Works with property filters (IS_ANY_OF, IS_EQUAL_TO, etc.). |
 | List / get / update v4 flow metadata | `hscli workflows flows list|get|update` | ✅ | |
 | **Populate `actions[]` on v4** | POST / PATCH `/automation/v4/flows` | ❌ | **Re-verified.** POST with `actions:[...]` → 500. PATCH → 405. Action schema is internal-only. **Workaround: create via v3 instead** — the same workflow surfaces on v4 (`migrationStatus.flowId`) with all actions intact. |
-| Enable / pause (`isEnabled: true`) via v4 PATCH | PATCH | ❌ | 405. Use v3 `enabled` field at create time; or toggle via UI. |
+| **Enable / disable a v4 flow** | `hscli workflows flows enable|disable <flowId>` | ✅ | `PUT /automation/v4/flows/{id}` with full flow body including `revisionId` and `isEnabled`. Verified live 2026-04-23. PATCH returns 405 (why we missed it first time) — PUT is the correct verb. |
 | Re-enroll contacts | `shouldReEnroll: true` in v4 flow; `allowContactToTriggerMultipleTimes` in v3 | ✅ | |
 
 #### v3 action catalog (what you can actually ship)
@@ -320,7 +320,7 @@ BRANCH example:
 
 - `hscli cms source-code get|metadata|extract` ✅
 - **Module schema discovery**: `/cms/v3/source-code/published/content/@hubspot/{module}.module/fields.json` returns the full field schema for any HubSpot-built module. See §9 for the inventory.
-- **Upload custom modules/templates** | ⚠️ | Endpoint exists but returns 415 "Unsupported Media Type" when JSON body sent. Needs `text/plain` or `multipart/form-data` — hscli's `api request` hardcodes `Content-Type: application/json`. hscli-side fix needed. |
+- **Upload custom modules/templates** | ⚠️ | Endpoint `PUT /cms/v3/source-code/{env}/content/{path}` exists but requires **`multipart/form-data`** with a `file` field (not JSON, `text/plain`, or `application/octet-stream` — all three return 415). hscli's HTTP client can't emit multipart bodies yet; fixable with a dedicated `hscli cms source-code upload <path> --file <local>` command. Until then, use the `@hubspot/cli` NPM package for authored uploads. |
 - Path validator rejects `/` in `@hubspot/button.module/fields.json` — use `hscli api request` as workaround until fix lands.
 
 ### Site search
@@ -480,11 +480,11 @@ Every row has been probed on 2026-04-23. Full evidence in Appendix C.
 | Want | Root cause | Evidence |
 |---|---|---|
 | Populate `actions[]` on **v4** workflow | v4 schema internal-only — POST 500 / PATCH 405. **Workaround lives:** use `hscli workflows v3 create` (legacy v3 API accepts full `actions[]`; same workflow appears in v4 + UI canvas). Action creation is NOT blocked by HubSpot — wrong endpoint was being used. |
-| Enable / disable workflow programmatically | No public verb on v4; v3 create accepts `enabled:true/false` | PATCH v4 → 405; v3 create honours `enabled` at creation time; toggle post-create is UI-only |
+| Transition AUTOMATED_DRAFT → AUTOMATED via PATCH | No state-transition via PATCH | PATCH → 400; PUT → 405; use `/publish` endpoint via `hscli marketing emails publish` |
 | Create email in `AUTOMATED` state directly | Explicit API rejection | Error message: *"Creating an email in the published state AUTOMATED is not allowed. Consider using AUTOMATED_DRAFT."* |
 | Transition AUTOMATED_DRAFT → AUTOMATED via PATCH/PUT | Must use `/publish` | PATCH → 400; PUT → 405 |
-| Clone v3 marketing email | All clone paths absent | 404 on `/clone`, `/copies`, `/replicate`, `/clone-email` |
-| A/B test / email variant authoring | Not exposed | |
+| ~~Clone v3 marketing email~~ | UPGRADED 2026-04-23 | Now `hscli marketing emails clone <id>` — endpoint takes id in body, not path. |
+| ~~A/B test / email variant authoring~~ | UPGRADED 2026-04-23 | Now `hscli marketing emails ab-variant --content-id <id> --name 'Variant B'`. |
 | Render body images inside the email editor iframe | Cross-origin iframe sandbox strips external images | Verified across 5 markup variants |
 | Merge-tag chip in stored HTML | Chip is in-edit React overlay only | 5 markup variants tested — none reproduce chip |
 | Connect new domain + TLS | POST to domains is blocked | `POST /cms/v3/domains` → 405 |

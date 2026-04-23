@@ -67,6 +67,49 @@ export function registerMarketing(program: Command, getCtx: () => CliContext): v
         printResult(ctx, res);
       });
 
+    // Clone a marketing email — v3 endpoint rediscovered via a
+    // docs re-audit (the id goes in the request body, not the path).
+    emails
+      .command("clone")
+      .argument("<emailId>", "Source email ID to clone")
+      .option("--name <name>", "Name for the cloned email", "Clone")
+      .option("--language <lang>", "Target language code (e.g. 'en', 'fr')")
+      .description("Clone an existing marketing email (POST /marketing/v3/emails/clone)")
+      .action(async (emailId, opts) => {
+        const ctx = getCtx();
+        const client = createClient(ctx.profile);
+        const body: Record<string, unknown> = {
+          id: String(emailId).trim(),
+          cloneName: String(opts.name).trim(),
+        };
+        if (opts.language) body.language = String(opts.language).trim();
+        const res = await maybeWrite(ctx, client, "POST", `/marketing/v3/emails/clone`, body);
+        printResult(ctx, res);
+      });
+
+    // Create an A/B variant of an existing marketing email.
+    // Endpoint: POST /marketing/v3/emails/ab-test/create-variation
+    // (ids in body, NOT in path — rediscovered via docs re-audit).
+    emails
+      .command("ab-variant")
+      .requiredOption("--content-id <id>", "Source email ID (contentId)")
+      .requiredOption("--name <name>", "Variation name (e.g. 'Variant B')")
+      .description("Create an A/B variant of a marketing email")
+      .action(async (opts) => {
+        const ctx = getCtx();
+        const client = createClient(ctx.profile);
+        const body = {
+          contentId: String(opts.contentId).trim(),
+          variationName: String(opts.name).trim(),
+        };
+        const res = await maybeWrite(
+          ctx, client, "POST",
+          `/marketing/v3/emails/ab-test/create-variation`,
+          body,
+        );
+        printResult(ctx, res);
+      });
+
     // Upload an image for use inside an email body. Wraps
     // `POST /files/v3/files/import-from-url/async` + status polling.
     // Returns the final HubFS CDN URL once the async task completes,

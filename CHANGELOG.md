@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.8.6 - 2026-04-23
+
+**Docs re-audit finds 4 more endpoints previously flagged as blocked.**
+Systematic second pass against HubSpot developer docs uncovered:
+
+- Email cloning — endpoint is `POST /marketing/v3/emails/clone` (id goes in body, not path — we only tried path variants before).
+- A/B variant authoring — `POST /marketing/v3/emails/ab-test/create-variation` with `{contentId, variationName}`.
+- v4 workflow enable/disable — `PUT` (not `PATCH` — 405 was verb-wrong) with full flow body including `revisionId`.
+- CMS source-code upload (still ⚠️) — endpoint exists, requires `multipart/form-data` with a `file` field. hscli's HTTP client can't emit multipart yet.
+
+All four verified live on portal 147975758 before shipping — no "claimed from priors" entries.
+
+### Added
+
+- `hscli marketing emails clone <emailId> --name <name> [--language <lang>]` — clone a marketing email.
+- `hscli marketing emails ab-variant --content-id <id> --name <variantName>` — create an A/B variant.
+- `hscli workflows flows enable <flowId>` / `flows disable <flowId>` — toggle workflow on/off via PUT.
+
+### Fixes
+
+- [docs/CAPABILITY_LIBRARY.md](docs/CAPABILITY_LIBRARY.md) §2 Marketing emails + §5 Automation + §10 Blocks reclassified. The ❌ list in §10 shrank by 3 items after the re-audit; §12 roadmap now names the multipart CMS upload command as the only remaining CMS-upload gap.
+
 ## 0.8.5 - 2026-04-23
 
 **Multi-step workflow creation via CLI — legacy v3 unlock.** The v4

@@ -38,6 +38,45 @@ export function registerWorkflows(program: Command, getCtx: () => CliContext): v
     updatePath: (id) => `/automation/v4/flows/${id}`,
   });
 
+  // Enable/disable a v4 flow. Requires PUT (not PATCH — 405 on PATCH)
+  // with the full flow body including `revisionId`. Rediscovered via
+  // the docs re-audit after earlier probes that used PATCH.
+  const flows = workflows.commands.find((c) => c.name() === "flows");
+  if (flows) {
+    flows
+      .command("enable")
+      .argument("<flowId>", "Flow ID")
+      .description("Enable a flow (PUT /automation/v4/flows/{id} with isEnabled:true)")
+      .action(async (flowId) => {
+        const ctx = getCtx();
+        const client = createClient(ctx.profile);
+        const id = encodePathSegment(flowId, "flowId");
+        // Fetch current body — revisionId must match, and `type` is
+        // required on the PUT.
+        const current = (await client.request(
+          `/automation/v4/flows/${id}`,
+        )) as Record<string, unknown>;
+        const put = { ...current, isEnabled: true };
+        const res = await maybeWrite(ctx, client, "PUT", `/automation/v4/flows/${id}`, put);
+        printResult(ctx, res);
+      });
+    flows
+      .command("disable")
+      .argument("<flowId>", "Flow ID")
+      .description("Disable a flow (PUT /automation/v4/flows/{id} with isEnabled:false)")
+      .action(async (flowId) => {
+        const ctx = getCtx();
+        const client = createClient(ctx.profile);
+        const id = encodePathSegment(flowId, "flowId");
+        const current = (await client.request(
+          `/automation/v4/flows/${id}`,
+        )) as Record<string, unknown>;
+        const put = { ...current, isEnabled: false };
+        const res = await maybeWrite(ctx, client, "PUT", `/automation/v4/flows/${id}`, put);
+        printResult(ctx, res);
+      });
+  }
+
   // Legacy v3 workflows — the only public API that accepts
   // populated multi-step actions on create. Contact-based only.
   const v3 = workflows.command("v3").description("Legacy v3 workflows API (accepts populated actions[] — contact-based only)");
