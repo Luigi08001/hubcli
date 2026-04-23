@@ -234,16 +234,43 @@ All readable + writable via standard CRM endpoints:
 
 ## 5. Automation
 
-### Workflows (v4 flows)
+### Workflows
+
+HubSpot exposes TWO public workflow APIs:
+
+**🎯 Legacy v3 `/automation/v3/workflows`** — accepts populated `actions[]` on create. Dual-backed: workflows created via v3 also appear via v4 (`migrationStatus.flowId`) and render in the modern HubSpot canvas UI with visible action nodes. Contact-based only.
+
+**v4 `/automation/v4/flows`** — current API. Works for metadata + enrollment triggers. `actions[]` on create returns 500 (schema internal). Recommended: create via v3, read/list via either.
 
 | Job | Command | Status | Evidence |
 |---|---|---|---|
-| Create flow | `hscli workflows flows create` | ✅ | Works; `type: "CONTACT_FLOW", flowType: "WORKFLOW"` required. |
-| `LIST_BASED` enrollment criteria | `enrollmentCriteria.listFilterBranch` | ✅ | Works with property filters (IS_ANY_OF, IS_EQUAL_TO, etc.). |
-| List / get / update metadata | `hscli workflows flows list|get|update` | ✅ | |
-| **Populate `actions[]` (Delay, Send email, Set property, Branch, Webhook)** | create or update | ❌ | **Re-verified.** POST with `actions:[{...SINGLE_CONNECTION, actionTypeId:"0-1"...}]` → 500. PATCH → 405. Network sniff confirms UI uses private `app-eu1.hubspot.com/api/automationmanagement/v1/*` family (session-cookie auth, not bearer). |
-| Enable / pause (`isEnabled: true`) | PATCH | ❌ | 405 on PATCH; 404 on `/flows/{id}/enable`. |
-| Re-enroll contacts | `shouldReEnroll: true` in flow config | ✅ | |
+| **Create multi-step workflow** (DELAY · EMAIL · SET_PROPERTY · BRANCH · WEBHOOK · UPDATE_LIST · TASK · TICKET · DEAL · NOTIFICATION) | `hscli workflows v3 create --data '{...}'` | ✅ | **Verified 2026-04-23:** 5-step DELAY→EMAIL→DELAY→SET_PROPERTY→BRANCH workflow created via one CLI call; renders in HubSpot canvas at `/workflows/{portal}/platform/flow/{migrationStatus.flowId}/edit` as a full multi-node canvas. |
+| List / get / delete v3 workflow | `hscli workflows v3 list|get|delete` | ✅ | Full CRUD via `/automation/v3/workflows/*`. |
+| Enroll / unenroll contact | `hscli workflows v3 enroll|unenroll <workflowId> <email>` | ✅ | `/automation/v3/workflows/{id}/enrollments/contacts/{email}`. |
+| Get contact's current enrollments | `hscli workflows v3 enrollments <email>` | ✅ | `/automation/v3/contacts/{email}/workflowEnrollments`. |
+| Enrollment criteria (`segmentCriteria` list filters) | v3 payload `segmentCriteria` field | ✅ | Standard contact-list filter shape (see HubSpot Contact Lists API). |
+| Goals (`goalCriteria`) | v3 payload `goalCriteria` field | ✅ | Same list-filter shape as enrollment. |
+| Create v4 flow (metadata + enrollment trigger, no actions) | `hscli workflows flows create` | ✅ | `type: "CONTACT_FLOW", flowType: "WORKFLOW"` required. |
+| `LIST_BASED` enrollment criteria on v4 | `enrollmentCriteria.listFilterBranch` | ✅ | Works with property filters (IS_ANY_OF, IS_EQUAL_TO, etc.). |
+| List / get / update v4 flow metadata | `hscli workflows flows list|get|update` | ✅ | |
+| **Populate `actions[]` on v4** | POST / PATCH `/automation/v4/flows` | ❌ | **Re-verified.** POST with `actions:[...]` → 500. PATCH → 405. Action schema is internal-only. **Workaround: create via v3 instead** — the same workflow surfaces on v4 (`migrationStatus.flowId`) with all actions intact. |
+| Enable / pause (`isEnabled: true`) via v4 PATCH | PATCH | ❌ | 405. Use v3 `enabled` field at create time; or toggle via UI. |
+| Re-enroll contacts | `shouldReEnroll: true` in v4 flow; `allowContactToTriggerMultipleTimes` in v3 | ✅ | |
+
+#### v3 action catalog (what you can actually ship)
+
+All supported `type` values on v3 `actions[]`:
+
+`DELAY` · `EMAIL` (send marketing email by `emailContentId`) · `SET_CONTACT_PROPERTY` · `SET_COMPANY_PROPERTY` · `COPY_PROPERTY` · `COPY_COMPANY_PROPERTY` · `ADD_SUBTRACT_PROPERTY` · `BRANCH` (with `acceptActions`/`rejectActions`) · `WEBHOOK` · `UPDATE_LIST` (add/remove static list) · `TASK` · `TICKET` · `DEAL` · `NOTIFICATION` · `SMS_NOTIFICATION` · `LEAD_ASSIGNMENT` · `WORKFLOW_ENROLLMENT` · `CREATE_SFDC_TASK` · `UPDATE_EMAIL_SUBSCRIPTION` · `SET_SALESFORCE_CAMPAIGN_MEMBERSHIP`
+
+BRANCH example:
+
+```json
+{"type":"BRANCH",
+ "filters":[[{"operator":"EQ","property":"industry","value":"COMPUTER_SOFTWARE","type":"string"}]],
+ "acceptActions":[{"type":"SET_CONTACT_PROPERTY","propertyName":"hs_lead_status","newValue":"CONNECTED"}],
+ "rejectActions":[{"type":"SET_CONTACT_PROPERTY","propertyName":"hs_lead_status","newValue":"ATTEMPTED_TO_CONTACT"}]}
+```
 
 ### Sequences
 
@@ -452,8 +479,8 @@ Every row has been probed on 2026-04-23. Full evidence in Appendix C.
 
 | Want | Root cause | Evidence |
 |---|---|---|
-| Populate `actions[]` on v4 workflow | Public API doesn't accept actions; UI uses session-cookie private API at `app-eu1.hubspot.com/api/automationmanagement/v1/*` | POST → 500; PATCH → 405; network sniffed UI |
-| Enable / disable workflow | Same API family | PATCH `/automation/v4/flows/{id}` → 405 |
+| Populate `actions[]` on **v4** workflow | v4 schema internal-only — POST 500 / PATCH 405. **Workaround lives:** use `hscli workflows v3 create` (legacy v3 API accepts full `actions[]`; same workflow appears in v4 + UI canvas). Action creation is NOT blocked by HubSpot — wrong endpoint was being used. |
+| Enable / disable workflow programmatically | No public verb on v4; v3 create accepts `enabled:true/false` | PATCH v4 → 405; v3 create honours `enabled` at creation time; toggle post-create is UI-only |
 | Create email in `AUTOMATED` state directly | Explicit API rejection | Error message: *"Creating an email in the published state AUTOMATED is not allowed. Consider using AUTOMATED_DRAFT."* |
 | Transition AUTOMATED_DRAFT → AUTOMATED via PATCH/PUT | Must use `/publish` | PATCH → 400; PUT → 405 |
 | Clone v3 marketing email | All clone paths absent | 404 on `/clone`, `/copies`, `/replicate`, `/clone-email` |
