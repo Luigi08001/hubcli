@@ -1,3 +1,6 @@
+/**
+ * `hscli forms` — HubSpot Marketing Forms: list/get, definitions, submissions.
+ */
 import { Command } from "commander";
 import { createClient } from "../../core/http.js";
 import type { CliContext } from "../../core/output.js";

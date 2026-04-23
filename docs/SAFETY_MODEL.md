@@ -1,6 +1,6 @@
-# SAFETY_MODEL
+# Safety model
 
-> See also: [[ARCHITECTURE]] · [[COMMAND_COMPATIBILITY]] · [[hubspot-rules]] · [[TESTING_PLAN]]
+> See also: [ARCHITECTURE.md](ARCHITECTURE.md) · [COMMAND_COMPATIBILITY.md](COMMAND_COMPATIBILITY.md) · [TESTING_PLAN.md](TESTING_PLAN.md)
 
 ## Principles
 1. **No silent mutation**: write commands require explicit invocation and can be simulated via `--dry-run`.

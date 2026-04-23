@@ -1,3 +1,6 @@
+/**
+ * Shared helpers for domain-scoped command groups (marketing, cms, sales, service, workflows, …).
+ */
 import { Command } from "commander";
 import { createClient } from "../../core/http.js";
 import type { CliContext } from "../../core/output.js";

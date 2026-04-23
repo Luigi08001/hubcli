@@ -1,3 +1,6 @@
+/**
+ * `hscli mcp` — spawn the stdio MCP server. Thin wrapper around src/mcp/server.ts.
+ */
 import { Command } from "commander";
 import { runMcpServer } from "../mcp/server.js";
 

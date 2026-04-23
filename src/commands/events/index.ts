@@ -1,3 +1,6 @@
+/**
+ * `hscli events` — emit + fetch Events API entries (CRM behavioral events + analytics event stream).
+ */
 import { Command } from "commander";
 import { getToken } from "../../core/auth.js";
 import { HubSpotClient } from "../../core/http.js";

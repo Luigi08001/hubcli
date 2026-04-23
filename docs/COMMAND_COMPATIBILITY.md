@@ -1,6 +1,6 @@
-# COMMAND COMPATIBILITY
+# Command compatibility
 
-> See also: [[COMMAND_TREE]] · [[SAFETY_MODEL]] · [[RELEASE_GOVERNANCE]]
+> See also: [COMMAND_TREE.md](COMMAND_TREE.md) · [SAFETY_MODEL.md](SAFETY_MODEL.md) · [RELEASE_GOVERNANCE.md](RELEASE_GOVERNANCE.md)
 
 ## Stability Promise
 - Existing command names and argument shapes are considered stable in minor/patch versions.

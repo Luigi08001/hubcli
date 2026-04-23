@@ -1,3 +1,6 @@
+/**
+ * `hscli crm tickets` — CRUD + search + batch over /crm/v3/objects/tickets.
+ */
 import { Command } from "commander";
 import type { CliContext } from "../../core/output.js";
 import { registerObjectCommands } from "./shared.js";

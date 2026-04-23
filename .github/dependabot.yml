@@ -1,3 +1,8 @@
+# Dependabot configuration for @revfleet/hscli.
+# npm deps grouped by update-type so minor+patch bumps land as one
+# PR (less CI churn); majors still arrive individually so we can
+# triage breaking changes deliberately (see e.g. TS 5→6 in v0.8.1).
+
 version: 2
 
 updates:
@@ -5,15 +10,27 @@ updates:
     directory: /
     schedule:
       interval: weekly
+      day: monday
     open-pull-requests-limit: 10
+    labels:
+      - dependencies
     groups:
       minor-and-patch:
         update-types:
           - minor
           - patch
+    ignore:
+      # Don't auto-bump across breaking major lines; we handle those
+      # manually to preserve API stability for plugin authors.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+      day: monday
     open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - ci

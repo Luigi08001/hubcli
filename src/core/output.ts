@@ -1,3 +1,6 @@
+/**
+ * Output layer — printResult / printError, JSON / table / CSV / YAML formatting, secret redaction.
+ */
 export type OutputMode = "human" | "json";
 export type OutputFormat = "json" | "table" | "csv" | "yaml";
 

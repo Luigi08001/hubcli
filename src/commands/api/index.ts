@@ -1,3 +1,6 @@
+/**
+ * Raw HubSpot API passthrough — `hscli api request` for endpoints without a dedicated subcommand.
+ */
 import { Command } from "commander";
 import { createClient } from "../../core/http.js";
 import type { CliContext } from "../../core/output.js";

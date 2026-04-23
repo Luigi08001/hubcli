@@ -1,3 +1,6 @@
+/**
+ * `hscli crm describe` — resolve an object’s property schema (with an on-disk cache for offline validate).
+ */
 import { Command } from "commander";
 import { getToken } from "../../core/auth.js";
 import { loadCrmObjectSchema, validateCrmPayload } from "../../core/schema-cache.js";

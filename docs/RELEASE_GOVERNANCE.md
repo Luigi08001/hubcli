@@ -1,6 +1,6 @@
-# RELEASE GOVERNANCE
+# Release governance
 
-> See also: [[TESTING_PLAN]] · [[COMMAND_COMPATIBILITY]] · [[SECURITY]] · [[ROADMAP_PHASE1_TO_3]]
+> See also: [TESTING_PLAN.md](TESTING_PLAN.md) · [COMMAND_COMPATIBILITY.md](COMMAND_COMPATIBILITY.md) · [SECURITY.md](../SECURITY.md) · [PUBLISHING.md](PUBLISHING.md)
 
 ## Versioning & Compatibility
 - Use semantic versioning.

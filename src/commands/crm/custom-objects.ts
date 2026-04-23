@@ -1,3 +1,6 @@
+/**
+ * `hscli crm custom-objects` — schemas + records for any custom object type.
+ */
 import { Command } from "commander";
 import { createClient } from "../../core/http.js";
 import type { CliContext } from "../../core/output.js";

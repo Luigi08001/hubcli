@@ -1,3 +1,6 @@
+/**
+ * `hscli workflows` — v4 flows + legacy v2/v3 workflow enrollment.
+ */
 import { Command } from "commander";
 import type { CliContext } from "../../core/output.js";
 import { registerResource } from "../domains/shared.js";

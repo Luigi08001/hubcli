@@ -1,24 +1,57 @@
 {
-  "defaults": {
-    "allowWrite": true,
-    "allowDelete": false,
-    "requireChangeTicket": false
-  },
+  "$schema-note": "hscli policy v2 — method+path glob rules, time windows, change-ticket + approval gates. First-match-wins per profile. Legacy v1 flat fields (allowWrite, allowDelete, requireChangeTicket) are still honored under `defaults` / per-profile for backward compat.",
+  "version": 2,
   "profiles": {
     "prod": {
-      "allowWrite": true,
-      "allowDelete": false,
-      "requireChangeTicket": true
+      "defaultAction": "deny",
+      "rules": [
+        {
+          "name": "allow-all-reads",
+          "match": { "method": "GET", "path": "**" },
+          "action": "allow"
+        },
+        {
+          "name": "block-gdpr-delete-anywhere",
+          "match": { "method": "*", "path": "**/gdpr-delete**" },
+          "action": "deny"
+        },
+        {
+          "name": "block-schema-deletes",
+          "match": { "method": "DELETE", "path": "/crm/v3/schemas/**" },
+          "action": "deny"
+        },
+        {
+          "name": "crm-writes-need-ticket-and-hours",
+          "match": { "method": "POST", "path": "/crm/v3/objects/**" },
+          "action": "allow",
+          "requireChangeTicket": true,
+          "window": { "tz": "US/Eastern", "hours": "09-17", "days": "mon-fri" }
+        },
+        {
+          "name": "crm-updates-need-ticket-and-hours",
+          "match": { "method": "PATCH", "path": "/crm/v3/objects/**" },
+          "action": "allow",
+          "requireChangeTicket": true,
+          "window": { "tz": "US/Eastern", "hours": "09-17", "days": "mon-fri" }
+        },
+        {
+          "name": "deletes-need-approval",
+          "match": { "method": "DELETE", "path": "/crm/v3/objects/**" },
+          "action": "allow",
+          "requireChangeTicket": true,
+          "requireApproval": "manual"
+        }
+      ]
     },
     "sandbox": {
-      "allowWrite": true,
-      "allowDelete": true,
-      "requireChangeTicket": false
+      "defaultAction": "allow",
+      "rules": [
+        {
+          "name": "still-block-gdpr-delete",
+          "match": { "method": "*", "path": "**/gdpr-delete**" },
+          "action": "deny"
+        }
+      ]
     }
-  },
-  "blockedMethodPathPrefixes": {
-    "DELETE": [
-      "/crm/v3/schemas"
-    ]
   }
 }
