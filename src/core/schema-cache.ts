@@ -1,6 +1,6 @@
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { getHubcliHomeDir, getProfile, getApiBaseUrl } from "./auth.js";
+import { getHscliHomeDir, getProfile, getApiBaseUrl } from "./auth.js";
 import { HubSpotClient } from "./http.js";
 import { CliError } from "./output.js";
 
@@ -403,7 +403,7 @@ function isExpired(expiresAt: string): boolean {
 }
 
 function schemaCachePaths(): { dir: string; file: string } {
-  const dir = getHubcliHomeDir();
+  const dir = getHscliHomeDir();
   return { dir, file: join(dir, SCHEMA_CACHE_FILENAME) };
 }
 

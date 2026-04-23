@@ -17,7 +17,7 @@
 
 ## Auth
 
-- Config dir: `~/.revfleet/` (primary). Legacy `~/.hubcli/` still read for backward compat.
+- Config dir: `~/.revfleet/` (override via `$HSCLI_HOME`).
 - `~/.revfleet/auth.json` stores profile tokens (0600 permissions, 0700 directory).
 - Optional encrypted vault via `auth.enc` + `HSCLI_VAULT_PASSPHRASE` env var.
 - Token type: HubSpot Private App token (recommended) or OAuth (supported for developer apps).
@@ -56,4 +56,3 @@ Always run `vitest` + `tsc` before opening a PR.
 2. Run `npx vitest run` + `npx tsc --noEmit` after any source change.
 3. No real emails / notifications / outbound during tests — the `--dry-run` + `--force` model is the guardrail.
 4. Branch protection is on; changes to `main` go through PRs with CI green.
-5. The `~/.hubcli/` fallback path in `src/core/auth.ts` is intentional backward-compat — don't remove without a migration plan.

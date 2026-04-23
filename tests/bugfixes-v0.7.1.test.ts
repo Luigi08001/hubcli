@@ -1,14 +1,12 @@
 /**
  * Regression tests for Codex-reported bugs landed in v0.7.1:
  *
- *  1. P1 — getHubcliHomeDir ignores auth.enc (primary silently skipped
- *          in favor of legacy plaintext auth.json).
- *  2. P1 — auth encrypt/decrypt bypassed getHubcliHomeDir and hit the
- *          wrong directory for users on the legacy fallback.
- *  3. P2 — policy windows evaluated in UTC instead of window.tz (or
+ *  1. P1 — getHscliHomeDir ignores auth.enc (primary silently skipped
+ *          in favor of plaintext auth.json when both existed).
+ *  2. P2 — policy windows evaluated in UTC instead of window.tz (or
  *          local when omitted), causing day-boundary misfires.
- *  4. P2 — MCP executeTool never tagged toolName in telemetry.
- *  5. P2 — trace session options (includeBodies, scope) written but
+ *  3. P2 — MCP executeTool never tagged toolName in telemetry.
+ *  4. P2 — trace session options (includeBodies, scope) written but
  *          never enforced by the HTTP layer.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -18,119 +16,54 @@ import { join } from "node:path";
 import { encryptVault } from "../src/core/vault.js";
 
 // ───────────────────────────────────────────────────────────────────────────
-// #1 P1: getHubcliHomeDir must treat auth.enc as a primary-location marker
+// #1 P1: getHscliHomeDir must honor auth.enc + respect HSCLI_HOME
 // ───────────────────────────────────────────────────────────────────────────
-describe("getHubcliHomeDir — auth.enc detection", () => {
+describe("getHscliHomeDir — config-dir resolution", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.resetModules();
     delete process.env.HSCLI_HOME;
   });
 
-  it("primary wins when it has auth.enc even if legacy has auth.json", async () => {
-    // Simulate: user migrated to ~/.revfleet/ and encrypted the vault. A
-    // stale ~/.hubcli/auth.json is still sitting around from before the
-    // migration. The resolver must NOT route back to legacy plaintext.
-    const fakeHome = mkdtempSync(join(tmpdir(), "hscli-home-"));
-    const primary = join(fakeHome, ".revfleet");
-    const legacy = join(fakeHome, ".hubcli");
-    mkdirSync(primary, { recursive: true });
-    mkdirSync(legacy, { recursive: true });
-    writeFileSync(join(primary, "auth.enc"), "encrypted-blob");
-    writeFileSync(join(legacy, "auth.json"), JSON.stringify({
-      profiles: { default: { token: "stale-legacy-plaintext" } },
-    }));
+  it("returns $HSCLI_HOME when explicitly set", async () => {
+    const fakeHome = mkdtempSync(join(tmpdir(), "hscli-home-explicit-"));
+    process.env.HSCLI_HOME = fakeHome;
+    try {
+      const { getHscliHomeDir } = await import("../src/core/auth.js");
+      expect(getHscliHomeDir()).toBe(fakeHome);
+    } finally {
+      delete process.env.HSCLI_HOME;
+    }
+  });
+
+  it("defaults to ~/.revfleet/ when $HSCLI_HOME is unset", async () => {
+    const fakeHome = mkdtempSync(join(tmpdir(), "hscli-home-default-"));
     const origHome = process.env.HOME;
     process.env.HOME = fakeHome;
     try {
-      const { getHubcliHomeDir } = await import("../src/core/auth.js");
-      expect(getHubcliHomeDir()).toBe(primary);
+      const { getHscliHomeDir } = await import("../src/core/auth.js");
+      expect(getHscliHomeDir()).toBe(join(fakeHome, ".revfleet"));
     } finally {
       if (origHome === undefined) delete process.env.HOME;
       else process.env.HOME = origHome;
     }
   });
 
-  it("legacy fallback works when only ~/.hubcli has auth.enc", async () => {
-    const fakeHome = mkdtempSync(join(tmpdir(), "hscli-home-legacy-"));
+  it("encrypted vault unlocks with passphrase (primary location)", async () => {
+    const fakeHome = mkdtempSync(join(tmpdir(), "hscli-home-enc-"));
     const primary = join(fakeHome, ".revfleet");
-    const legacy = join(fakeHome, ".hubcli");
-    mkdirSync(primary, { recursive: true });  // empty
-    mkdirSync(legacy, { recursive: true });
-    writeFileSync(join(legacy, "auth.enc"), "encrypted-blob");
-    const origHome = process.env.HOME;
-    process.env.HOME = fakeHome;
-    try {
-      const { getHubcliHomeDir } = await import("../src/core/auth.js");
-      expect(getHubcliHomeDir()).toBe(legacy);
-    } finally {
-      if (origHome === undefined) delete process.env.HOME;
-      else process.env.HOME = origHome;
-    }
-  });
-
-  it("encrypted primary takes precedence and unlocks with passphrase", async () => {
-    const fakeHome = mkdtempSync(join(tmpdir(), "hscli-home-both-"));
-    const primary = join(fakeHome, ".revfleet");
-    const legacy = join(fakeHome, ".hubcli");
     mkdirSync(primary, { recursive: true });
-    mkdirSync(legacy, { recursive: true });
     const encrypted = encryptVault(
-      JSON.stringify({ profiles: { default: { token: "primary-encrypted-token" } } }),
+      JSON.stringify({ profiles: { default: { token: "encrypted-token" } } }),
       "pw",
     );
     writeFileSync(join(primary, "auth.enc"), encrypted);
-    writeFileSync(join(legacy, "auth.json"), JSON.stringify({
-      profiles: { default: { token: "legacy-plaintext-token" } },
-    }));
     const origHome = process.env.HOME;
     process.env.HOME = fakeHome;
     process.env.HSCLI_VAULT_PASSPHRASE = "pw";
     try {
       const { getToken } = await import("../src/core/auth.js");
-      expect(getToken("default")).toBe("primary-encrypted-token");
-    } finally {
-      delete process.env.HSCLI_VAULT_PASSPHRASE;
-      if (origHome === undefined) delete process.env.HOME;
-      else process.env.HOME = origHome;
-    }
-  });
-});
-
-// ───────────────────────────────────────────────────────────────────────────
-// #2 P1: auth encrypt/decrypt must reuse getHubcliHomeDir() — not hardcode
-//        the primary location. Users on the legacy fallback were hitting
-//        "No auth.json found to encrypt" even when their active store was.
-// ───────────────────────────────────────────────────────────────────────────
-describe("auth encrypt — honors legacy fallback home dir", () => {
-  beforeEach(() => {
-    vi.restoreAllMocks();
-    vi.resetModules();
-    delete process.env.HSCLI_HOME;
-    delete process.env.HSCLI_VAULT_PASSPHRASE;
-  });
-
-  it("auth encrypt operates on legacy ~/.hubcli when primary is empty", async () => {
-    const fakeHome = mkdtempSync(join(tmpdir(), "hscli-enc-legacy-"));
-    const primary = join(fakeHome, ".revfleet");
-    const legacy = join(fakeHome, ".hubcli");
-    mkdirSync(primary, { recursive: true }); // empty
-    mkdirSync(legacy, { recursive: true });
-    writeFileSync(join(legacy, "auth.json"), JSON.stringify({
-      profiles: { default: { token: "legacy-plaintext" } },
-    }));
-    const origHome = process.env.HOME;
-    process.env.HOME = fakeHome;
-    process.env.HSCLI_VAULT_PASSPHRASE = "pw";
-    vi.spyOn(console, "log").mockImplementation(() => {});
-
-    try {
-      const { run } = await import("../src/cli.js");
-      await run(["node", "hscli", "--json", "auth", "encrypt"]);
-      // The legacy dir is where the real auth.json lived, so that's where
-      // the encryption must have happened.
-      expect(existsSync(join(legacy, "auth.enc"))).toBe(true);
-      expect(existsSync(join(legacy, "auth.json"))).toBe(false);
+      expect(getToken("default")).toBe("encrypted-token");
     } finally {
       delete process.env.HSCLI_VAULT_PASSPHRASE;
       if (origHome === undefined) delete process.env.HOME;
