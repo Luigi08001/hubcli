@@ -25,6 +25,7 @@ import {
 } from "../core/urls.js";
 import { registerHubspotCompatTools } from "./compat-hubspot.js";
 import { registerExtensionTools } from "./ext-tools.js";
+import { registerHubspotModuleTools } from "./hubspot-modules.js";
 
 export interface McpBaseArgs {
   profile?: string;
@@ -295,6 +296,14 @@ export function registerHubSpotTools(server: McpServer): void {
   // expose (workflows, files, forms, webhooks, marketing-emails, CMS writes,
   // conversations).
   registerExtensionTools(server);
+
+  // HubSpot drag-and-drop module library — exposes every @hubspot/*
+  // module's field schema as a typed MCP surface. Agents can discover
+  // modules (`hubspot_module_list`), inspect their fields
+  // (`hubspot_module_describe`), and compose validated widget bodies
+  // (`hubspot_module_compose`) before writing to marketing/emails or
+  // CMS pages.
+  registerHubspotModuleTools(server);
 
   registerMcpTool(server,"crm_properties_list", {
     description: "List properties for an object type",

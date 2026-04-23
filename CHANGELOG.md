@@ -1,5 +1,47 @@
 # Changelog
 
+## 0.8.8 - 2026-04-23
+
+**Multipart HTTP support + MCP drag-and-drop module tools.** Two
+complementary unlocks that close the last major capability gaps from
+the re-audit series.
+
+### Added — multipart HTTP (Node 20+ native FormData)
+
+`src/core/http.ts` now accepts `RequestOptions.multipart` — a field-name
+→ (string | `{path, contentType?, filename?}`) record. Internally it
+builds a native `FormData` and lets the runtime emit the correct
+`multipart/form-data; boundary=…` Content-Type. Manually setting the
+header without a boundary was the root cause of every 415 we hit
+(confirmed via reading HubSpot's own [nodejs SDK source](https://github.com/HubSpot/hubspot-api-nodejs)).
+
+Three new CLI commands:
+
+- `hscli cms source-code upload <env> <destPath> --file <localPath> [--content-type <mime>]` — PUT a local file to a CMS source-code path. Verified live.
+- `hscli cms hubdb import <tableId> --file <csv> --config '<json>'` — import rows into a HubDB draft table (multipart: `config` + `file` parts). Transport verified; CSV imports themselves require a Content-Hub plan tier that supports them.
+- `hscli cms upload <destPath> --file <localPath> [--content-type <mime>]` — mirrors the legacy `content/filemapper/v1/upload/{dest}` endpoint that HubSpot's own `hs upload` command uses under the hood (not in public dev-docs). Verified live.
+
+New flags on raw passthrough:
+
+- `hscli api request --file <field>=<path>[:<contentType>]` — repeatable file part attachment.
+- `hscli api request --part <field>=<value>` — repeatable text part attachment.
+
+Combined: any multipart endpoint is reachable without a dedicated wrapper command.
+
+### Added — MCP drag-and-drop module tools
+
+Three new MCP tools wire HubSpot's full `@hubspot/*` module library into the agent surface:
+
+- **`hubspot_module_list`** — enumerate built-in modules on the caller's portal, with `--schemas` for inline field definitions.
+- **`hubspot_module_describe`** — fetch one module's `fields.json` (types, required, defaults, choices, nested groups). The same schema a UI user sees when they click a module.
+- **`hubspot_module_compose`** — given a module path + field values, returns a validated widget body ready to embed in `content.widgets[widgetId]`. Rejects unknown fields + type mismatches before the widget is posted to HubSpot.
+
+Design: one dynamic compose tool instead of auto-generating 55 per-module tools, matching how a drag-drop user actually works (browse → describe → fill).
+
+### Fixes
+
+- [docs/CAPABILITY_LIBRARY.md](docs/CAPABILITY_LIBRARY.md) §6 CMS source-code + §6 HubDB import + §13 multipart table — all ⚠️ rows for multipart endpoints flip to ✅. Appendix B gains a subsection describing the 3 new MCP tools and the agent "browse → describe → fill" flow.
+
 ## 0.8.7 - 2026-04-23
 
 **Third docs pass + HubSpot open-source scan.** Reviewed

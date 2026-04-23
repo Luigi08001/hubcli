@@ -321,13 +321,13 @@ BRANCH example:
 - `hscli cms hubdb create|list|get|rows|delete` ✅
 - **Export**: `hscli cms hubdb export <tableId> --format CSV|XLSX|XLS [--output <path>]` ✅ — returns file content inline or writes to disk.
 - Row CRUD + schema ✅
-- **Import** (CSV upload) | ⚠️ | `POST /cms/v3/hubdb/tables/{id}/draft/import` requires `multipart/form-data` with two parts (`config` JSON + `file` bytes). hscli can't emit multipart yet — same gap as CMS source-code upload. Fix unlocks both. |
+- **Import** (CSV/XLSX upload) | ✅ | `hscli cms hubdb import <tableId> --file <path> --config '{"format":"CSV","columnMappings":[…]}'`. Real multipart; transport verified. CSV-specific imports require a Content-Hub plan tier that supports them (API returns "CSV imports are not supported" on incompatible portals — XLSX works broadly). |
 
 ### Source code + module library
 
 - `hscli cms source-code get|metadata|extract` ✅
 - **Module schema discovery**: `/cms/v3/source-code/published/content/@hubspot/{module}.module/fields.json` returns the full field schema for any HubSpot-built module. See §9 for the inventory.
-- **Upload custom modules/templates** | ⚠️ | Endpoint `PUT /cms/v3/source-code/{env}/content/{path}` exists but requires **`multipart/form-data`** with a `file` field (not JSON, `text/plain`, or `application/octet-stream` — all three return 415). hscli's HTTP client can't emit multipart bodies yet; fixable with a dedicated `hscli cms source-code upload <path> --file <local>` command. Until then, use the `@hubspot/cli` NPM package for authored uploads. |
+- **Upload custom modules/templates** | ✅ | `hscli cms source-code upload <env> <destPath> --file <local>`. Uses real `multipart/form-data` with a FormData-generated boundary. Verified live 2026-04-23. Also: `hscli cms upload <destPath> --file <local>` targets the legacy `content/filemapper/v1/upload/*` endpoint (what `hs upload` actually uses under the hood). |
 - Path validator rejects `/` in `@hubspot/button.module/fields.json` — use `hscli api request` as workaround until fix lands.
 
 ### Site search
@@ -548,17 +548,19 @@ A GitHub scan of [HubSpot/hubspot-local-dev-lib](https://github.com/HubSpot/hubs
 | `/content/filemapper/v1/upload/{urlencoded-dest}` | **The endpoint `hs upload` actually uses** (not `/cms/v3/source-code/*`) for theme/template uploads. Multipart with `file` field. | ✅ (under `content` scope) | Standard |
 | `/crm/v3/lists/{listId}/conversion/*` | List conversion schedule/update/cancel (added Sept 2025, not yet in docs) | ✅ (under `crm` scope) | Standard |
 
-### Multipart endpoints still ⚠️ (needs hscli HTTP-client fix)
+### Multipart endpoints — ALL UNBLOCKED 0.8.8+
 
-hscli currently sends everything as `application/json`. The following HubSpot endpoints require `multipart/form-data`:
+`src/core/http.ts` now accepts `RequestOptions.multipart` — a field-name → (string | file) record. Internally it builds a native `FormData` instance and lets Node 20+ `fetch` emit the correct `multipart/form-data; boundary=…` Content-Type (manually setting the header without a boundary was the root cause of our 415s, as also seen in HubSpot's own nodejs SDK).
 
-- `PUT /cms/v3/source-code/{env}/content/{path}` — custom module/template source
-- `POST /cms/v3/hubdb/tables/{id}/draft/import` — CSV row import (parts: `config` JSON + `file` bytes)
-- `POST /content/filemapper/v1/upload/{dest}` — theme/template upload (used by `hs upload`)
-- `POST /file-transport/v1/hubfiles/object-schemas` — custom-object schema file
-- `POST /project-components-external/v3/upload/new-api` — project zip + IR (3 parts: `projectFilesZip`, `platformVersion`, `uploadRequest`)
+| Endpoint | hscli command | Status |
+|---|---|---|
+| `PUT /cms/v3/source-code/{env}/content/{path}` | `hscli cms source-code upload <env> <destPath> --file <local>` | ✅ verified live |
+| `POST /cms/v3/hubdb/tables/{id}/draft/import` | `hscli cms hubdb import <tableId> --file <path> --config '<json>'` | ✅ transport verified; CSV-import itself tier-gated |
+| `POST /content/filemapper/v1/upload/{dest}` | `hscli cms upload <destPath> --file <local>` | ✅ verified live (mirrors `hs upload`) |
+| `POST /file-transport/v1/hubfiles/object-schemas` | `hscli api request --path /file-transport/v1/hubfiles/object-schemas --method POST --file file=<local>` | ⚠️ reachable (raw passthrough); wrapper command pending |
+| `POST /project-components-external/v3/upload/new-api` | `hscli api request --path /project-components-external/v3/upload/new-api --method POST --file projectFilesZip=<zip> --part platformVersion=2026.03 --part uploadRequest='<json>'` | ⚠️ reachable via raw passthrough |
 
-**One HTTP-client change in hscli** (add multipart body support to `src/core/http.ts`) unlocks all 5. Tracked in §12 roadmap.
+Also: `hscli api request` now takes `--file <field>=<path>[:<mime>]` (repeatable) and `--part <field>=<value>` (repeatable). So any untyped multipart endpoint is reachable without a dedicated command.
 
 ### Additional endpoints documented only in HubSpot's own SDK
 
@@ -602,7 +604,25 @@ Every CLI command maps to an MCP tool via:
 hscli mcp serve   # stdio or --transport sse
 ```
 
-1,180 typed tools covering this capability library. See [MCP.md](MCP.md).
+1,180+ typed tools covering this capability library. See [MCP.md](MCP.md).
+
+### HubSpot drag-and-drop module library exposed as 3 MCP tools (0.8.8+)
+
+Every `@hubspot/*` module's `fields.json` schema is surfaced on demand — not pre-generated as 55 separate tools. Agents get the same "browse → describe → fill" flow a UI user has.
+
+| Tool | What it does |
+|---|---|
+| `hubspot_module_list` | Enumerate all built-in modules accessible on the caller's portal. Optional `schemas: true` returns full field definitions inline. |
+| `hubspot_module_describe` | Fetch one module's `fields.json` schema: names, types (text, richtext, number, boolean, color, choice, group, image, link, ...), required flags, defaults, choices, nested children. Exactly what a drag-drop user sees when they click a module. |
+| `hubspot_module_compose` | Given a module path + field values, returns a widget body ready to embed in `content.widgets[widgetId]`. Validates values against the schema first — rejects unknown fields and type mismatches with a clear error. No more hand-shaping widget bodies. |
+
+Example (agent-driven): "Create a welcome email with a hero image + CTA button" becomes
+1. `hubspot_module_describe @hubspot/linked_image` → see what fields the image module takes
+2. `hubspot_module_describe @hubspot/button` → see button field shape
+3. `hubspot_module_compose` × 2 → get validated widget bodies
+4. `marketing_emails_create` → paste the composed widgets under `content.widgets` + reference from `flexAreas`
+
+This is the hscli-side implementation of the "agent does what a drag-drop human does" value proposition, backed by HubSpot's own module schemas.
 
 ## Appendix C — Verification log
 
