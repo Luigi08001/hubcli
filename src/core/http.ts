@@ -451,11 +451,18 @@ export class HubSpotClient {
       // Baseline event: always includes ts + requestId + profile.
       // toolName comes from AsyncLocalStorage (set by the MCP handler
       // wrapper) so concurrent MCP calls don't race on a process-global.
+      const tcx = getTelemetryContext();
+      // changeTicket: ALS wins for MCP (race-safe), env fallback for CLI
+      // (single-invocation per process, preAction sets HSCLI_CHANGE_TICKET).
+      const changeTicket = tcx?.changeTicket
+        || process.env.HSCLI_CHANGE_TICKET?.trim()
+        || undefined;
       appendFileSync(this.telemetryFile, JSON.stringify({
         ts: new Date().toISOString(),
         requestId: this.requestId,
         profile: this.profile,
-        toolName: getTelemetryContext()?.toolName,
+        toolName: tcx?.toolName,
+        changeTicket,
         ...safeEvent,
       }) + "\n", "utf8");
     } catch {

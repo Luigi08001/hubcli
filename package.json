@@ -57,6 +57,8 @@
   "files": [
     "dist",
     "docs/*.md",
+    "docs/TUTORIALS/*.md",
+    "docs/POLICY_EXAMPLE.json",
     "docs/policy-templates",
     "README.md",
     "LICENSE",

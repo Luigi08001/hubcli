@@ -230,10 +230,38 @@ describe("MCP telemetry — toolName tagging", () => {
 
     const { registerHubSpotTools } = await import("../src/mcp/server.js");
     const mock = new MockMcpServer();
-     
+
     registerHubSpotTools(mock as any);
     await mock.tools.get("crm_contacts_list")!({ limit: 1 });
     expect(process.env.HSCLI_MCP_TOOL_NAME).toBeUndefined();
+  });
+
+  it("changeTicket from MCP args is written into the telemetry event", async () => {
+    const home = setupMcpHome();
+    const telemetryFile = join(home, "trace.jsonl");
+    process.env.HSCLI_TELEMETRY_FILE = telemetryFile;
+
+    vi.spyOn(global, "fetch" as never).mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({ id: "1" }),
+      headers: new Headers(),
+    } as never);
+
+    const { registerHubSpotTools } = await import("../src/mcp/server.js");
+    const mock = new MockMcpServer();
+
+    registerHubSpotTools(mock as any);
+    const cb = mock.tools.get("crm_contacts_list");
+    expect(cb, "crm_contacts_list tool must be registered").toBeDefined();
+    await cb!({ limit: 1, changeTicket: "OPS-42" });
+
+    expect(existsSync(telemetryFile)).toBe(true);
+    const lines = readFileSync(telemetryFile, "utf8").trim().split("\n").filter(Boolean);
+    expect(lines.length).toBeGreaterThan(0);
+    const event = JSON.parse(lines[lines.length - 1]) as { toolName?: string; changeTicket?: string };
+    expect(event.toolName).toBe("crm_contacts_list");
+    expect(event.changeTicket).toBe("OPS-42");
   });
 });
 

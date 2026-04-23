@@ -29,14 +29,25 @@ across: `commands/account`, `commands/auth` (`token-info`),
 `commands/marketing` (helper path), `commands/settings`,
 `mcp/server` (`executeTool`), `mcp/hubspot-modules`.
 
-### Fixed — P2: MCP cannot provide change tickets
+### Fixed — P2: MCP cannot provide change tickets (and audit it)
 
 `baseArgsSchema` and `McpBaseArgs` now include an optional
 `changeTicket` field. `mcpContext()` threads it into the `CliContext`
 so policies with `requireChangeTicket: true` accept MCP writes.
-`HSCLI_POLICY_FILE` and `HSCLI_CHANGE_TICKET` are also honored as
-env-level fallbacks so agents can inject the ticket without a code
-change.
+
+The ticket is **also written into the trace/audit JSONL** — the first
+iteration of this PR only threaded it into the policy check but
+left telemetry blind to it (review feedback). `TelemetryContext`
+now carries `changeTicket`, `executeTool()` extends the ALS scope
+with it via a new `withTelemetryContext()` helper, and
+`emitTelemetry()` emits it on every event. For CLI (non-MCP), the
+preAction hook sets `HSCLI_CHANGE_TICKET` so the HTTP layer picks
+it up as an env fallback (CLI is single-invocation per process, so
+env is race-safe). `HSCLI_POLICY_FILE` + `HSCLI_CHANGE_TICKET` are
+also honored on MCP so agents can inject without a code change.
+
+Regression test: `changeTicket from MCP args is written into the
+telemetry event` in `tests/bugfixes-v0.7.1.test.ts`.
 
 ### Fixed — P2: MCP tool-name attribution was process-global
 
@@ -64,9 +75,14 @@ previously the command succeeded silently with an unverifiable token.
 
 ### Changed — packaging
 
-`files` in `package.json` now includes `docs/*.md` so the README's
-doc links resolve after `npm install`. Previously only
-`docs/policy-templates/` was shipped.
+`files` in `package.json` now includes `docs/*.md`,
+`docs/TUTORIALS/*.md`, and `docs/POLICY_EXAMPLE.json` so the
+README's doc links resolve after `npm install`. Previously only
+`docs/policy-templates/` was shipped. The top-level `docs/*.md`
+glob is non-recursive, so `TUTORIALS/` needed its own explicit
+entry (review feedback). The README's `demo-*.gif` references were
+switched to absolute GitHub raw URLs since the 14 MB of demo
+assets don't belong in the tarball.
 
 ### Changed — product positioning
 

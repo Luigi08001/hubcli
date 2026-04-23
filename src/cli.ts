@@ -112,6 +112,15 @@ export function createProgram(): { program: Command; getCtx: () => CliContext } 
       process.env.HSCLI_STRICT_CAPABILITIES = ctx.strictCapabilities ? "1" : "0";
       process.env.HSCLI_REQUEST_ID = runId;
       if (telemetryFile) process.env.HSCLI_TELEMETRY_FILE = telemetryFile;
+      // CLI is single-invocation per process, so env is safe here (no
+      // concurrency). emitTelemetry() reads this as a fallback when the
+      // AsyncLocalStorage changeTicket isn't set — which is the CLI case,
+      // since only MCP runs inside runWithTelemetryContext.
+      if (ctx.changeTicket) {
+        process.env.HSCLI_CHANGE_TICKET = ctx.changeTicket;
+      } else {
+        delete process.env.HSCLI_CHANGE_TICKET;
+      }
     });
 
   registerAuth(program, () => ctx);

@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/demo-hubspot.gif" alt="hscli writing into a HubSpot portal in real time — records appear in the UI as hscli creates them" width="100%">
+  <img src="https://raw.githubusercontent.com/revfleet/hscli/main/docs/demo-hubspot.gif" alt="hscli writing into a HubSpot portal in real time — records appear in the UI as hscli creates them" width="100%">
 </p>
 
 <p align="center">
@@ -161,7 +161,7 @@ hscli --format table crm contacts list --limit 5   # table (default)
 The HubSpot-UI recording at the top shows the *outcome*. Here's the *cause* — the same fixture built and torn down entirely from the shell:
 
 <p align="center">
-  <img src="docs/demo-terminal.gif" alt="hscli terminal walkthrough — blank → create → associate → read → update → archive → blank" width="100%">
+  <img src="https://raw.githubusercontent.com/revfleet/hscli/main/docs/demo-terminal.gif" alt="hscli terminal walkthrough — blank → create → associate → read → update → archive → blank" width="100%">
 </p>
 
 [Source script](scripts/demo.sh) · [recording config](scripts/demo.tape) · [how the recordings are made](scripts/README.md)

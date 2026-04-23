@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { createClient, HubSpotClient } from "../core/http.js";
-import { runWithTelemetryContext } from "../core/telemetry-context.js";
+import { runWithTelemetryContext, withTelemetryContext } from "../core/telemetry-context.js";
 import { CliError, redactSensitive, type CliContext } from "../core/output.js";
 import {
   ENGAGEMENT_OBJECT_TYPES,
@@ -110,7 +110,13 @@ export async function executeTool(args: McpBaseArgs, fn: (ctx: CliContext, clien
     const client = createClient(ctx.profile, {
       strictCapabilities: isEnvTrue(process.env.HSCLI_MCP_STRICT_CAPABILITIES),
     });
-    const result = await fn(ctx, client);
+    // Extend the outer tool-name ALS scope with the changeTicket parsed
+    // from args so emitTelemetry() tags every HTTP event triggered by
+    // this MCP call with both toolName + changeTicket.
+    const result = await withTelemetryContext(
+      ctx.changeTicket ? { changeTicket: ctx.changeTicket } : {},
+      () => fn(ctx, client),
+    );
     return textResult(result);
   } catch (error) {
     const err = error instanceof CliError
