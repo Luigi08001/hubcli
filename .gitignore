@@ -16,3 +16,4 @@ scripts/.hubspot-state.json
 scripts/.video-cache/
 scripts/__pycache__/
 scripts/*.py[cod]
+scripts/.video-cache-assets/
