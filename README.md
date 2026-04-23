@@ -107,7 +107,7 @@ Every request hscli makes is append-only JSONL. Pair `trace` with `audit` for fu
 ## What's in the box
 
 <details>
-<summary><strong>Full surface coverage</strong> — click to expand</summary>
+<summary><strong>Surface coverage</strong> — click to expand</summary>
 
 - **CRM** — contacts, companies, deals, tickets, leads, quotes, products, line items, orders, carts, discounts, fees, taxes, invoices, subscriptions, payments, goals, communications, users, custom objects, properties, pipelines, associations v4, owners, imports, exports, engagements, sync, describe/validate, timeline, CRM Cards
 - **Marketing** — emails (v3 + legacy v1), campaigns, ads, social, SEO, landing pages, transactional, subscriptions, events, behavioral events, forms
@@ -127,9 +127,17 @@ Enterprise defaults: `--dry-run`, `--force`, policy files, change tickets, capab
 
 ### What "1,180 endpoints" means
 
-Every one of HubSpot's documented public API endpoints has a corresponding CLI subcommand — verified against an automated scrape of HubSpot's developer documentation.
+hscli covers **~all** of HubSpot's documented public API endpoints — a CLI subcommand or MCP tool per endpoint, verified against an automated scrape of HubSpot's developer documentation. A small residue stays out of reach because it's UI-only, deprecated, or requires a developer-app auth model rather than a private-app bearer token; see [docs/CAPABILITY_LIBRARY.md](docs/CAPABILITY_LIBRARY.md) for the ❌/⚠️/✅ matrix.
 
-It does **not** mean every endpoint returns 2xx on your portal. HubSpot tier-locks hundreds of endpoints behind paid plans:
+Even within the reachable set, actual 2xx responses on your portal depend on:
+
+- **Tier/plan gates** — hundreds of endpoints are locked to Marketing/Sales/Service/CMS/Ops/Commerce Pro/Enterprise or add-ons.
+- **Scope gates** — the private-app token must carry the right scopes; some scopes have no public endpoint surface.
+- **Auth-model gates** — a subset (developer-platform, app-install) require a Developer Account + `appId` + developer API key, not a bearer token.
+- **Deprecated surfaces** — HubDB v2, CMS performance, legacy ecommerce bridge, accounting extension, marketing calendar etc. are shipped for continuity but HubSpot may 4xx them.
+- **UI-only surfaces** — chatflow decision trees, SLA policies, quote e-signature, social-inbox reactions, scoring formulas and similar authoring flows have no public endpoint (covered in the library as ❌ hard-locks).
+
+HubSpot's own tier map, projected onto hscli's surface:
 
 | Portal profile | Reachable endpoints |
 |---|---:|
@@ -164,7 +172,7 @@ The HubSpot-UI recording at the top shows the *outcome*. Here's the *cause* — 
   <img src="https://raw.githubusercontent.com/revfleet/hscli/main/docs/demo-terminal.gif" alt="hscli terminal walkthrough — blank → create → associate → read → update → archive → blank" width="100%">
 </p>
 
-[Source script](scripts/demo.sh) · [recording config](scripts/demo.tape) · [how the recordings are made](scripts/README.md)
+[Source script](https://github.com/revfleet/hscli/blob/main/scripts/demo.sh) · [recording config](https://github.com/revfleet/hscli/blob/main/scripts/demo.tape) · [how the recordings are made](https://github.com/revfleet/hscli/blob/main/scripts/README.md)
 
 ## Caches
 

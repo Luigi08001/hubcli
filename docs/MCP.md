@@ -44,7 +44,7 @@ Add a server entry in your Claude Desktop MCP config:
       "command": "node",
       "args": ["/absolute/path/to/hscli/dist/cli.js", "mcp"],
       "env": {
-        "HSCLI_HOME": "/absolute/path/to/.hscli",
+        "HSCLI_HOME": "/absolute/path/to/.revfleet",
         "HSCLI_MCP_PROFILE": "default"
       }
     }

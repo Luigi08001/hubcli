@@ -16,7 +16,7 @@ Incident response procedures for hscli operations.
 ### Diagnosis
 ```bash
 # Check recent telemetry for unusual activity
-cat ~/.hscli/telemetry.jsonl | grep '"method":"DELETE"' | tail -20
+cat ~/.revfleet/telemetry.jsonl | grep '"method":"DELETE"' | tail -20
 
 # Check which profiles exist
 hscli auth profiles
@@ -69,7 +69,7 @@ hscli auth set-mode production read-only
 ### Diagnosis
 ```bash
 # Check telemetry for 429 responses
-cat ~/.hscli/telemetry.jsonl | grep '"status":429' | wc -l
+cat ~/.revfleet/telemetry.jsonl | grep '"status":429' | wc -l
 
 # Check current rate limit state via a simple request
 hscli crm contacts list --limit 1 --telemetry-file /tmp/ratelimit-check.jsonl
@@ -109,10 +109,10 @@ hscli crm contacts list --limit 1
 ### Diagnosis
 ```bash
 # Confirm vault is encrypted
-ls -la ~/.hscli/auth.enc
+ls -la ~/.revfleet/auth.enc
 
 # Check if plain auth.json exists as backup
-ls -la ~/.hscli/auth.json
+ls -la ~/.revfleet/auth.json
 ```
 
 ### Recovery
@@ -120,7 +120,7 @@ ls -la ~/.hscli/auth.json
 **If `auth.json` backup exists:**
 ```bash
 # Remove encrypted vault, use plain file
-rm ~/.hscli/auth.enc
+rm ~/.revfleet/auth.enc
 # Verify access
 hscli auth profiles
 # Re-encrypt with new passphrase
@@ -131,7 +131,7 @@ hscli auth encrypt
 **If no backup exists:**
 ```bash
 # Remove encrypted vault
-rm ~/.hscli/auth.enc
+rm ~/.revfleet/auth.enc
 # Re-authenticate with each profile
 hscli auth login --token "pat-xxx-token" --profile default
 hscli auth login --token "pat-xxx-other" --profile staging
@@ -207,7 +207,7 @@ hscli api request --method GET --path "/marketing/v3/emails?limit=1"
 3. **Use fallback**: the error message includes a fallback command
 4. **Clear stale cache**:
    ```bash
-   rm ~/.hscli/capabilities.json
+   rm ~/.revfleet/capabilities.json
    hscli doctor capabilities --refresh
    ```
 
@@ -240,7 +240,7 @@ hscli auth login --token "pat-eu1-your-token"
 hscli doctor hublet-check
 # Should show: hublet=eu1, apiDomain=api-eu1.hubapi.com
 
-# If using @hubspot/cli too, ensure ~/.hscli/config.yml has env: eu1
+# If using HubSpot's official @hubspot/cli too, ensure its ~/.hscli.config.yml has env: eu1
 ```
 
 ### Prevention

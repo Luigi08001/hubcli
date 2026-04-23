@@ -1,5 +1,76 @@
 # Changelog
 
+## 0.8.10 - 2026-04-24
+
+**Polish follow-up to 0.8.9.** Five small fixes from the PR #43 review —
+no behavior change on the safety rails landed in 0.8.9, just closing
+gaps around product claim honesty, packaging, regression coverage,
+first-call hublet UX, and doc freshness.
+
+### Changed — README claim wording aligned with package.json
+
+The README's "What '1,180 endpoints' means" block previously said
+"Every one of HubSpot's documented public API endpoints has a
+corresponding CLI subcommand." Rewritten to "covers **~all** of
+HubSpot's documented public API endpoints" with an explicit list of
+reachability gates (tier, scope, auth model, deprecation, UI-only)
+and a pointer to the ❌/⚠️/✅ matrix in `docs/CAPABILITY_LIBRARY.md`.
+The "Full surface coverage" details summary also softened to
+"Surface coverage".
+
+### Fixed — more packaged-docs link breakage on npm
+
+0.8.9 caught `docs/TUTORIALS/*.md` and `docs/POLICY_EXAMPLE.json`.
+Review flagged a second batch: `brand/readme-hero.svg`,
+`CONTRIBUTING.md`, `scripts/demo.sh`, `scripts/demo.tape`, and
+`scripts/README.md` were still relative and not in the tarball.
+
+- `brand/readme-hero.svg` + `CONTRIBUTING.md` added to `files`
+  (small, make sense in-package).
+- `scripts/*` links rewritten to absolute
+  `github.com/revfleet/hscli/blob/main/...` URLs since the
+  `scripts/` directory also contains ~200KB of Python helpers, a
+  `__pycache__/`, and release tooling that don't belong in npm.
+
+### Added — security regression tests (`tests/bugfixes-v0.8.9.test.ts`)
+
+Locking in 0.8.9's hardening so future refactors don't silently
+re-open the leaks:
+
+- **`auth token-info` never writes the raw token to telemetry**
+  (verifies the `/oauth/v1/access-tokens/{token}` path is redacted
+  to `/oauth/v1/access-tokens/[REDACTED]`).
+- **`--include-bodies` redacts secrets in request + response**
+  (posts a `pat-na1-…` in the request body and receives it in the
+  response body, asserts the raw value never appears in the JSONL
+  and `[REDACTED]` does).
+- **CLI path surfaces `changeTicket` in telemetry**
+  (covers the env-bridge fallback — the MCP-only ALS test from
+  0.8.9 didn't exercise the non-MCP code path).
+
+### Changed — `auth login` uses hublet-aware verification URL
+
+`fetchPortalDetails()` previously always hit `api.hubapi.com` for
+the initial `/account-info/v3/details` probe. For EU/AP portals
+this first call fails and the code falls through to another probe
+before the hublet gets saved. Now the token prefix (`pat-eu1-…`,
+`pat-ap1-…`) is passed through the existing `detectHublet()`
+helper before the first fetch, so EU/AP users get a 2xx on the
+first try instead of a silent fallback.
+
+### Changed — stale doc references to `~/.hscli`
+
+Some operational docs still pointed to the pre-rebrand config dir:
+
+- `docs/MCP.md` — example `HSCLI_HOME` value corrected to
+  `/absolute/path/to/.revfleet`.
+- `docs/OPERATIONAL_PLAYBOOKS.md` — 7 shell snippets rewritten from
+  `~/.hscli/` → `~/.revfleet/`. The single reference to
+  HubSpot's official `@hubspot/cli` (which *does* use
+  `~/.hscli.config.yml`) is now explicitly flagged as such.
+- `docs/ROADMAP_PHASE1_TO_3.md` — plugin discovery entry updated to
+  reflect 0.8.9's opt-in `HSCLI_PLUGIN_AUTO_DISCOVER` model.
+
 ## 0.8.9 - 2026-04-23
 
 **Security hardening + hublet routing completeness.** Addresses five

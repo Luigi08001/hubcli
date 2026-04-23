@@ -69,7 +69,7 @@ This roadmap defines execution from foundational CLI to production-ready HubSpot
 - Supply-chain automation (Dependabot: npm weekly + GitHub Actions weekly)
 - P1/P2 bug fixes: vault bypass enforcement, 404 record-vs-endpoint disambiguation, safeJson body handling, sync cursor/mode isolation
 - Plugin/extension interface (`src/core/plugins.ts`, `docs/PLUGIN_GUIDE.md`)
-  - HSCLI_PLUGINS env var + node_modules keyword discovery
+  - HSCLI_PLUGINS env var allowlist (default) + opt-in node_modules keyword auto-discovery via HSCLI_PLUGIN_AUTO_DISCOVER
   - PluginContext exposes createClient, maybeWrite, printResult, CliError
   - Safety gates (dry-run/force/policy) enforced for plugin writes
 - Operational playbooks for incident response (`docs/OPERATIONAL_PLAYBOOKS.md`)

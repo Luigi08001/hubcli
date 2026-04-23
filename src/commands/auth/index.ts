@@ -2,14 +2,26 @@ import { Command } from "commander";
 import { readFileSync } from "node:fs";
 import { createClient } from "../../core/http.js";
 import { getProfile, getToken, hasProfile, listProfiles, removeToken, saveProfile, saveToken, detectHublet, resolveApiDomain, getHscliHomeDir } from "../../core/auth.js";
+
+/**
+ * Derive an API base URL from what we can see *before* the profile exists
+ * — used during `auth login` to verify the token against the right hublet
+ * on the first call, so EU/AP portals don't first 4xx against na1 and
+ * then succeed on retry.
+ */
+function resolveVerifyBaseUrl(token: string): string {
+  const hublet = detectHublet({ token });
+  return `https://${resolveApiDomain(hublet)}`;
+}
 import type { CliContext } from "../../core/output.js";
 import { CliError, printResult } from "../../core/output.js";
 import { encryptExistingVault, decryptExistingVault, getVaultPassphrase, isVaultEncrypted } from "../../core/vault.js";
 
 async function fetchPortalDetails(token: string): Promise<{ portalId?: string; uiDomain?: string }> {
   const result: { portalId?: string; uiDomain?: string } = {};
+  const baseUrl = resolveVerifyBaseUrl(token);
   try {
-    const res = await fetch("https://api.hubapi.com/account-info/v3/details", {
+    const res = await fetch(`${baseUrl}/account-info/v3/details`, {
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       signal: AbortSignal.timeout(10_000),
     });
@@ -23,7 +35,7 @@ async function fetchPortalDetails(token: string): Promise<{ portalId?: string; u
   }
   if (!result.portalId) {
     try {
-      const res = await fetch("https://api.hubapi.com/integrations/v1/me", {
+      const res = await fetch(`${baseUrl}/integrations/v1/me`, {
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         signal: AbortSignal.timeout(10_000),
       });

@@ -1,6 +1,6 @@
 {
   "name": "@revfleet/hscli",
-  "version": "0.8.9",
+  "version": "0.8.10",
   "description": "Agentic HubSpot CLI + MCP server. Covers ~all documented public endpoints (1180 across 55+ command domains). Reachability is tier/scope/auth-model gated — UI-only surfaces and deprecated APIs excluded. Enterprise safety rails, self-hosted.",
   "type": "module",
   "bin": {
@@ -60,7 +60,9 @@
     "docs/TUTORIALS/*.md",
     "docs/POLICY_EXAMPLE.json",
     "docs/policy-templates",
+    "brand/readme-hero.svg",
     "README.md",
+    "CONTRIBUTING.md",
     "LICENSE",
     "SECURITY.md",
     "CHANGELOG.md"
