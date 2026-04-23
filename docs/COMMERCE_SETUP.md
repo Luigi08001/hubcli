@@ -1,6 +1,6 @@
 # Commerce Setup Guide
 
-> See also: [[PORTAL_SETUP]] · [[SALES_SETUP]] · [[REPORTING_SETUP]]
+> See also: [PORTAL_SETUP.md](PORTAL_SETUP.md) · [SALES_SETUP.md](SALES_SETUP.md) · [REPORTING_SETUP.md](REPORTING_SETUP.md)
 
 Complete configuration guide for HubSpot Commerce Hub settings. Covers products, payment processing, payment links, quotes, invoices, subscriptions, tax, and commerce automation.
 

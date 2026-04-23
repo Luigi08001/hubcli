@@ -1,6 +1,6 @@
 # SECURITY
 
-> See also: [[SAFETY_MODEL]] · [[RELEASE_GOVERNANCE]] · [[hubspot-rules]]
+> See also: [SAFETY_MODEL.md](SAFETY_MODEL.md) · [RELEASE_GOVERNANCE.md](RELEASE_GOVERNANCE.md)
 
 ## Security Objectives
 - Prevent credential exposure

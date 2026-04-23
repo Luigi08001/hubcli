@@ -1,6 +1,6 @@
 # Operations Setup Guide
 
-> See also: [[PORTAL_SETUP]] · [[REPORTING_SETUP]] · [[INTEGRATIONS_NOTIFICATIONS_SETUP]]
+> See also: [PORTAL_SETUP.md](PORTAL_SETUP.md) · [REPORTING_SETUP.md](REPORTING_SETUP.md) · [INTEGRATIONS_NOTIFICATIONS_SETUP.md](INTEGRATIONS_NOTIFICATIONS_SETUP.md)
 
 Complete configuration guide for HubSpot Operations Hub settings. Covers data sync, data quality, workflows, datasets, custom properties, and data management.
 

@@ -1,6 +1,6 @@
 # Service Setup Guide
 
-> See also: [[PORTAL_SETUP]] · [[SALES_SETUP]] · [[OPERATIONS_SETUP]] · [[REPORTING_SETUP]]
+> See also: [PORTAL_SETUP.md](PORTAL_SETUP.md) · [SALES_SETUP.md](SALES_SETUP.md) · [OPERATIONS_SETUP.md](OPERATIONS_SETUP.md) · [REPORTING_SETUP.md](REPORTING_SETUP.md)
 
 Complete configuration guide for HubSpot Service Hub settings. Covers tickets, knowledge base, customer portal, feedback surveys, SLAs, and service automation.
 

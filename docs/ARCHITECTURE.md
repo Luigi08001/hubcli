@@ -1,6 +1,6 @@
 # ARCHITECTURE
 
-> See also: [[SAFETY_MODEL]] · [[COMMAND_TREE]] · [[MCP]] · [[TESTING_PLAN]] · [[WHY_HOW_WHAT]]
+> See also: [SAFETY_MODEL.md](SAFETY_MODEL.md) · [COMMAND_TREE.md](COMMAND_TREE.md) · [MCP.md](MCP.md) · [TESTING_PLAN.md](TESTING_PLAN.md) · [WHY_HOW_WHAT.md](WHY_HOW_WHAT.md)
 
 `hscli` is built as a layered TypeScript CLI:
 

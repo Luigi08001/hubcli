@@ -1,6 +1,6 @@
 # Integrations, Notifications & Account Settings Setup Guide
 
-> See also: [[PORTAL_SETUP]] · [[OPERATIONS_SETUP]] · [[SECURITY]] · [[hubspot-rules]]
+> See also: [PORTAL_SETUP.md](PORTAL_SETUP.md) · [OPERATIONS_SETUP.md](OPERATIONS_SETUP.md) · [SECURITY.md](../SECURITY.md)
 
 Complete configuration guide for HubSpot integrations, marketplace apps, notifications, user preferences, and account-wide settings.
 

@@ -1,6 +1,6 @@
 # Sales Setup Guide
 
-> See also: [[PORTAL_SETUP]] · [[MARKETING_SETUP]] · [[COMMERCE_SETUP]] · [[REPORTING_SETUP]]
+> See also: [PORTAL_SETUP.md](PORTAL_SETUP.md) · [MARKETING_SETUP.md](MARKETING_SETUP.md) · [COMMERCE_SETUP.md](COMMERCE_SETUP.md) · [REPORTING_SETUP.md](REPORTING_SETUP.md)
 
 Complete configuration guide for HubSpot Sales Hub settings. Covers deals pipeline, quotes, meetings, sequences, playbooks, forecasting, and sales automation.
 
