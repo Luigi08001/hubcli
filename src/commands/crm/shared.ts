@@ -54,6 +54,44 @@ function encodePathSegment(raw: string, segmentName: string): string {
   return encodeURIComponent(value);
 }
 
+/**
+ * Encode a multi-segment file path (e.g. `@hubspot/button.module/fields.json`).
+ *
+ * Each segment is validated and URL-encoded independently, but the `/`
+ * separators are preserved so the resulting string still looks like a
+ * filesystem path when slotted into a URL. Used for CMS source-code
+ * endpoints where paths legitimately contain `/`.
+ *
+ * Blocks the same hazards as `encodePathSegment` (empty segments,
+ * control chars, `\\`, `.` / `..`) plus a few path-traversal patterns.
+ */
+function encodeFilePath(raw: string, segmentName: string): string {
+  const value = raw?.trim();
+  if (!value) {
+    throw new CliError("INVALID_PATH_SEGMENT", `${segmentName} cannot be empty`);
+  }
+  if (CONTROL_CHAR_PATTERN.test(value)) {
+    throw new CliError("INVALID_PATH_SEGMENT", `${segmentName} must not contain control characters`);
+  }
+  if (value.includes("\\")) {
+    throw new CliError("INVALID_PATH_SEGMENT", `${segmentName} must not contain backslashes`);
+  }
+  const normalized = value.replace(/^\/+|\/+$/g, "");
+  if (!normalized) {
+    throw new CliError("INVALID_PATH_SEGMENT", `${segmentName} cannot be empty after stripping separators`);
+  }
+  const parts = normalized.split("/");
+  for (const part of parts) {
+    if (!part) {
+      throw new CliError("INVALID_PATH_SEGMENT", `${segmentName} must not contain empty segments (//)`);
+    }
+    if (part === "." || part === "..") {
+      throw new CliError("INVALID_PATH_SEGMENT", `${segmentName} segment cannot be '.' or '..'`);
+    }
+  }
+  return parts.map((p) => encodeURIComponent(p)).join("/");
+}
+
 function parseSupportedObjectType<T extends readonly string[]>(
   raw: string,
   allowed: T,
@@ -80,8 +118,9 @@ export async function maybeWrite(
   method: "POST" | "PATCH" | "PUT" | "DELETE",
   path: string,
   body?: unknown,
+  extra?: { rawBody?: string; contentType?: string },
 ): Promise<unknown> {
-  if (ctx.dryRun) return { dryRun: true, method, path, body };
+  if (ctx.dryRun) return { dryRun: true, method, path, body, ...(extra ?? {}) };
   if (!ctx.force) {
     throw new CliError(
       "WRITE_CONFIRMATION_REQUIRED",
@@ -89,7 +128,13 @@ export async function maybeWrite(
     );
   }
   enforceWritePolicy(ctx, method, path);
-  return client.request(path, { method, body });
+  const requestOptions: { method: typeof method; body?: unknown; rawBody?: string; contentType?: string } = {
+    method,
+    body,
+  };
+  if (extra?.rawBody !== undefined) requestOptions.rawBody = extra.rawBody;
+  if (extra?.contentType !== undefined) requestOptions.contentType = extra.contentType;
+  return client.request(path, requestOptions);
 }
 
 export function registerObjectCommands(parent: Command, objectType: string, getCtx: () => CliContext): void {
@@ -294,6 +339,7 @@ export {
   parseBooleanFlag,
   parseSupportedObjectType,
   encodePathSegment,
+  encodeFilePath,
   appendOptional,
   OBJECT_COMMAND_TYPES,
   PROPERTY_OBJECT_TYPES,

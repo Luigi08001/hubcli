@@ -26,20 +26,47 @@ export function registerApi(program: Command, getCtx: () => CliContext): void {
     .requiredOption("--path <path>", "HubSpot API path (must start with /)")
     .option("--method <method>", "HTTP method", "GET")
     .option("--data <payload>", "JSON payload for write/read body")
+    .option(
+      "--raw-body <body>",
+      "Raw body string (sent verbatim, no JSON serialization). Use with --content-type.",
+    )
+    .option(
+      "--content-type <type>",
+      "Content-Type header. Defaults to application/json. Required for non-JSON bodies (e.g. text/plain for CMS source-code uploads).",
+    )
     .action(async (opts) => {
       const ctx = getCtx();
       const client = createClient(ctx.profile);
       const method = parseMethod(opts.method);
       const path = String(opts.path).trim();
-      const body = opts.data !== undefined ? parseJsonPayload(opts.data) : undefined;
 
-      if (method === "GET" && body !== undefined) {
-        throw new CliError("INVALID_GET_BODY", "GET requests do not accept --data");
+      if (opts.data !== undefined && opts.rawBody !== undefined) {
+        throw new CliError("INVALID_BODY", "--data and --raw-body cannot be combined");
+      }
+      const body = opts.data !== undefined ? parseJsonPayload(opts.data) : undefined;
+      const rawBody: string | undefined = opts.rawBody !== undefined ? String(opts.rawBody) : undefined;
+      const contentType: string | undefined =
+        opts.contentType !== undefined ? String(opts.contentType).trim() : undefined;
+
+      if (method === "GET" && (body !== undefined || rawBody !== undefined)) {
+        throw new CliError("INVALID_GET_BODY", "GET requests do not accept --data or --raw-body");
       }
 
+      const requestOptions: { method: typeof method; body?: unknown; rawBody?: string; contentType?: string } = { method };
+      if (body !== undefined) requestOptions.body = body;
+      if (rawBody !== undefined) requestOptions.rawBody = rawBody;
+      if (contentType !== undefined) requestOptions.contentType = contentType;
+
       const res = WRITE_METHODS.has(method)
-        ? await maybeWrite(ctx, client, method as "POST" | "PATCH" | "PUT" | "DELETE", path, body)
-        : await client.request(path, body !== undefined ? { method, body } : { method });
+        ? await maybeWrite(
+            ctx,
+            client,
+            method as "POST" | "PATCH" | "PUT" | "DELETE",
+            path,
+            body,
+            { rawBody, contentType },
+          )
+        : await client.request(path, requestOptions);
 
       printResult(ctx, res);
     });

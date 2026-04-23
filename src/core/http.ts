@@ -52,6 +52,16 @@ export interface RequestOptions {
   method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
   body?: unknown;
   idempotencyKey?: string;
+  /**
+   * Override the default `Content-Type: application/json`. Used when
+   * HubSpot endpoints expect `text/plain`, `text/html`, or
+   * `multipart/form-data` — e.g. `/cms/v3/source-code/*` template
+   * uploads. When set, `rawBody` is sent verbatim instead of
+   * JSON-stringifying `body`.
+   */
+  contentType?: string;
+  /** Raw body string used when `contentType` is non-JSON. */
+  rawBody?: string;
 }
 
 interface HubSpotClientOptions {
@@ -114,6 +124,12 @@ const ALLOWED_PATH_SCOPES = [
   "business-units",
   "form-integrations",
   "comments",
+  // Survey + feedback endpoints (e.g. /feedback/v3/submissions)
+  "feedback",
+  // Legacy goals API (/goals/v1/*) — modern alternative is /crm/v3/objects/goal_targets
+  "goals",
+  // CMS content folder tree listing (used by design-manager tooling)
+  "content-folders",
 ];
 
 interface RollingQuotaState {
@@ -195,15 +211,22 @@ export class HubSpotClient {
     });
 
     try {
+      const contentType = options.contentType ?? "application/json";
+      const bodyToSend =
+        options.rawBody !== undefined
+          ? options.rawBody
+          : options.body !== undefined
+            ? JSON.stringify(options.body)
+            : undefined;
       const response = await fetch(url, {
         method,
         headers: {
           Authorization: `Bearer ${this.token}`,
-          "Content-Type": "application/json",
+          "Content-Type": contentType,
           "X-Hubcli-Request-Id": this.requestId,
           ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}),
         },
-        body: options.body ? JSON.stringify(options.body) : undefined,
+        body: bodyToSend,
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
 

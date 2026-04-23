@@ -45,8 +45,8 @@ export async function seedInfra(ctx: SeedContext, result: SeedResult): Promise<v
   try {
     const rec = await safeCreate(client, "/automation/v4/flows", {
       name: `HubCLI Seed Workflow ${runSuffix}`,
-      type: "WORKFLOW",
-      flowType: "CONTACT_FLOW",
+      type: "CONTACT_FLOW",
+      flowType: "WORKFLOW",
       objectTypeId: "0-1",
       isEnabled: false,
     });

@@ -1,5 +1,67 @@
 # Changelog
 
+## 0.8.4 - 2026-04-23
+
+**Drag-and-drop library access + polish.** A batch of capability-surface
+additions following a systematic probe of HubSpot's public API. All
+changes verified against HubSpot's live endpoints on 2026-04-23. See
+[docs/CAPABILITY_LIBRARY.md](docs/CAPABILITY_LIBRARY.md) for the
+complete map of what hscli does + what HubSpot platform-blocks.
+
+### Added
+
+- **`cms source-code list-modules`** — enumerates HubSpot's built-in
+  `@hubspot/*` module library (55 modules verified on a Content Hub
+  portal) against a wordlist drawn from HubSpot's developer docs.
+  Returns per-module field counts + optional full field schemas via
+  `--schemas`. Lets CLI + MCP callers discover every module and its
+  settings — the same surface a drag-and-drop user sees.
+- **`marketing emails upload-image`** — one-command wrapper over
+  `POST /files/v3/files/import-from-url/async` + status polling.
+  Imports an external image into HubSpot Files and returns the
+  resulting HubFS CDN URL ready to embed in an email body. HubSpot's
+  email preview renders HubFS-hosted images; external URLs get
+  sandboxed by the in-editor iframe.
+- **`marketing emails publish <emailId>`** — surfaces the previously
+  undocumented `POST /marketing/v3/emails/{id}/publish` endpoint as a
+  first-class CLI command. Verified live: returns HubSpot's standard
+  validation errors on malformed emails (subscription type missing,
+  required fields unset), confirming the endpoint is real and
+  publishes otherwise-valid emails.
+- **`api request --content-type <type>` + `--raw-body <body>`** — new
+  flags on the raw API passthrough. Needed for endpoints that reject
+  `application/json` (e.g. `/cms/v3/source-code/*` template uploads
+  that expect `text/plain`). Default behaviour unchanged.
+- **`docs/CAPABILITY_LIBRARY.md`** — new. Maps every CRM / Marketing /
+  Sales / Service / CMS / Admin / Developer job a HubSpot user performs
+  through the UI to hscli commands, with honest `✅ full parity` /
+  `⚠️ partial` / `❌ API-locked` / `🚧 hscli-allowlist-blocked` /
+  `🔒 tier-gated` classifications. Every ❌ row in the library was
+  probed live — no entries "claimed from priors."
+
+### Fixes
+
+- **`cms source-code` path validator** — `get|create|update|delete|metadata|validate`
+  commands previously rejected paths containing `/`, making
+  `@hubspot/button.module/fields.json`-style lookups impossible via
+  the CLI. Introduced `encodeFilePath` which preserves `/` separators
+  between segments while still blocking control chars, `\\`, `.`/`..`,
+  and double-slashes. Single-segment encoding (`encodePathSegment`)
+  unchanged.
+- **Endpoint allowlist expanded** — `/feedback/*`, `/goals/*`, and
+  `/content-folders/*` paths were previously blocked by hscli's own
+  `INVALID_PATH_SCOPE` guard (not HubSpot). Added to the allowlist so
+  the CLI can hit them when HubSpot exposes them on a portal.
+- Fixed: seed workflow payload matches current HubSpot v4 flows API
+  (was rejected with 400).
+
+### Tests
+
+- New `tests/path-encoding.test.ts` — 13 unit tests covering both
+  `encodePathSegment` (single-segment) and `encodeFilePath`
+  (multi-segment with `/`) hazard cases: traversal (`..`), double
+  slashes, backslashes, control chars, all-slash inputs.
+
 ## 0.8.3 - 2026-04-23
 
 **Clean-install fix + CI stability.** Two P1 issues surfaced in a
