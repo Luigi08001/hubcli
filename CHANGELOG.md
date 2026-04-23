@@ -1,5 +1,42 @@
 # Changelog
 
+## 0.8.5 - 2026-04-23
+
+**Multi-step workflow creation via CLI — legacy v3 unlock.** The v4
+`/automation/v4/flows` endpoint rejects populated `actions[]` on
+create (500) / update (405), which we previously classified as a
+HubSpot platform block. **It isn't.** HubSpot's legacy v3 API
+(`/automation/v3/workflows`) accepts a fully-populated `actions[]`
+array on create — DELAY, EMAIL, SET_CONTACT_PROPERTY, BRANCH,
+WEBHOOK, UPDATE_LIST, TASK, TICKET, DEAL, NOTIFICATION — and
+workflows created via v3 are dual-backed: they surface in v4
+(`migrationStatus.flowId`) and render in HubSpot's modern canvas UI
+with all action nodes visible. Verified live on portal 147975758
+with a 5-step welcome onboarding flow (Trigger → Delay → Send email
+→ Delay → Set property → Branch).
+
+### Added
+
+- **`hscli workflows v3`** subcommand suite:
+  - `v3 list` / `v3 get <id>` — read legacy workflows (includes full
+    `actions[]` tree, which v4 GET omits).
+  - `v3 create --data '{...}'` — create contact-based workflow with
+    populated multi-step actions. One CLI call replaces an entire
+    clicking-through-canvas UI session.
+  - `v3 delete <id>` — archive a workflow.
+  - `v3 enroll <id> <email>` / `v3 unenroll <id> <email>` — manage
+    contact enrollment (automation membership).
+  - `v3 enrollments <email>` — list a contact's current workflow
+    memberships.
+
+### Fixes
+
+- **[docs/CAPABILITY_LIBRARY.md](docs/CAPABILITY_LIBRARY.md)** §5
+  Automation — workflow-action creation reclassified from ❌
+  "API-locked" to ✅ via v3. Full `type`-value catalogue added.
+  §10 blocked-list entry amended: the ❌ on v4 remains, but v3
+  provides the missing workaround.
+
 ## 0.8.4 - 2026-04-23
 
 **Drag-and-drop library access + polish.** A batch of capability-surface
