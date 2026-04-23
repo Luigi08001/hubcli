@@ -118,7 +118,11 @@ export async function maybeWrite(
   method: "POST" | "PATCH" | "PUT" | "DELETE",
   path: string,
   body?: unknown,
-  extra?: { rawBody?: string; contentType?: string },
+  extra?: {
+    rawBody?: string;
+    contentType?: string;
+    multipart?: Record<string, import("../../core/http.js").MultipartPart>;
+  },
 ): Promise<unknown> {
   if (ctx.dryRun) return { dryRun: true, method, path, body, ...(extra ?? {}) };
   if (!ctx.force) {
@@ -128,12 +132,16 @@ export async function maybeWrite(
     );
   }
   enforceWritePolicy(ctx, method, path);
-  const requestOptions: { method: typeof method; body?: unknown; rawBody?: string; contentType?: string } = {
-    method,
-    body,
-  };
+  const requestOptions: {
+    method: typeof method;
+    body?: unknown;
+    rawBody?: string;
+    contentType?: string;
+    multipart?: Record<string, import("../../core/http.js").MultipartPart>;
+  } = { method, body };
   if (extra?.rawBody !== undefined) requestOptions.rawBody = extra.rawBody;
   if (extra?.contentType !== undefined) requestOptions.contentType = extra.contentType;
+  if (extra?.multipart !== undefined) requestOptions.multipart = extra.multipart;
   return client.request(path, requestOptions);
 }
 

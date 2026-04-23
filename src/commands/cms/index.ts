@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { resolve } from "node:path";
 import { createClient } from "../../core/http.js";
 import type { CliContext } from "../../core/output.js";
 import { printResult } from "../../core/output.js";
@@ -135,4 +136,36 @@ export function registerCms(program: Command, getCtx: () => CliContext): void {
   });
 
   registerHubdb(cms, getCtx);
+
+  // `cms upload` — mirrors `hs upload` from HubSpot's own CLI. Uses
+  // the legacy /content/filemapper/v1/upload/{dest} endpoint (NOT
+  // documented at developers.hubspot.com). Found by reading
+  // HubSpot/hubspot-local-dev-lib api/fileMapper.ts — this is what
+  // `hs upload` actually calls under the hood. Multipart POST with
+  // a `file` field; destination path goes in the URL (URL-encoded).
+  cms
+    .command("upload")
+    .description("Upload a local file to the CMS file system (multipart; uses content/filemapper/v1)")
+    .argument("<destPath>", "Destination path in the CMS (e.g. src/templates/home.html)")
+    .requiredOption("--file <localPath>", "Local file to upload")
+    .option("--content-type <type>", "MIME type of the file (default: application/octet-stream)")
+    .action(async (destPath, o) => {
+      const ctx = getCtx();
+      const client = createClient(ctx.profile);
+      // Endpoint URL-encodes the whole destination path as a single
+      // path segment — slashes + dots + everything becomes %2F/%2E.
+      const destEncoded = encodeURIComponent(String(destPath));
+      const localPath = resolve(String(o.file));
+      const res = await maybeWrite(
+        ctx, client, "POST",
+        `/content/filemapper/v1/upload/${destEncoded}`,
+        undefined,
+        {
+          multipart: {
+            file: { path: localPath, contentType: o.contentType ?? "application/octet-stream" },
+          },
+        },
+      );
+      printResult(ctx, res);
+    });
 }

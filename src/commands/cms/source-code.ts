@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { resolve } from "node:path";
 import { createClient } from "../../core/http.js";
 import type { CliContext } from "../../core/output.js";
 import { printResult } from "../../core/output.js";
@@ -141,6 +142,32 @@ export function registerSourceCode(cms: Command, getCtx: () => CliContext): void
     // Legacy quotes
     "quote_download", "quote_payment", "quote_signature", "line_items",
   ];
+
+  // Upload (create-or-replace) a CMS source-code file from a local
+  // path. Fixes the 415 we hit earlier — HubSpot requires real
+  // multipart/form-data with a `file` field and a boundary emitted
+  // by the runtime. Verified against HubSpot's nodejs SDK source
+  // (codegen/cms/source_code/apis/ContentApi.ts).
+  sc.command("upload")
+    .description("Upload (PUT) a local file to a CMS source-code path (multipart)")
+    .argument("<environment>", "Environment: draft or published")
+    .argument("<destPath>", "Destination path (e.g. custom/my-module.module/module.html)")
+    .requiredOption("--file <localPath>", "Local file to upload")
+    .option("--content-type <type>", "MIME type of the file", "application/octet-stream")
+    .action(async (environment, destPath, o) => {
+      const ctx = getCtx();
+      const client = createClient(ctx.profile);
+      const envSeg = encodePathSegment(environment, "environment");
+      const pathSeg = encodeFilePath(destPath, "destPath");
+      const localPath = resolve(String(o.file));
+      const res = await maybeWrite(
+        ctx, client, "PUT",
+        `/cms/v3/source-code/${envSeg}/content/${pathSeg}`,
+        undefined,
+        { multipart: { file: { path: localPath, contentType: String(o.contentType) } } },
+      );
+      printResult(ctx, res);
+    });
 
   sc.command("list-modules")
     .description("Enumerate available @hubspot/* built-in modules + their field schemas")
