@@ -39,10 +39,12 @@ High-level map of every hscli command. For detailed args and examples per comman
 
 ## Guide
 
-- `hscli guide [--goal portal-migration|setup|read|write|guardrails|property-preflight|audit-trace|explore]` — guided workflows for common operator tasks
+- `hscli ui` / `hscli home` — terminal home for operator workflows and current profile context
+- `hscli guide [--goal portal-migration|setup|read|fetch|write|guardrails|property-preflight|audit-trace|explore]` — guided workflows for common operator tasks
 - `hscli /migration` — portal/schema migration workflow
 - `hscli /setup` — auth, hublet routing, scopes, and capability setup
 - `hscli /read` — safe source-portal read workflow
+- `hscli /fetch` / `hscli /get` — get records or metadata without mutating the portal
 - `hscli /write` — target-portal write workflow with dry-run + trace
 - `hscli /guardrails` — policy, read-only, trace, and scope checks
 

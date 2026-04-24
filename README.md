@@ -50,9 +50,12 @@ hscli auth set-hublet live eu1
 Start from intent instead of memorizing the whole command tree:
 
 ```bash
+hscli ui           # terminal home for operator workflows
 hscli /setup       # auth, hublet routing, scopes, capabilities
 hscli /migration   # portal/schema migration sequence
 hscli /read        # source-portal read workflow
+hscli /fetch       # get records or metadata without mutation
+hscli /get         # alias for /fetch
 hscli /write       # target-portal write workflow
 hscli /guardrails  # read-only, policy, trace, scope checks
 ```

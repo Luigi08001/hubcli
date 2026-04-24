@@ -10,13 +10,15 @@ translator, session-auth permission sets), and tightens the HTTP
 layer so multiple clients in one process no longer overrun a shared
 HubSpot rate budget.
 
-38 new tests land alongside the features (307 total passing).
+39 new tests land alongside the features (308 total passing).
 
 ### Added — migration/operator workflows
 
 - Claude-style operator entrypoints: `hscli /setup`, `/migration`,
-  `/read`, `/write`, and `/guardrails`, with non-slash aliases for
+  `/read`, `/fetch` (`/get`), `/write`, and `/guardrails`, with non-slash aliases for
   shell environments that prefer plain command names.
+- `hscli ui` / `hscli home` terminal home for profile context and
+  operator workflow selection.
 - `auth set-hublet <profile> <hublet>` plus global `--hublet` /
   `--api-base-url` routing overrides for explicit EU/AP/NA hublet
   control.

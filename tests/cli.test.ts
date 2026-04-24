@@ -1139,20 +1139,57 @@ describe("hscli", () => {
     expect(output.data.capturedByMigrationExport).toContain("deal/ticket pipelines with stage detail");
   });
 
-  it("slash guide commands expose migration and guardrail modes", async () => {
+  it("slash guide commands expose migration, fetch, and guardrail modes", async () => {
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     const fetchSpy = vi.spyOn(global, "fetch" as never);
 
     const { run } = await import("../src/cli.js");
     await run(["node", "hscli", "--json", "/migration"]);
+    await run(["node", "hscli", "--json", "/fetch"]);
+    await run(["node", "hscli", "--json", "/get"]);
     await run(["node", "hscli", "--json", "/guardrails"]);
 
     expect(fetchSpy).not.toHaveBeenCalled();
     const migration = JSON.parse(String(logSpy.mock.calls[0][0]));
-    const guardrails = JSON.parse(String(logSpy.mock.calls[1][0]));
+    const fetchGuide = JSON.parse(String(logSpy.mock.calls[1][0]));
+    const getGuide = JSON.parse(String(logSpy.mock.calls[2][0]));
+    const guardrails = JSON.parse(String(logSpy.mock.calls[3][0]));
     expect(migration.data.goal).toBe("portal-migration");
+    expect(fetchGuide.data.goal).toBe("fetch");
+    expect(fetchGuide.data.nextCommands).toContain("hscli --profile live account info");
+    expect(getGuide.data.goal).toBe("fetch");
+    expect(getGuide.data.nextCommands).toContain("hscli --profile live crm contacts get <contactId>");
     expect(guardrails.data.goal).toBe("guardrails");
     expect(guardrails.data.nextCommands).toContain("hscli auth set-mode live read-only");
+  });
+
+  it("terminal ui exposes profile context, choices, and selected workflow in JSON mode", async () => {
+    const home = setupHomeWithToken("default", "pat-eu1-test-token", {
+      portalId: "12345678",
+      hublet: "eu1",
+      apiDomain: "api-eu1.hubapi.com",
+      uiDomain: "app-eu1.hubspot.com",
+      mode: "read-only",
+    });
+    process.env.HOME = home;
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const fetchSpy = vi.spyOn(global, "fetch" as never);
+
+    const { run } = await import("../src/cli.js");
+    await run(["node", "hscli", "--json", "ui", "--goal", "fetch", "--no-interactive"]);
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    const output = JSON.parse(String(logSpy.mock.calls[0][0]));
+    expect(output.data.profile).toMatchObject({
+      profile: "default",
+      authenticated: true,
+      portalId: "12345678",
+      hublet: "eu1",
+      apiBaseUrl: "https://api-eu1.hubapi.com",
+      mode: "read-only",
+    });
+    expect(output.data.workflow.goal).toBe("fetch");
+    expect(output.data.choices).toContain("4  /fetch      get records or metadata without mutation");
   });
 
   it("exports recoverable CRM activities for one record", async () => {

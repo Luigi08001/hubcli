@@ -805,9 +805,12 @@ The MCP server exposes the same operations as the CLI with the same safety model
 Use Claude-style slash commands when you want the CLI to tell you the next safe sequence:
 
 ```bash
+hscli ui
 hscli /setup
 hscli /migration
 hscli /read
+hscli /fetch
+hscli /get
 hscli /write
 hscli /guardrails
 ```

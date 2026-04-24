@@ -4,7 +4,7 @@ import { stdin as input, stdout as output } from "node:process";
 import type { CliContext } from "../../core/output.js";
 import { printResult } from "../../core/output.js";
 
-type GuideGoal = "portal-migration" | "setup" | "read" | "write" | "guardrails" | "property-preflight" | "audit-trace" | "explore";
+export type GuideGoal = "portal-migration" | "setup" | "read" | "fetch" | "write" | "guardrails" | "property-preflight" | "audit-trace" | "explore";
 
 const GOAL_ALIASES: Record<string, GuideGoal> = {
   "1": "portal-migration",
@@ -17,27 +17,32 @@ const GOAL_ALIASES: Record<string, GuideGoal> = {
   "3": "read",
   "/read": "read",
   read: "read",
-  "4": "write",
+  "4": "fetch",
+  "/fetch": "fetch",
+  fetch: "fetch",
+  "/get": "fetch",
+  get: "fetch",
+  "5": "write",
   "/write": "write",
   write: "write",
-  "5": "guardrails",
+  "6": "guardrails",
   "/guardrails": "guardrails",
   guardrails: "guardrails",
   safety: "guardrails",
   policy: "guardrails",
   properties: "property-preflight",
   "property-preflight": "property-preflight",
-  "6": "property-preflight",
+  "7": "property-preflight",
   audit: "audit-trace",
   trace: "audit-trace",
   "audit-trace": "audit-trace",
-  "7": "audit-trace",
+  "8": "audit-trace",
   explore: "explore",
   help: "explore",
-  "8": "explore",
+  "9": "explore",
 };
 
-function resolveGoal(raw: string | undefined): GuideGoal {
+export function resolveGoal(raw: string | undefined): GuideGoal {
   const value = raw?.trim().toLowerCase();
   if (!value) return "portal-migration";
   return GOAL_ALIASES[value] ?? "portal-migration";
@@ -52,12 +57,13 @@ async function askGoal(): Promise<GuideGoal> {
       "1) Prepare a portal/schema migration",
       "2) Set up auth, hublet routing, scopes, and capabilities",
       "3) Read safely from a source portal",
-      "4) Write safely to a target portal",
-      "5) Configure guardrails",
-      "6) Preflight property migration payloads",
-      "7) Trace/audit writes",
-      "8) Explore available commands",
-      "Choose 1-8: ",
+      "4) Fetch/get records or metadata",
+      "5) Write safely to a target portal",
+      "6) Configure guardrails",
+      "7) Preflight property migration payloads",
+      "8) Trace/audit writes",
+      "9) Explore available commands",
+      "Choose 1-9: ",
     ].join("\n"));
     return resolveGoal(answer);
   } finally {
@@ -65,7 +71,7 @@ async function askGoal(): Promise<GuideGoal> {
   }
 }
 
-function guidePayload(goal: GuideGoal): Record<string, unknown> {
+export function guidePayload(goal: GuideGoal): Record<string, unknown> {
   if (goal === "setup") {
     return {
       goal,
@@ -98,6 +104,24 @@ function guidePayload(goal: GuideGoal): Record<string, unknown> {
       guardrails: [
         "Profile read-only mode blocks POST/PATCH/PUT/DELETE even if the token has write scopes.",
         "Use separate source/target profiles instead of switching tokens in place.",
+      ],
+    };
+  }
+  if (goal === "fetch") {
+    return {
+      goal,
+      purpose: "Fetch one record, list a small sample, or pull metadata without mutating the portal.",
+      nextCommands: [
+        "hscli --profile live account info",
+        "hscli --profile live crm contacts get <contactId>",
+        "hscli --profile live crm companies list --limit 10",
+        "hscli --profile live crm properties list contacts --format json > contacts-properties.json",
+        "hscli --profile live crm activities export contacts <contactId> --out contact-activities.json",
+        "hscli --profile live api request --path /crm/v3/objects/contacts/<contactId>",
+      ],
+      guardrails: [
+        "Use this for read-only inspection and spot checks.",
+        "For source portals, run `hscli auth set-mode live read-only` first.",
       ],
     };
   }
@@ -224,6 +248,8 @@ export function registerGuide(program: Command, getCtx: () => CliContext): void 
   registerSlashGuide(program, getCtx, "/migration", "portal-migration", "Portal/schema migration workflow");
   registerSlashGuide(program, getCtx, "/setup", "setup", "Initial profile, hublet, scope, and capability setup");
   registerSlashGuide(program, getCtx, "/read", "read", "Safe source-portal read workflow");
+  registerSlashGuide(program, getCtx, "/fetch", "fetch", "Fetch records or metadata without mutating the portal");
+  registerSlashGuide(program, getCtx, "/get", "fetch", "Get records or metadata without mutating the portal");
   registerSlashGuide(program, getCtx, "/write", "write", "Target-portal write workflow with dry-run and trace");
   registerSlashGuide(program, getCtx, "/guardrails", "guardrails", "Safety policy, read-only, and trace workflow");
 }
