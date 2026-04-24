@@ -1,6 +1,16 @@
 # Changelog
 
-## Unreleased
+## 0.8.11 - 2026-04-24
+
+**Migration operator surface + shared rate-limit enforcement.** Ships
+the Claude-style `/setup` → `/migration` → `/read` → `/write` →
+`/guardrails` operator flow, fleshes out migration-replay coverage
+(batch properties, custom-object property routing, legacy v2 forms
+translator, session-auth permission sets), and tightens the HTTP
+layer so multiple clients in one process no longer overrun a shared
+HubSpot rate budget.
+
+38 new tests land alongside the features (307 total passing).
 
 ### Added — migration/operator workflows
 
