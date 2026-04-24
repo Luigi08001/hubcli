@@ -352,6 +352,7 @@ describe("hscli", () => {
     expect(output.data.body).toMatchObject({
       formType: "hubspot",
       name: "Legacy Newsletter",
+      archived: false,
       configuration: {
         postSubmitAction: { type: "redirect_url", value: "https://example.com/thanks" },
         notifyRecipients: ["ops@example.com", "sales@example.com"],
@@ -359,6 +360,7 @@ describe("hscli", () => {
       displayOptions: { submitButtonText: "Send" },
       legalConsentOptions: { type: "none" },
     });
+    expect(Date.parse(output.data.body.createdAt)).not.toBeNaN();
     expect(output.data.body.fieldGroups[0].fields).toHaveLength(2);
     expect(output.data.body.fieldGroups[0].fields[0]).toMatchObject({
       name: "email",
@@ -402,8 +404,10 @@ describe("hscli", () => {
     expect(output.data).toMatchObject({
       formType: "hubspot",
       name: "Minimal legacy form",
+      archived: false,
       configuration: { postSubmitAction: { type: "thank_you", value: "Merci" } },
     });
+    expect(Date.parse(output.data.createdAt)).not.toBeNaN();
     expect(output.data.fieldGroups[0].fields[0]).toMatchObject({
       name: "firstname",
       fieldType: "single_line_text",

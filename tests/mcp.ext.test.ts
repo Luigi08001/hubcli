@@ -192,8 +192,10 @@ describe("extension MCP tools (beyond HubSpot Remote MCP)", () => {
     expect(body.body).toMatchObject({
       formType: "hubspot",
       name: "Legacy MCP form",
+      archived: false,
       displayOptions: { submitButtonText: "Go" },
     });
+    expect(Date.parse(body.body.createdAt)).not.toBeNaN();
     expect(body.body.fieldGroups[0].fields[0]).toMatchObject({
       name: "firstname",
       fieldType: "single_line_text",

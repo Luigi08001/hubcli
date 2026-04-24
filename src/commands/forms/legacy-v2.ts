@@ -89,6 +89,8 @@ export function translateLegacyFormV2ToV3(input: Record<string, unknown>): Recor
   return cleanRecord({
     formType: "hubspot",
     name,
+    createdAt: new Date().toISOString(),
+    archived: false,
     fieldGroups,
     configuration: mapConfiguration(input),
     displayOptions: mapDisplayOptions(input),
