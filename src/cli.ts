@@ -32,6 +32,7 @@ import { registerEvents } from "./commands/events/index.js";
 import { registerEmailEvents } from "./commands/email-events/index.js";
 import { registerMediaBridge } from "./commands/media-bridge/index.js";
 import { registerFeatureFlags } from "./commands/feature-flags/index.js";
+import { registerGuide } from "./commands/guide/index.js";
 import { registerMarketingEmailsV1 } from "./commands/marketing-emails-v1/index.js";
 import { registerIntegrators } from "./commands/integrators/index.js";
 import { registerIntegrations } from "./commands/integrations/index.js";
@@ -153,6 +154,7 @@ export function createProgram(): { program: Command; getCtx: () => CliContext } 
   registerEmailEvents(program, () => ctx);
   registerMediaBridge(program, () => ctx);
   registerFeatureFlags(program, () => ctx);
+  registerGuide(program, () => ctx);
   registerMarketingEmailsV1(program, () => ctx);
   registerIntegrators(program, () => ctx);
   registerIntegrations(program, () => ctx);

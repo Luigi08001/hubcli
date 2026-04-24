@@ -506,6 +506,110 @@ describe("hscli", () => {
     expect(errSpy.mock.calls.some((c) => String(c[0]).includes("UNSUPPORTED_OBJECT_TYPE"))).toBe(true);
   });
 
+  it("exports migration metadata with property groups and pipeline stage detail", async () => {
+    const home = setupHomeWithToken();
+    process.env.HOME = home;
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const fetchSpy = vi.spyOn(global, "fetch" as never).mockImplementation(async (url: unknown) => {
+      const value = String(url);
+      if (value.includes("/crm/v3/properties/contacts/groups")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ results: [{ name: "ccm_ticket_data", label: "CCM Ticket Data", displayOrder: 42 }] }),
+          headers: new Headers(),
+        } as never;
+      }
+      if (value.includes("/crm/v3/properties/contacts")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ results: [{ name: "migration_region", label: "Migration Region" }] }),
+          headers: new Headers(),
+        } as never;
+      }
+      if (value.match(/\/crm\/v3\/pipelines\/deals$/)) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ results: [{ id: "default", label: "Sales Pipeline", displayOrder: 0 }] }),
+          headers: new Headers(),
+        } as never;
+      }
+      if (value.includes("/crm/v3/pipelines/deals/default/stages")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ results: [{ id: "appointmentscheduled", label: "Appointment scheduled", displayOrder: 0, metadata: { probability: "0.2" } }] }),
+          headers: new Headers(),
+        } as never;
+      }
+      if (value.includes("/crm/v3/pipelines/deals/default")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ id: "default", label: "Sales Pipeline", stages: [{ id: "appointmentscheduled" }] }),
+          headers: new Headers(),
+        } as never;
+      }
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ results: [] }),
+        headers: new Headers(),
+      } as never;
+    });
+
+    const { run } = await import("../src/cli.js");
+    await run([
+      "node",
+      "hscli",
+      "--json",
+      "crm",
+      "migration",
+      "export-metadata",
+      "--objects",
+      "contacts",
+      "--pipeline-objects",
+      "deals",
+      "--no-owners",
+      "--no-teams",
+      "--no-business-units",
+      "--no-currencies",
+      "--no-custom-schemas",
+      "--no-association-labels",
+    ]);
+
+    expect(fetchSpy).toHaveBeenCalledTimes(5);
+    const output = JSON.parse(String(logSpy.mock.calls[0][0]));
+    expect(output.data.propertyGroups.contacts.data.results[0]).toEqual({
+      name: "ccm_ticket_data",
+      label: "CCM Ticket Data",
+      displayOrder: 42,
+    });
+    expect(output.data.pipelines.deals.details[0].stages.data.results[0]).toEqual({
+      id: "appointmentscheduled",
+      label: "Appointment scheduled",
+      displayOrder: 0,
+      metadata: { probability: "0.2" },
+    });
+    expect(output.data.requiredForReplayOrder).toContain("pipelines");
+  });
+
+  it("guide returns portal migration workflow without prompting when goal is provided", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const fetchSpy = vi.spyOn(global, "fetch" as never);
+
+    const { run } = await import("../src/cli.js");
+    await run(["node", "hscli", "--json", "guide", "--goal", "portal-migration"]);
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    const output = JSON.parse(String(logSpy.mock.calls[0][0]));
+    expect(output.data.goal).toBe("portal-migration");
+    expect(output.data.nextCommands).toContain("hscli crm migration export-metadata --out migration-metadata.json");
+    expect(output.data.capturedByMigrationExport).toContain("deal/ticket pipelines with stage detail");
+  });
+
   it("rejects path traversal-like id segments", async () => {
     const home = setupHomeWithToken();
     process.env.HOME = home;

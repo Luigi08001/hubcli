@@ -33,7 +33,11 @@ High-level map of every hscli command. For detailed args and examples per comman
 - `hscli doctor capabilities [--refresh]` — probe portal tier + scopes
 - `hscli doctor permissions` — introspect current token scopes
 
-## CRM (22 sub-command files)
+## Guide
+
+- `hscli guide [--goal portal-migration|property-preflight|audit-trace|explore]` — guided workflows for common operator tasks
+
+## CRM (23 sub-command files)
 
 Objects:
 - `hscli crm contacts|companies|deals|tickets list|get|search|create|update|delete [...]`
@@ -51,6 +55,7 @@ Properties + pipelines + associations:
 
 Imports + sync + introspection:
 - `hscli crm imports list|get|create`
+- `hscli crm migration export-metadata [--out file] [--association-pairs contacts:companies,...]` — export migration metadata: property groups, properties, pipelines/stages, owners/teams, custom schemas, association labels
 - `hscli crm sync pull --object <type>` — incremental sync
 - `hscli crm describe <object> [--refresh-cache] [--offline]` — schema introspection
 - `hscli crm validate <object> --data '<payload>' [--offline]` — client-side validation

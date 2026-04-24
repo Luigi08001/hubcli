@@ -280,6 +280,26 @@ hscli crm engagements emails create --force \
 
 ## 5. Properties and Associations
 
+### Start with a guided migration workflow
+
+```bash
+hscli guide
+
+hscli guide --goal portal-migration
+```
+
+### Export portal migration metadata
+
+```bash
+hscli crm migration export-metadata --out migration-metadata.json
+
+hscli crm migration export-metadata \
+  --association-pairs contacts:companies,companies:contacts,2-123456:contacts \
+  --out migration-metadata.json
+```
+
+This captures property groups with their real labels/displayOrder, property definitions, deal/ticket pipelines with per-stage detail, custom object schemas, owners, teams, business units, currencies, and standard association labels. Use it before building replay payloads so pipeline IDs/stage IDs and owner/team mappings are explicit.
+
 ### List all properties for contacts
 
 ```bash
