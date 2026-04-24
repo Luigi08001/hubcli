@@ -1,5 +1,38 @@
 # Changelog
 
+## Unreleased
+
+### Added — migration/operator workflows
+
+- Claude-style operator entrypoints: `hscli /setup`, `/migration`,
+  `/read`, `/write`, and `/guardrails`, with non-slash aliases for
+  shell environments that prefer plain command names.
+- `auth set-hublet <profile> <hublet>` plus global `--hublet` /
+  `--api-base-url` routing overrides for explicit EU/AP/NA hublet
+  control.
+- `doctor scopes list|presets|explain|diff`, backed by a local
+  HubSpot scope catalog and `real-mirror-read` / `real-mirror-write`
+  presets.
+
+### Added — migration replay coverage
+
+- Batch property create support and custom-object property/group
+  endpoint routing for object type IDs.
+- Legacy v2 forms translator/replay hardening: required v3 metadata,
+  property preflight, and group-size splitting.
+- Session-auth permission-set commands for internal HubSpot permission
+  set migration paths.
+
+### Fixed — HubSpot rate-limit enforcement
+
+- Rate-limit state is now shared by `profile + API base URL + auth kind`
+  within the process, so multiple clients do not overrun the same
+  observed budget.
+- The HTTP layer enforces HubSpot `Secondly`, rolling window, daily
+  remaining, and `Retry-After` headers before subsequent calls.
+- Daily hard-limit responses now stop immediately with
+  `RATE_LIMIT_DAILY_EXHAUSTED` instead of retrying and wasting calls.
+
 ## 0.8.10 - 2026-04-24
 
 **Polish follow-up to 0.8.9.** Five small fixes from the PR #43 review —

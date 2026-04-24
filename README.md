@@ -38,6 +38,32 @@ hscli crm contacts list --limit 5
 
 Create a Private App token at **Settings → Integrations → Private Apps → Create private app** in your HubSpot portal.
 
+For EU/AP/NA hublet routing, hscli auto-detects from token/account metadata. You can also pin it explicitly:
+
+```bash
+printf '%s' "$HUBSPOT_TOKEN" | hscli auth login --profile live --token-stdin --hublet eu1
+hscli auth set-hublet live eu1
+```
+
+## Operator workflows
+
+Start from intent instead of memorizing the whole command tree:
+
+```bash
+hscli /setup       # auth, hublet routing, scopes, capabilities
+hscli /migration   # portal/schema migration sequence
+hscli /read        # source-portal read workflow
+hscli /write       # target-portal write workflow
+hscli /guardrails  # read-only, policy, trace, scope checks
+```
+
+Scope checks are built in:
+
+```bash
+hscli doctor scopes diff --required real-mirror-read
+hscli doctor scopes explain sales-email-read
+```
+
 ## Write safely
 
 ```bash
@@ -121,7 +147,7 @@ Every request hscli makes is append-only JSONL. Pair `trace` with `audit` for fu
 - **Legacy v1/v2** — every pre-v3 surface preserved for portals that still need them
 - **Raw API** command with path-scope controls + full OAuth flow support
 
-Enterprise defaults: `--dry-run`, `--force`, policy files, change tickets, capability probing, rate-limit intelligence, token redaction, path scope allowlisting, idempotency keys on every write.
+Enterprise defaults: `--dry-run`, `--force`, policy files, change tickets, capability probing, shared rate-limit enforcement, token redaction, path scope allowlisting, idempotency keys on every write.
 
 </details>
 
@@ -153,7 +179,7 @@ Exact endpoint → tier mapping in [docs/TIERS.md](docs/TIERS.md).
 1. **CLI-first, MCP as a peer.** Every MCP tool has a matching `hscli` command — same write gates, same redaction, same capability probing in both.
 2. **Self-hosted, token-sovereign.** Your HubSpot private app token stays on your machine. No telemetry, no phone-home.
 3. **Safe by default.** Mutations are blocked unless `--force` is explicit. `--dry-run` previews every write. Idempotency-Key on every mutation.
-4. **HubSpot-native.** Reads `X-HubSpot-RateLimit-*` headers, throttles proactively, caches capabilities by `portalId + scopes`, validates payloads offline.
+4. **HubSpot-native.** Reads `X-HubSpot-RateLimit-*` headers, throttles proactively across clients, stops on daily hard-limit exhaustion, caches capabilities by `portalId + scopes`, validates payloads offline.
 
 ## Output modes
 
