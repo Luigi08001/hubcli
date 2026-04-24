@@ -1,13 +1,22 @@
 node_modules/
 dist/
 .env
+.env.*
 .DS_Store
 coverage/
 *.log
 
+# Local hscli credential vaults / runtime state
+.revfleet/
+auth.json
+auth.enc
+trace-session.json
+trace-*.jsonl
+
 # Pre-rename local state files — never recommit
 .hubcli*
 .hscli-sync-*
+.hscli/
 
 # scripts/ Python venv + HubSpot session state (must stay local)
 scripts/.venv/
