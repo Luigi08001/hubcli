@@ -24,8 +24,55 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { appendOptional, encodePathSegment, maybeWrite, parseNumberFlag } from "../commands/crm/shared.js";
-import { normalizeFormPayloadForV3 } from "../commands/forms/legacy-v2.js";
+import { normalizeFormPayloadForV3, type FormPayloadFormat } from "../commands/forms/legacy-v2.js";
+import {
+  loadTargetFormPropertyNames,
+  preflightLegacyFormProperties,
+  shouldRunFormPropertyPreflight,
+  type FormPropertyPreflightMode,
+  type SkippedFormField,
+} from "../commands/forms/property-preflight.js";
+import type { HubSpotClient } from "../core/http.js";
+import type { CliContext } from "../core/output.js";
 import { baseArgsSchema, executeTool, registerMcpTool } from "./server.js";
+
+interface McpFormWriteArgs {
+  data: Record<string, unknown>;
+  sourceFormat?: FormPayloadFormat;
+  propertyPreflight?: FormPropertyPreflightMode;
+  strict?: boolean;
+}
+
+async function prepareMcpFormBody(
+  ctx: CliContext,
+  client: HubSpotClient,
+  args: McpFormWriteArgs,
+): Promise<{ body: Record<string, unknown>; skippedFields: SkippedFormField[] }> {
+  let payload = args.data;
+  const sourceFormat = args.sourceFormat ?? "auto";
+  const preflightMode = args.strict ? "strict" : (args.propertyPreflight ?? "auto");
+  let skippedFields: SkippedFormField[] = [];
+
+  if (sourceFormat !== "v3" && shouldRunFormPropertyPreflight(payload, preflightMode, ctx.dryRun)) {
+    const preflight = await preflightLegacyFormProperties(
+      payload,
+      (objectType) => loadTargetFormPropertyNames(client, objectType),
+      preflightMode === "strict",
+    );
+    payload = preflight.payload;
+    skippedFields = preflight.skippedFields;
+  }
+
+  return {
+    body: normalizeFormPayloadForV3(payload, sourceFormat),
+    skippedFields,
+  };
+}
+
+function attachSkippedFields(result: unknown, skippedFields: SkippedFormField[]): unknown {
+  if (skippedFields.length === 0) return result;
+  return { result, skippedFields };
+}
 
 export function registerExtensionTools(server: McpServer): void {
   // ═══════════════════════════════════════════════════════════════════════
@@ -155,15 +202,15 @@ export function registerExtensionTools(server: McpServer): void {
       ...baseArgsSchema,
       data: z.record(z.string(), z.unknown()),
       sourceFormat: z.enum(["auto", "v2", "v3"]).default("auto").optional(),
+      propertyPreflight: z.enum(["auto", "skip", "strict"]).default("auto").optional(),
+      strict: z.boolean().optional().describe("Fail when target-property preflight finds missing legacy form fields"),
     },
-  }, (args: { data: Record<string, unknown>; sourceFormat?: "auto" | "v2" | "v3"; force?: boolean; profile?: string }) =>
-    executeTool(args, (ctx, client) => maybeWrite(
-      ctx,
-      client,
-      "POST",
-      "/marketing/v3/forms",
-      normalizeFormPayloadForV3(args.data, args.sourceFormat ?? "auto"),
-    )),
+  }, (args: { data: Record<string, unknown>; sourceFormat?: FormPayloadFormat; propertyPreflight?: FormPropertyPreflightMode; strict?: boolean; force?: boolean; dryRun?: boolean; profile?: string }) =>
+    executeTool(args, async (ctx, client) => {
+      const { body, skippedFields } = await prepareMcpFormBody(ctx, client, args);
+      const result = await maybeWrite(ctx, client, "POST", "/marketing/v3/forms", body);
+      return attachSkippedFields(result, skippedFields);
+    }),
   );
 
   registerMcpTool(server, "forms_update", {
@@ -173,15 +220,15 @@ export function registerExtensionTools(server: McpServer): void {
       formId: z.string().min(1),
       data: z.record(z.string(), z.unknown()),
       sourceFormat: z.enum(["auto", "v2", "v3"]).default("auto").optional(),
+      propertyPreflight: z.enum(["auto", "skip", "strict"]).default("auto").optional(),
+      strict: z.boolean().optional().describe("Fail when target-property preflight finds missing legacy form fields"),
     },
-  }, (args: { formId: string; data: Record<string, unknown>; sourceFormat?: "auto" | "v2" | "v3"; force?: boolean; profile?: string }) =>
-    executeTool(args, (ctx, client) => maybeWrite(
-      ctx,
-      client,
-      "PATCH",
-      `/marketing/v3/forms/${encodePathSegment(args.formId, "formId")}`,
-      normalizeFormPayloadForV3(args.data, args.sourceFormat ?? "auto"),
-    )),
+  }, (args: { formId: string; data: Record<string, unknown>; sourceFormat?: FormPayloadFormat; propertyPreflight?: FormPropertyPreflightMode; strict?: boolean; force?: boolean; dryRun?: boolean; profile?: string }) =>
+    executeTool(args, async (ctx, client) => {
+      const { body, skippedFields } = await prepareMcpFormBody(ctx, client, args);
+      const result = await maybeWrite(ctx, client, "PATCH", `/marketing/v3/forms/${encodePathSegment(args.formId, "formId")}`, body);
+      return attachSkippedFields(result, skippedFields);
+    }),
   );
 
   registerMcpTool(server, "forms_submissions", {

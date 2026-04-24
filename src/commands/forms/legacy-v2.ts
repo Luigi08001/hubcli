@@ -52,6 +52,19 @@ const OBJECT_TYPE_IDS: Record<string, string> = {
   TICKET: "0-5",
 };
 
+const PROPERTY_ENDPOINT_OBJECT_TYPES: Record<string, string> = {
+  "0-1": "contacts",
+  "0-2": "companies",
+  "0-3": "deals",
+  "0-5": "tickets",
+  COMPANY: "companies",
+  CONTACT: "contacts",
+  DEAL: "deals",
+  TICKET: "tickets",
+};
+
+const MAX_FIELDS_PER_GROUP = 3;
+
 export function parseFormPayloadFormat(raw: string | undefined): FormPayloadFormat {
   if (raw === undefined || raw === "auto") return "auto";
   if (raw === "v2" || raw === "v3") return raw;
@@ -73,6 +86,16 @@ export function isLegacyFormV2Payload(input: Record<string, unknown>): boolean {
     || typeof input.inlineMessage === "string"
     || typeof input.notifyRecipients === "string"
     || typeof input.guid === "string";
+}
+
+export function legacyFormFieldPropertyObjectType(field: Record<string, unknown>): string {
+  const objectTypeId = stringValue(field.objectTypeId);
+  if (objectTypeId) return PROPERTY_ENDPOINT_OBJECT_TYPES[objectTypeId] ?? objectTypeId;
+
+  const propertyObjectType = stringValue(field.propertyObjectType)?.trim().toUpperCase();
+  if (propertyObjectType) return PROPERTY_ENDPOINT_OBJECT_TYPES[propertyObjectType] ?? propertyObjectType.toLowerCase();
+
+  return "contacts";
 }
 
 export function translateLegacyFormV2ToV3(input: Record<string, unknown>): Record<string, unknown> {
@@ -100,7 +123,7 @@ export function translateLegacyFormV2ToV3(input: Record<string, unknown>): Recor
 
 function mapFieldGroups(rawGroups: unknown): Array<Record<string, unknown>> {
   const groups = records(rawGroups);
-  return groups.map((group) => {
+  return groups.flatMap((group) => {
     const fields = records(group.fields)
       .filter((field) => field.enabled !== false)
       .map(mapField)
@@ -109,12 +132,23 @@ function mapFieldGroups(rawGroups: unknown): Array<Record<string, unknown>> {
     const richText = stringValue(group.richText);
     if (fields.length === 0 && !richText) return undefined;
 
-    return cleanRecord({
+    const baseGroup = cleanRecord({
       groupType: mapGroupType(group),
       richTextType: mapRichTextType(group.richTextType),
       richText,
-      fields,
+      fields: fields.slice(0, MAX_FIELDS_PER_GROUP),
     });
+    if (fields.length <= MAX_FIELDS_PER_GROUP) return baseGroup;
+
+    const splitGroups = [baseGroup];
+    for (let start = MAX_FIELDS_PER_GROUP; start < fields.length; start += MAX_FIELDS_PER_GROUP) {
+      splitGroups.push(cleanRecord({
+        groupType: mapGroupType(group),
+        richTextType: mapRichTextType(group.richTextType),
+        fields: fields.slice(start, start + MAX_FIELDS_PER_GROUP),
+      }));
+    }
+    return splitGroups;
   }).filter((group): group is Record<string, unknown> => group !== undefined);
 }
 

@@ -414,6 +414,150 @@ describe("hscli", () => {
     });
   });
 
+  it("splits translated forms/v2 field groups into HubSpot v3 groups of at most 3 fields", async () => {
+    const home = setupHomeWithToken();
+    process.env.HOME = home;
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const fetchSpy = vi.spyOn(global, "fetch" as never);
+
+    const { run } = await import("../src/cli.js");
+    await run([
+      "node",
+      "hscli",
+      "--json",
+      "forms",
+      "translate-v2",
+      "--data",
+      JSON.stringify({
+        name: "Long legacy form",
+        formFieldGroups: [{
+          richText: "<p>Intro</p>",
+          fields: [
+            { name: "email", label: "Email", fieldType: "email" },
+            { name: "firstname", label: "First name", fieldType: "text" },
+            { name: "lastname", label: "Last name", fieldType: "text" },
+            { name: "phone", label: "Phone", fieldType: "phone" },
+          ],
+        }],
+      }),
+    ]);
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    const output = JSON.parse(String(logSpy.mock.calls[0][0]));
+    expect(output.data.fieldGroups).toHaveLength(2);
+    expect(output.data.fieldGroups[0]).toMatchObject({
+      richText: "<p>Intro</p>",
+      fields: [
+        { name: "email" },
+        { name: "firstname" },
+        { name: "lastname" },
+      ],
+    });
+    expect(output.data.fieldGroups[1]).toMatchObject({
+      fields: [{ name: "phone" }],
+    });
+    expect(output.data.fieldGroups[1].richText).toBeUndefined();
+  });
+
+  it("preflights legacy form properties on writes and skips target-missing fields", async () => {
+    const home = setupHomeWithToken();
+    process.env.HOME = home;
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const fetchSpy = vi.spyOn(global, "fetch" as never).mockImplementation(async (url: unknown, init?: RequestInit) => {
+      const value = String(url);
+      if (value.includes("/crm/v3/properties/contacts")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ results: [{ name: "email" }, { name: "firstname" }] }),
+          headers: new Headers(),
+        } as never;
+      }
+      if (value.includes("/marketing/v3/forms")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ id: "form-1", body: JSON.parse(String(init?.body ?? "{}")) }),
+          headers: new Headers(),
+        } as never;
+      }
+      throw new Error(`unexpected URL ${value}`);
+    });
+
+    const { run } = await import("../src/cli.js");
+    await run([
+      "node",
+      "hscli",
+      "--json",
+      "--force",
+      "forms",
+      "create",
+      "--source-format",
+      "v2",
+      "--data",
+      JSON.stringify({
+        name: "Preflighted legacy form",
+        formFieldGroups: [{
+          fields: [
+            { name: "email", label: "Email", fieldType: "email" },
+            { name: "missing_field", label: "Missing", fieldType: "text" },
+          ],
+        }],
+      }),
+    ]);
+
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    const [, postInit] = fetchSpy.mock.calls[1] as [URL | string, RequestInit];
+    const postedBody = JSON.parse(String(postInit.body));
+    expect(postedBody.fieldGroups[0].fields).toHaveLength(1);
+    expect(postedBody.fieldGroups[0].fields[0]).toMatchObject({ name: "email" });
+    const output = JSON.parse(String(logSpy.mock.calls[0][0]));
+    expect(output.data).toMatchObject({
+      result: { id: "form-1" },
+      skippedFields: [{
+        name: "missing_field",
+        objectType: "contacts",
+        label: "Missing",
+        reason: "property-missing-on-target",
+      }],
+    });
+  });
+
+  it("strict legacy form property preflight fails before writing", async () => {
+    const home = setupHomeWithToken();
+    process.env.HOME = home;
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const fetchSpy = vi.spyOn(global, "fetch" as never).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ results: [{ name: "email" }] }),
+      headers: new Headers(),
+    } as never);
+
+    const { run } = await import("../src/cli.js");
+    await run([
+      "node",
+      "hscli",
+      "--json",
+      "--dry-run",
+      "forms",
+      "create",
+      "--source-format",
+      "v2",
+      "--strict",
+      "--data",
+      JSON.stringify({
+        name: "Strict legacy form",
+        formFieldGroups: [{ fields: [{ name: "missing_field", label: "Missing", fieldType: "text" }] }],
+      }),
+    ]);
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    const output = String(errSpy.mock.calls[0][0]);
+    expect(output).toContain("FORM_PROPERTY_PREFLIGHT_FAILED");
+    expect(output).toContain("missing_field");
+  });
+
   it("strict capabilities mode fails fast when capability status is unknown", async () => {
     const home = setupHomeWithToken();
     process.env.HOME = home;

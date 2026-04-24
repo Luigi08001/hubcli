@@ -7,6 +7,51 @@ import type { CliContext } from "../../core/output.js";
 import { printResult } from "../../core/output.js";
 import { encodePathSegment, maybeWrite, parseJsonPayload, parseNumberFlag } from "../crm/shared.js";
 import { normalizeFormPayloadForV3, parseFormPayloadFormat } from "./legacy-v2.js";
+import {
+  loadTargetFormPropertyNames,
+  parseFormPropertyPreflightMode,
+  preflightLegacyFormProperties,
+  shouldRunFormPropertyPreflight,
+  type SkippedFormField,
+} from "./property-preflight.js";
+
+interface FormWriteOptions {
+  data: string;
+  sourceFormat?: string;
+  propertyPreflight?: string;
+  strict?: boolean;
+}
+
+async function prepareFormBody(
+  ctx: CliContext,
+  client: ReturnType<typeof createClient>,
+  opts: FormWriteOptions,
+): Promise<{ body: Record<string, unknown>; skippedFields: SkippedFormField[] }> {
+  let payload = parseJsonPayload(opts.data);
+  const format = parseFormPayloadFormat(opts.sourceFormat);
+  const preflightMode = opts.strict ? "strict" : parseFormPropertyPreflightMode(opts.propertyPreflight);
+  let skippedFields: SkippedFormField[] = [];
+
+  if (format !== "v3" && shouldRunFormPropertyPreflight(payload, preflightMode, ctx.dryRun)) {
+    const preflight = await preflightLegacyFormProperties(
+      payload,
+      (objectType) => loadTargetFormPropertyNames(client, objectType),
+      preflightMode === "strict",
+    );
+    payload = preflight.payload;
+    skippedFields = preflight.skippedFields;
+  }
+
+  return {
+    body: normalizeFormPayloadForV3(payload, format),
+    skippedFields,
+  };
+}
+
+function attachSkippedFields(result: unknown, skippedFields: SkippedFormField[]): unknown {
+  if (skippedFields.length === 0) return result;
+  return { result, skippedFields };
+}
 
 export function registerForms(program: Command, getCtx: () => CliContext): void {
   const forms = program.command("forms").description("HubSpot Forms APIs");
@@ -31,24 +76,28 @@ export function registerForms(program: Command, getCtx: () => CliContext): void 
   forms.command("create")
     .requiredOption("--data <payload>", "JSON payload")
     .option("--source-format <format>", "Payload shape: auto|v2|v3", "auto")
+    .option("--property-preflight <mode>", "Target property preflight for legacy forms: auto|skip|strict", "auto")
+    .option("--strict", "Fail when target-property preflight finds missing form fields")
     .action(async (opts) => {
       const ctx = getCtx();
       const client = createClient(ctx.profile);
-      const body = normalizeFormPayloadForV3(parseJsonPayload(opts.data), parseFormPayloadFormat(opts.sourceFormat));
+      const { body, skippedFields } = await prepareFormBody(ctx, client, opts);
       const res = await maybeWrite(ctx, client, "POST", "/marketing/v3/forms", body);
-      printResult(ctx, res);
+      printResult(ctx, attachSkippedFields(res, skippedFields));
     });
 
   forms.command("update")
     .argument("<id>")
     .requiredOption("--data <payload>", "JSON payload")
     .option("--source-format <format>", "Payload shape: auto|v2|v3", "auto")
+    .option("--property-preflight <mode>", "Target property preflight for legacy forms: auto|skip|strict", "auto")
+    .option("--strict", "Fail when target-property preflight finds missing form fields")
     .action(async (id, opts) => {
       const ctx = getCtx();
       const client = createClient(ctx.profile);
-      const body = normalizeFormPayloadForV3(parseJsonPayload(opts.data), parseFormPayloadFormat(opts.sourceFormat));
+      const { body, skippedFields } = await prepareFormBody(ctx, client, opts);
       const res = await maybeWrite(ctx, client, "PATCH", `/marketing/v3/forms/${encodePathSegment(id, "id")}`, body);
-      printResult(ctx, res);
+      printResult(ctx, attachSkippedFields(res, skippedFields));
     });
 
   forms.command("translate-v2")
