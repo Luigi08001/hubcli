@@ -16,7 +16,7 @@ import {
   parseNumberFlag,
   parseSupportedObjectType,
 } from "../commands/crm/shared.js";
-import { chunkInputs, loadExistingPropertyNames, normalizePropertyBatch, propertyName, type PropertyInput } from "../commands/crm/property-batch.js";
+import { chunkInputs, loadExistingPropertyMetadata, normalizePropertyBatch, normalizePropertyLabel, propertyName, type EmptyEnumMode, type PropertyInput } from "../commands/crm/property-batch.js";
 import {
   resolvePortalContext,
   enrichListResponse,
@@ -345,29 +345,48 @@ export function registerHubSpotTools(server: McpServer): void {
       inputs: z.array(z.record(z.string(), z.unknown())).min(1),
       chunkSize: z.number().int().positive().default(100),
       skipExisting: z.boolean().optional(),
+      skipLabelCollisions: z.boolean().optional(),
       includeReadonly: z.boolean().optional(),
+      includeReserved: z.boolean().optional(),
+      emptyEnumMode: z.enum(["skip", "demote"]).optional(),
     },
   }, (args: McpBaseArgs & {
     objectType: string;
     inputs: PropertyInput[];
     chunkSize?: number;
     skipExisting?: boolean;
+    skipLabelCollisions?: boolean;
     includeReadonly?: boolean;
+    includeReserved?: boolean;
+    emptyEnumMode?: EmptyEnumMode;
   }) => executeTool(args, async (ctx, client) => {
     const objectTypeSegment = encodePathSegment(args.objectType, "objectType");
     const path = `/crm/v3/properties/${objectTypeSegment}/batch/create`;
     const chunkSize = parseNumberFlag(String(args.chunkSize ?? 100), "chunkSize");
-    const normalized = normalizePropertyBatch(args.inputs, Boolean(args.includeReadonly));
+    const normalized = normalizePropertyBatch(args.inputs, {
+      includeReadonly: Boolean(args.includeReadonly),
+      includeReserved: Boolean(args.includeReserved),
+      emptyEnumMode: args.emptyEnumMode,
+    });
 
     let inputs = normalized.inputs;
     const skippedExisting: string[] = [];
-    if (args.skipExisting && inputs.length > 0) {
-      const existing = await loadExistingPropertyNames(client, objectTypeSegment);
+    const skippedLabelCollisions: Array<{ name: string; label: string; existingName: string }> = [];
+    if ((args.skipExisting || args.skipLabelCollisions) && inputs.length > 0) {
+      const existing = await loadExistingPropertyMetadata(client, objectTypeSegment);
       inputs = inputs.filter((input) => {
         const name = propertyName(input, "");
-        const exists = name !== "" && existing.has(name);
-        if (exists) skippedExisting.push(name);
-        return !exists;
+        if (args.skipExisting && name !== "" && existing.names.has(name)) {
+          skippedExisting.push(name);
+          return false;
+        }
+        const label = normalizePropertyLabel(input.label);
+        const existingName = label ? existing.labels.get(label) : undefined;
+        if (args.skipLabelCollisions && label && existingName && existingName !== name) {
+          skippedLabelCollisions.push({ name, label: String(input.label), existingName });
+          return false;
+        }
+        return true;
       });
     }
 
@@ -378,7 +397,12 @@ export function registerHubSpotTools(server: McpServer): void {
       totalInput: normalized.rawInputs.length,
       requested: inputs.length,
       skippedReadonly: normalized.skippedReadonly,
+      skippedReserved: normalized.skippedReserved,
+      skippedInvalid: normalized.skippedInvalid,
       skippedExisting,
+      skippedLabelCollisions,
+      cleanedOptions: normalized.cleanedOptions,
+      demotedEnums: normalized.demotedEnums,
       chunkSize,
       chunks: chunks.map((chunk, index) => ({
         index: index + 1,

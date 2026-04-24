@@ -333,12 +333,106 @@ describe("hscli", () => {
     });
   });
 
+  it("preflights reserved names and invalid enum options before property batch create", async () => {
+    const home = setupHomeWithToken();
+    process.env.HOME = home;
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const fetchSpy = vi.spyOn(global, "fetch" as never);
+
+    const { run } = await import("../src/cli.js");
+    await run([
+      "node",
+      "hscli",
+      "--json",
+      "--dry-run",
+      "crm",
+      "properties",
+      "batch-create",
+      "contacts",
+      "--data",
+      JSON.stringify({
+        inputs: [
+          { name: "hs_reserved_custom", label: "Reserved", type: "string", fieldType: "text" },
+          { name: "empty_enum", label: "Empty Enum", type: "enumeration", fieldType: "select", options: [] },
+          {
+            name: "dirty_enum",
+            label: "Dirty Enum",
+            type: "enumeration",
+            fieldType: "select",
+            options: [
+              { label: "Good", value: "good" },
+              { label: "", value: "blank_label" },
+              { label: "Blank Value", value: "" },
+            ],
+          },
+        ],
+      }),
+    ]);
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    const output = JSON.parse(String(logSpy.mock.calls[0][0]));
+    expect(output.data.requested).toBe(1);
+    expect(output.data.skippedReserved).toEqual(["hs_reserved_custom"]);
+    expect(output.data.skippedInvalid).toEqual([{
+      code: "EMPTY_ENUM_OPTIONS",
+      name: "empty_enum",
+      message: "Skipped enumeration property with no valid options.",
+    }]);
+    expect(output.data.cleanedOptions).toEqual([{
+      code: "BLANK_OPTION_REMOVED",
+      name: "dirty_enum",
+      message: "Removed 2 option(s) with blank label/value.",
+    }]);
+    expect(output.data.previewInputs[0].options).toEqual([{ label: "Good", value: "good" }]);
+  });
+
+  it("can demote empty enums during property batch create preflight", async () => {
+    const home = setupHomeWithToken();
+    process.env.HOME = home;
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    const { run } = await import("../src/cli.js");
+    await run([
+      "node",
+      "hscli",
+      "--json",
+      "--dry-run",
+      "crm",
+      "properties",
+      "batch-create",
+      "contacts",
+      "--empty-enum",
+      "demote",
+      "--data",
+      JSON.stringify({
+        inputs: [
+          { name: "empty_enum", label: "Empty Enum", type: "enumeration", fieldType: "select", options: [] },
+        ],
+      }),
+    ]);
+
+    const output = JSON.parse(String(logSpy.mock.calls[0][0]));
+    expect(output.data.requested).toBe(1);
+    expect(output.data.demotedEnums).toEqual([{
+      code: "EMPTY_ENUM_DEMOTED",
+      name: "empty_enum",
+      message: "Demoted enumeration with no valid options to string/text.",
+    }]);
+    expect(output.data.previewInputs[0]).toEqual({
+      name: "empty_enum",
+      label: "Empty Enum",
+      type: "string",
+      fieldType: "text",
+    });
+  });
+
   it("batch-creates properties from @file payloads and skips existing names", async () => {
     const home = setupHomeWithToken();
     process.env.HOME = home;
     const payloadPath = join(home, "properties.json");
     writeFileSync(payloadPath, JSON.stringify([
       { name: "existing_prop", label: "Existing prop", type: "string", fieldType: "text" },
+      { name: "leadstatus_custom", label: "Lead Status", type: "string", fieldType: "text" },
       { name: "new_prop", label: "New prop", type: "string", fieldType: "text" },
     ]), "utf8");
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
@@ -348,7 +442,10 @@ describe("hscli", () => {
         return {
           ok: true,
           status: 200,
-          json: async () => ({ results: [{ name: "existing_prop" }] }),
+          json: async () => ({ results: [
+            { name: "existing_prop", label: "Existing prop" },
+            { name: "hs_content_membership_status", label: "Lead Status" },
+          ] }),
           headers: new Headers(),
         } as never;
       }
@@ -371,6 +468,7 @@ describe("hscli", () => {
       "batch-create",
       "contacts",
       "--skip-existing",
+      "--skip-label-collisions",
       "--chunk-size",
       "1",
       "--data",
@@ -387,6 +485,11 @@ describe("hscli", () => {
     });
     const output = JSON.parse(String(logSpy.mock.calls[0][0]));
     expect(output.data.skippedExisting).toEqual(["existing_prop"]);
+    expect(output.data.skippedLabelCollisions).toEqual([{
+      name: "leadstatus_custom",
+      label: "Lead Status",
+      existingName: "hs_content_membership_status",
+    }]);
     expect(output.data.requested).toBe(1);
   });
 

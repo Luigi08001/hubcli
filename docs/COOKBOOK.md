@@ -304,15 +304,27 @@ hscli crm properties create contacts --force \
 
 ### Batch-create properties from a sandbox export
 
+Property groups have their own labels and display order. Export/recreate groups from the source portal before property batch-create; do not derive group labels from `groupName`.
+
 ```bash
 hscli --json crm properties list contacts > contacts-properties.json
 
 hscli --dry-run crm properties batch-create contacts \
   --skip-existing \
+  --skip-label-collisions \
   --data @contacts-properties.json
 
 hscli --force crm properties batch-create contacts \
   --skip-existing \
+  --skip-label-collisions \
+  --data @contacts-properties.json
+```
+
+`batch-create` skips `hs_*` reserved names, HubSpot-defined/read-only properties, and empty enumerations by default. It also removes enum options with blank labels/values before sending. If you prefer to keep a property whose enum options cannot be recovered, demote it to a free-text property:
+
+```bash
+hscli --dry-run crm properties batch-create contacts \
+  --empty-enum demote \
   --data @contacts-properties.json
 ```
 

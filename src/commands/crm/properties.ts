@@ -1,9 +1,15 @@
 import { Command } from "commander";
 import { createClient } from "../../core/http.js";
 import type { CliContext } from "../../core/output.js";
-import { printResult } from "../../core/output.js";
-import { chunkInputs, loadExistingPropertyNames, normalizePropertyBatch, propertyName, readPropertyInputs } from "./property-batch.js";
+import { CliError, printResult } from "../../core/output.js";
+import { chunkInputs, loadExistingPropertyMetadata, normalizePropertyBatch, normalizePropertyLabel, propertyName, readPropertyInputs, type EmptyEnumMode } from "./property-batch.js";
 import { PROPERTY_OBJECT_TYPES, encodePathSegment, maybeWrite, parseJsonPayload, parseNumberFlag, parseSupportedObjectType } from "./shared.js";
+
+function parseEmptyEnumMode(raw: string | undefined): EmptyEnumMode {
+  if (raw === undefined || raw === "skip") return "skip";
+  if (raw === "demote") return "demote";
+  throw new CliError("INVALID_FLAG", "--empty-enum must be skip or demote");
+}
 
 export function registerProperties(crm: Command, getCtx: () => CliContext): void {
   const properties = crm.command("properties").description("Property schema operations");
@@ -44,7 +50,10 @@ export function registerProperties(crm: Command, getCtx: () => CliContext): void
     .requiredOption("--data <payload>", "Batch payload JSON, @file, array, { inputs }, or { results } dump")
     .option("--chunk-size <n>", "Properties per batch request", "100")
     .option("--skip-existing", "Fetch existing sandbox properties and skip matching names")
+    .option("--skip-label-collisions", "Fetch existing sandbox properties and skip labels already used by another property")
     .option("--include-readonly", "Do not skip hubspotDefined/readOnlyDefinition properties")
+    .option("--include-reserved", "Do not skip reserved hs_* property names")
+    .option("--empty-enum <mode>", "How to handle enumeration properties with no valid options: skip|demote", "skip")
     .action(async (objectType, opts) => {
       const ctx = getCtx();
       const client = createClient(ctx.profile);
@@ -52,17 +61,30 @@ export function registerProperties(crm: Command, getCtx: () => CliContext): void
       const path = `/crm/v3/properties/${objectTypeSegment}/batch/create`;
       const chunkSize = parseNumberFlag(opts.chunkSize, "--chunk-size");
       const rawInputs = readPropertyInputs(opts.data);
-      const { inputs: writableInputs, skippedReadonly } = normalizePropertyBatch(rawInputs, Boolean(opts.includeReadonly));
+      const normalized = normalizePropertyBatch(rawInputs, {
+        includeReadonly: Boolean(opts.includeReadonly),
+        includeReserved: Boolean(opts.includeReserved),
+        emptyEnumMode: parseEmptyEnumMode(opts.emptyEnum),
+      });
 
-      let inputs = writableInputs;
+      let inputs = normalized.inputs;
       const skippedExisting: string[] = [];
-      if (opts.skipExisting && writableInputs.length > 0) {
-        const existing = await loadExistingPropertyNames(client, objectTypeSegment);
-        inputs = writableInputs.filter((input) => {
+      const skippedLabelCollisions: Array<{ name: string; label: string; existingName: string }> = [];
+      if ((opts.skipExisting || opts.skipLabelCollisions) && inputs.length > 0) {
+        const existing = await loadExistingPropertyMetadata(client, objectTypeSegment);
+        inputs = inputs.filter((input) => {
           const name = propertyName(input, "");
-          const exists = name !== "" && existing.has(name);
-          if (exists) skippedExisting.push(name);
-          return !exists;
+          if (opts.skipExisting && name !== "" && existing.names.has(name)) {
+            skippedExisting.push(name);
+            return false;
+          }
+          const label = normalizePropertyLabel(input.label);
+          const existingName = label ? existing.labels.get(label) : undefined;
+          if (opts.skipLabelCollisions && label && existingName && existingName !== name) {
+            skippedLabelCollisions.push({ name, label: String(input.label), existingName });
+            return false;
+          }
+          return true;
         });
       }
 
@@ -72,8 +94,13 @@ export function registerProperties(crm: Command, getCtx: () => CliContext): void
         endpoint: path,
         totalInput: rawInputs.length,
         requested: inputs.length,
-        skippedReadonly,
+        skippedReadonly: normalized.skippedReadonly,
+        skippedReserved: normalized.skippedReserved,
+        skippedInvalid: normalized.skippedInvalid,
         skippedExisting,
+        skippedLabelCollisions,
+        cleanedOptions: normalized.cleanedOptions,
+        demotedEnums: normalized.demotedEnums,
         chunkSize,
         chunks: chunks.map((chunk, index) => ({
           index: index + 1,

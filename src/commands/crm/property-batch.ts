@@ -17,10 +17,33 @@ const READONLY_PROPERTY_KEYS = new Set([
 
 export type PropertyInput = Record<string, unknown>;
 
+export type EmptyEnumMode = "skip" | "demote";
+
+export interface NormalizePropertyBatchOptions {
+  includeReadonly?: boolean;
+  includeReserved?: boolean;
+  emptyEnumMode?: EmptyEnumMode;
+}
+
+export interface PropertyBatchIssue {
+  code: string;
+  name: string;
+  message: string;
+}
+
 export interface NormalizedPropertyBatch {
   rawInputs: PropertyInput[];
   inputs: PropertyInput[];
   skippedReadonly: string[];
+  skippedReserved: string[];
+  skippedInvalid: PropertyBatchIssue[];
+  cleanedOptions: PropertyBatchIssue[];
+  demotedEnums: PropertyBatchIssue[];
+}
+
+export interface ExistingPropertyMetadata {
+  names: Set<string>;
+  labels: Map<string, string>;
 }
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
@@ -83,6 +106,11 @@ function isReadonlyProperty(input: PropertyInput): boolean {
   return isRecord(metadata) && metadata.readOnlyDefinition === true;
 }
 
+function isReservedProperty(input: PropertyInput): boolean {
+  const name = propertyName(input, "");
+  return name.startsWith("hs_");
+}
+
 export function propertyName(input: PropertyInput, fallback: string): string {
   return typeof input.name === "string" && input.name.trim() ? input.name.trim() : fallback;
 }
@@ -96,19 +124,98 @@ function normalizePropertyInput(input: PropertyInput): PropertyInput {
   return normalized;
 }
 
-export function normalizePropertyBatch(rawInputs: PropertyInput[], includeReadonly = false): NormalizedPropertyBatch {
+function isEnumerationProperty(input: PropertyInput): boolean {
+  return input.type === "enumeration";
+}
+
+function cleanOptions(input: PropertyInput): { input: PropertyInput; removed: number } {
+  const options = input.options;
+  if (!Array.isArray(options)) return { input, removed: 0 };
+  const cleaned = options.filter((option) => {
+    if (!isRecord(option)) return false;
+    return typeof option.label === "string"
+      && option.label.trim().length > 0
+      && typeof option.value === "string"
+      && option.value.trim().length > 0;
+  });
+  return {
+    input: { ...input, options: cleaned },
+    removed: options.length - cleaned.length,
+  };
+}
+
+function demoteEmptyEnum(input: PropertyInput): PropertyInput {
+  const demoted = { ...input };
+  demoted.type = "string";
+  demoted.fieldType = "text";
+  delete demoted.options;
+  return demoted;
+}
+
+function parseEmptyEnumMode(mode?: EmptyEnumMode): EmptyEnumMode {
+  return mode === "demote" ? "demote" : "skip";
+}
+
+export function normalizePropertyBatch(
+  rawInputs: PropertyInput[],
+  options: NormalizePropertyBatchOptions = {},
+): NormalizedPropertyBatch {
+  const includeReadonly = Boolean(options.includeReadonly);
+  const includeReserved = Boolean(options.includeReserved);
+  const emptyEnumMode = parseEmptyEnumMode(options.emptyEnumMode);
   const skippedReadonly: string[] = [];
+  const skippedReserved: string[] = [];
+  const skippedInvalid: PropertyBatchIssue[] = [];
+  const cleanedOptions: PropertyBatchIssue[] = [];
+  const demotedEnums: PropertyBatchIssue[] = [];
   const inputs: PropertyInput[] = [];
 
   for (const [index, input] of rawInputs.entries()) {
+    const name = propertyName(input, `<index:${index}>`);
     if (!includeReadonly && isReadonlyProperty(input)) {
-      skippedReadonly.push(propertyName(input, `<index:${index}>`));
+      skippedReadonly.push(name);
       continue;
     }
-    inputs.push(normalizePropertyInput(input));
+    if (!includeReserved && isReservedProperty(input)) {
+      skippedReserved.push(name);
+      continue;
+    }
+
+    const normalized = normalizePropertyInput(input);
+    const cleaned = cleanOptions(normalized);
+    if (cleaned.removed > 0) {
+      cleanedOptions.push({
+        code: "BLANK_OPTION_REMOVED",
+        name,
+        message: `Removed ${cleaned.removed} option(s) with blank label/value.`,
+      });
+    }
+
+    if (isEnumerationProperty(cleaned.input)) {
+      const validOptions = Array.isArray(cleaned.input.options) ? cleaned.input.options.length : 0;
+      if (validOptions === 0) {
+        if (emptyEnumMode === "demote") {
+          inputs.push(demoteEmptyEnum(cleaned.input));
+          demotedEnums.push({
+            code: "EMPTY_ENUM_DEMOTED",
+            name,
+            message: "Demoted enumeration with no valid options to string/text.",
+          });
+          continue;
+        }
+        skippedInvalid.push({
+          code: "EMPTY_ENUM_OPTIONS",
+          name,
+          message: "Skipped enumeration property with no valid options.",
+        });
+        continue;
+      }
+    }
+
+    inputs.push(cleaned.input);
   }
 
-  return { rawInputs, inputs, skippedReadonly };
+  return { rawInputs, inputs, skippedReadonly, skippedReserved, skippedInvalid, cleanedOptions, demotedEnums };
 }
 
 export function chunkInputs<T>(inputs: T[], chunkSize: number): T[][] {
@@ -120,12 +227,25 @@ export function chunkInputs<T>(inputs: T[], chunkSize: number): T[][] {
 }
 
 export async function loadExistingPropertyNames(client: HubSpotClient, objectTypeSegment: string): Promise<Set<string>> {
+  return (await loadExistingPropertyMetadata(client, objectTypeSegment)).names;
+}
+
+export function normalizePropertyLabel(label: unknown): string {
+  return typeof label === "string" ? label.trim().toLowerCase() : "";
+}
+
+export async function loadExistingPropertyMetadata(client: HubSpotClient, objectTypeSegment: string): Promise<ExistingPropertyMetadata> {
   const res = await client.request(`/crm/v3/properties/${objectTypeSegment}`);
-  if (!isRecord(res) || !Array.isArray(res.results)) return new Set();
-  return new Set(
-    res.results
-      .filter(isRecord)
-      .map((item) => item.name)
-      .filter((name): name is string => typeof name === "string" && name.trim().length > 0),
-  );
+  const metadata: ExistingPropertyMetadata = { names: new Set(), labels: new Map() };
+  if (!isRecord(res) || !Array.isArray(res.results)) return metadata;
+  for (const item of res.results.filter(isRecord)) {
+    const name = propertyName(item, "");
+    if (!name) continue;
+    metadata.names.add(name);
+    const label = normalizePropertyLabel(item.label);
+    if (label && !metadata.labels.has(label)) {
+      metadata.labels.set(label, name);
+    }
+  }
+  return metadata;
 }
