@@ -22,6 +22,9 @@
 - Retry on: `429`, `5xx`, and network errors.
 - Honor `Retry-After` header when present.
 - Use capped exponential backoff.
+- Share observed HubSpot rate-limit state across clients in the same process by profile + API base URL.
+- Enforce HubSpot `X-HubSpot-RateLimit-Secondly`, rolling interval, and daily remaining headers before the next request.
+- Stop before daily quota exhaustion with `RATE_LIMIT_DAILY_EXHAUSTED`.
 - Enforce request timeout (`30s`) to prevent hung command invocations.
 - Surface retry exhaustion as `HTTP_RETRY_EXHAUSTED`.
 

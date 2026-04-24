@@ -235,9 +235,20 @@ interface DailyQuotaState {
 }
 
 interface RateLimitSnapshot {
+  secondly?: RollingQuotaState;
   rolling?: RollingQuotaState;
   daily?: DailyQuotaState;
   nextRequestAtMs: number;
+}
+
+const SHARED_RATE_LIMITS = new Map<string, RateLimitSnapshot>();
+
+function sharedRateLimitState(key: string): RateLimitSnapshot {
+  const existing = SHARED_RATE_LIMITS.get(key);
+  if (existing) return existing;
+  const created: RateLimitSnapshot = { nextRequestAtMs: 0 };
+  SHARED_RATE_LIMITS.set(key, created);
+  return created;
 }
 
 export class HubSpotClient {
@@ -250,7 +261,7 @@ export class HubSpotClient {
   private readonly strictCapabilities: boolean;
   private readonly auth?: HubSpotClientOptions["auth"];
   private readonly skipCapabilityPreflight: boolean;
-  private readonly rateLimitState: RateLimitSnapshot = { nextRequestAtMs: 0 };
+  private readonly rateLimitState: RateLimitSnapshot;
   // Portal timezone (e.g. "US/Eastern"). Fetched lazily from
   // /account-info/v3/details the first time daily quota headers appear,
   // then used so the daily reset calculation matches HubSpot's actual
@@ -286,6 +297,8 @@ export class HubSpotClient {
     this.strictCapabilities = options.strictCapabilities ?? isEnvTrue(process.env.HSCLI_STRICT_CAPABILITIES);
     this.auth = options.auth;
     this.skipCapabilityPreflight = Boolean(options.skipCapabilityPreflight);
+    const authKind = this.auth?.kind ?? "bearer";
+    this.rateLimitState = sharedRateLimitState(`${this.profile}|${this.baseUrl.origin}|${authKind}`);
   }
 
   async request(path: string, options: RequestOptions = {}, attempt = 0): Promise<unknown> {
@@ -363,13 +376,17 @@ export class HubSpotClient {
       if (response.status === 429 || response.status >= 500) {
         if (response.status === 429) {
           this.observeTooManyRequests(response.headers);
+          const details = await safeJson(response);
+          if (this.isDailyQuotaExhausted() || isDailyRateLimit(details)) {
+            throw this.dailyQuotaError(details);
+          }
         }
         if (attempt >= MAX_RETRIES) {
           throw new CliError("HTTP_RETRY_EXHAUSTED", `Request failed after ${MAX_RETRIES + 1} attempts`, response.status);
         }
-        const retryAfter = Number(response.headers.get("retry-after") ?? "0");
-        const backoff = retryAfter > 0 ? retryAfter * 1000 : 1000 * 2 ** attempt;
-        await new Promise((r) => setTimeout(r, Math.min(backoff, MAX_BACKOFF_MS)));
+        const retryAfterMs = parseRetryAfterMs(response.headers.get("retry-after"));
+        const backoff = retryAfterMs ?? Math.min(1000 * 2 ** attempt, MAX_BACKOFF_MS);
+        await new Promise((r) => setTimeout(r, backoff));
         return this.request(path, { ...options, idempotencyKey }, attempt + 1);
       }
 
@@ -511,8 +528,8 @@ export class HubSpotClient {
   }
 
   private async beforeRateLimitedRequest(path: string): Promise<void> {
-    const waitMs = this.computeWaitMs();
-    if (waitMs > 0) {
+    let waitMs = this.computeWaitMs();
+    while (waitMs > 0) {
       await new Promise((resolve) => setTimeout(resolve, waitMs));
       this.emitTelemetry({
         method: "THROTTLE",
@@ -520,37 +537,21 @@ export class HubSpotClient {
         durationMs: waitMs,
         attempt: 0,
       });
+      waitMs = this.computeWaitMs();
+    }
+    const now = Date.now();
+    if (this.isDailyQuotaExhausted(now)) {
+      throw this.dailyQuotaError();
     }
     this.reserveBudget();
-
-    const now = Date.now();
-    const daily = this.rateLimitState.daily;
-    if (daily && now < daily.resetAtMs && daily.remaining <= 0) {
-      throw new CliError(
-        "RATE_LIMIT_DAILY_EXHAUSTED",
-        "HubSpot daily API quota appears exhausted for current credentials.",
-        429,
-        {
-          resetAt: new Date(daily.resetAtMs).toISOString(),
-          dailyMax: daily.max,
-          dailyRemaining: daily.remaining,
-        },
-      );
-    }
   }
 
   private computeWaitMs(): number {
     const now = Date.now();
     let waitMs = 0;
 
-    const rolling = this.rateLimitState.rolling;
-    if (rolling) {
-      if (now >= rolling.resetAtMs) {
-        rolling.remaining = rolling.max;
-      } else if (rolling.remaining <= ROLLING_SAFETY_BUFFER) {
-        waitMs = Math.max(waitMs, rolling.resetAtMs - now + 25);
-      }
-    }
+    waitMs = Math.max(waitMs, this.computeWindowWaitMs(this.rateLimitState.secondly, now));
+    waitMs = Math.max(waitMs, this.computeWindowWaitMs(this.rateLimitState.rolling, now));
 
     const nextRequestAt = this.rateLimitState.nextRequestAtMs;
     if (nextRequestAt > now) {
@@ -560,20 +561,48 @@ export class HubSpotClient {
     return waitMs;
   }
 
+  private computeWindowWaitMs(window: RollingQuotaState | undefined, now: number): number {
+    if (!window) return 0;
+    if (now >= window.resetAtMs) {
+      window.remaining = window.max;
+      window.resetAtMs = now + window.intervalMs;
+      return 0;
+    }
+    if (window.remaining <= ROLLING_SAFETY_BUFFER) {
+      return window.resetAtMs - now + 25;
+    }
+    return 0;
+  }
+
   private reserveBudget(): void {
     const now = Date.now();
-    const rolling = this.rateLimitState.rolling;
-    if (rolling && now < rolling.resetAtMs && rolling.remaining > 0) {
-      rolling.remaining -= 1;
-    }
+    this.reserveWindowBudget(this.rateLimitState.secondly, now);
+    this.reserveWindowBudget(this.rateLimitState.rolling, now);
     const daily = this.rateLimitState.daily;
     if (daily && now < daily.resetAtMs && daily.remaining > 0) {
       daily.remaining -= 1;
     }
   }
 
+  private reserveWindowBudget(window: RollingQuotaState | undefined, now: number): void {
+    if (window && now < window.resetAtMs && window.remaining > 0) {
+      window.remaining -= 1;
+    }
+  }
+
   private observeRateLimitHeaders(headers: Headers): void {
     const now = Date.now();
+
+    const secondlyMax = parsePositiveInt(headers.get("x-hubspot-ratelimit-secondly"));
+    const secondlyRemaining = parseNonNegativeInt(headers.get("x-hubspot-ratelimit-secondly-remaining"));
+    if (secondlyMax !== undefined && secondlyRemaining !== undefined) {
+      this.rateLimitState.secondly = {
+        intervalMs: 1000,
+        max: secondlyMax,
+        remaining: secondlyRemaining,
+        resetAtMs: now + 1000,
+      };
+    }
 
     const intervalMs = parsePositiveInt(headers.get("x-hubspot-ratelimit-interval-milliseconds"));
     const max = parsePositiveInt(headers.get("x-hubspot-ratelimit-max"));
@@ -642,12 +671,14 @@ export class HubSpotClient {
 
   private observeTooManyRequests(headers: Headers): void {
     const now = Date.now();
-    const retryAfterSeconds = parsePositiveInt(headers.get("retry-after"));
-    const retryAtMs = retryAfterSeconds !== undefined
-      ? now + retryAfterSeconds * 1000
-      : now + 1000;
+    const retryAfterMs = parseRetryAfterMs(headers.get("retry-after"));
+    const retryAtMs = now + (retryAfterMs ?? 1000);
 
     this.rateLimitState.nextRequestAtMs = Math.max(this.rateLimitState.nextRequestAtMs, retryAtMs);
+    if (this.rateLimitState.secondly) {
+      this.rateLimitState.secondly.remaining = 0;
+      this.rateLimitState.secondly.resetAtMs = Math.max(this.rateLimitState.secondly.resetAtMs, retryAtMs);
+    }
     if (this.rateLimitState.rolling) {
       this.rateLimitState.rolling.remaining = 0;
       this.rateLimitState.rolling.resetAtMs = Math.max(this.rateLimitState.rolling.resetAtMs, retryAtMs);
@@ -672,6 +703,28 @@ export class HubSpotClient {
     const msUntilReset = Math.max(0, resetAtMs - now);
     const spreadMs = Math.max(200, Math.floor(msUntilReset / Math.max(dailyRemaining, 1)));
     return now + spreadMs;
+  }
+
+  private isDailyQuotaExhausted(now = Date.now()): boolean {
+    const daily = this.rateLimitState.daily;
+    return Boolean(daily && now < daily.resetAtMs && daily.remaining <= 0);
+  }
+
+  private dailyQuotaError(details?: unknown): CliError {
+    const daily = this.rateLimitState.daily;
+    return new CliError(
+      "RATE_LIMIT_DAILY_EXHAUSTED",
+      "HubSpot daily API quota appears exhausted for current credentials.",
+      429,
+      {
+        ...(daily ? {
+          resetAt: new Date(daily.resetAtMs).toISOString(),
+          dailyMax: daily.max,
+          dailyRemaining: daily.remaining,
+        } : {}),
+        ...(details !== undefined ? { details } : {}),
+      },
+    );
   }
 }
 
@@ -721,6 +774,25 @@ function parseNonNegativeInt(value: string | null): number | undefined {
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed < 0) return undefined;
   return Math.floor(parsed);
+}
+
+function parseRetryAfterMs(value: string | null): number | undefined {
+  if (!value) return undefined;
+  const normalized = value.trim();
+  if (!normalized) return undefined;
+  const seconds = Number(normalized);
+  if (Number.isFinite(seconds) && seconds >= 0) return Math.floor(seconds * 1000);
+  const dateMs = Date.parse(normalized);
+  if (!Number.isFinite(dateMs)) return undefined;
+  return Math.max(0, dateMs - Date.now());
+}
+
+function isDailyRateLimit(details: unknown): boolean {
+  if (!details || typeof details !== "object" || Array.isArray(details)) return false;
+  const record = details as Record<string, unknown>;
+  const policyName = typeof record.policyName === "string" ? record.policyName.toUpperCase() : "";
+  const message = typeof record.message === "string" ? record.message.toLowerCase() : "";
+  return policyName === "DAILY" || message.includes("daily limit");
 }
 
 function nextUtcMidnightMs(nowMs: number): number {

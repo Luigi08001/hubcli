@@ -78,7 +78,7 @@ cat /tmp/ratelimit-check.jsonl
 
 ### Mitigation
 1. **Stop batch operations** immediately
-2. **Wait for reset**: daily quota resets at UTC midnight
+2. **Wait for reset**: daily quota resets at midnight in the portal's time zone
 3. **Reduce batch sizes**: use `--limit 10` instead of `--limit 100`
 4. **Space out requests**: add delays between sync pull runs
 
