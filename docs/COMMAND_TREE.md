@@ -46,6 +46,7 @@ Objects:
 - `hscli crm custom-objects schemas list|get|create|update|delete`
 - `hscli crm custom-objects records list|get|search|create|update|delete`
 - `hscli crm engagements (notes|calls|tasks|emails|meetings) list|get|create|update|delete`
+- `hscli crm activities export <objectType> <recordId>` — export recoverable record activities: engagements, memberships, selected property history
 
 Properties + pipelines + associations:
 - `hscli crm properties list|get|create|batch-create|update|delete` + `hscli crm properties groups list|create|update|delete`

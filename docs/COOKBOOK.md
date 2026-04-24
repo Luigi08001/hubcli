@@ -300,6 +300,19 @@ hscli crm migration export-metadata \
 
 This captures property groups with their real labels/displayOrder, property definitions, deal/ticket pipelines with per-stage detail, custom object schemas, owners, teams, business units, currencies, and standard association labels. Use it before building replay payloads so pipeline IDs/stage IDs and owner/team mappings are explicit.
 
+### Export recoverable record activities
+
+```bash
+hscli crm activities export contacts 12345 --out contact-12345-activities.json
+
+hscli crm activities export contacts 12345 \
+  --engagement-types notes,emails,calls,tasks,meetings \
+  --history-properties createdate,lifecyclestage,hubspot_owner_id,hs_analytics_source \
+  --out contact-12345-activities.json
+```
+
+This exports associated notes/emails/calls/tasks/meetings, current segment/list memberships with first/last-added timestamps, hydrated list details, and selected property history. HubSpot does not expose every UI activity-feed card as a replayable public API event, so “created from…” and “moved to…” cards are reconstructed from available properties/history.
+
 ### List all properties for contacts
 
 ```bash

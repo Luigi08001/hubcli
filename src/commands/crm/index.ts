@@ -31,6 +31,7 @@ import { registerCommunications } from "./communications.js";
 import { registerUsersObject } from "./users.js";
 import { registerDatedApi } from "./dated.js";
 import { registerMigration } from "./migration.js";
+import { registerActivities } from "./activities.js";
 
 export function registerCrm(program: Command, getCtx: () => CliContext): void {
   const crm = program.command("crm").description("HubSpot CRM objects");
@@ -65,4 +66,5 @@ export function registerCrm(program: Command, getCtx: () => CliContext): void {
   registerUsersObject(crm, getCtx);
   registerDatedApi(crm, getCtx);
   registerMigration(crm, getCtx);
+  registerActivities(crm, getCtx);
 }

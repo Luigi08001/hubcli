@@ -92,6 +92,7 @@ function guidePayload(goal: GuideGoal): Record<string, unknown> {
     goal,
     nextCommands: [
       "hscli crm migration export-metadata --out migration-metadata.json",
+      "hscli crm activities export contacts <contactId> --out contact-activities.json",
       "hscli --json crm properties list contacts > contacts-properties.json",
       "hscli --dry-run crm properties batch-create contacts --skip-existing --skip-label-collisions --data @contacts-properties.json",
       "hscli crm pipelines list deals",
@@ -104,6 +105,7 @@ function guidePayload(goal: GuideGoal): Record<string, unknown> {
       "custom object schemas",
       "owners, teams, business units, currencies",
       "standard association labels",
+      "recoverable record activities via crm activities export",
     ],
     replayOrder: [
       "custom schemas",

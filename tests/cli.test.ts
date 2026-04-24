@@ -610,6 +610,92 @@ describe("hscli", () => {
     expect(output.data.capturedByMigrationExport).toContain("deal/ticket pipelines with stage detail");
   });
 
+  it("exports recoverable CRM activities for one record", async () => {
+    const home = setupHomeWithToken();
+    process.env.HOME = home;
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const fetchSpy = vi.spyOn(global, "fetch" as never).mockImplementation(async (url: unknown, init?: unknown) => {
+      const value = String(url);
+      if (value.includes("/crm/v4/objects/contacts/123/associations/notes")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ results: [{ toObjectId: "note-1" }] }),
+          headers: new Headers(),
+        } as never;
+      }
+      if (value.includes("/crm/v3/objects/notes/batch/read")) {
+        expect((init as { method?: string }).method).toBe("POST");
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ results: [{ id: "note-1", properties: { hs_note_body: "Migrated note" } }] }),
+          headers: new Headers(),
+        } as never;
+      }
+      if (value.includes("/crm/v4/objects/contacts/123/associations/calls")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ results: [] }),
+          headers: new Headers(),
+        } as never;
+      }
+      if (value.includes("/crm/v3/lists/records/0-1/123/memberships")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ results: [{ listId: "456", firstAddedTimestamp: "2026-04-22T09:05:00Z", lastAddedTimestamp: "2026-04-22T09:05:00Z" }] }),
+          headers: new Headers(),
+        } as never;
+      }
+      if (value.includes("/crm/v3/objects/contacts/123")) {
+        expect(value).toContain("propertiesWithHistory=lifecyclestage%2Ccreatedate");
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            id: "123",
+            properties: { lifecyclestage: "lead", createdate: "2026-04-22T07:01:00Z" },
+            propertiesWithHistory: { lifecyclestage: [{ value: "lead", timestamp: "2026-04-22T07:01:00Z" }] },
+          }),
+          headers: new Headers(),
+        } as never;
+      }
+      return {
+        ok: false,
+        status: 404,
+        json: async () => ({ message: "not-found" }),
+        headers: new Headers(),
+      } as never;
+    });
+
+    const { run } = await import("../src/cli.js");
+    await run([
+      "node",
+      "hscli",
+      "--json",
+      "crm",
+      "activities",
+      "export",
+      "contacts",
+      "123",
+      "--engagement-types",
+      "notes,calls",
+      "--history-properties",
+      "lifecyclestage,createdate",
+      "--no-list-details",
+    ]);
+
+    expect(fetchSpy).toHaveBeenCalledTimes(5);
+    const output = JSON.parse(String(logSpy.mock.calls[0][0]));
+    expect(output.data.engagements.notes.ids).toEqual(["note-1"]);
+    expect(output.data.engagements.notes.batches[0].data.results[0].properties.hs_note_body).toBe("Migrated note");
+    expect(output.data.memberships.memberships.data.results[0].listId).toBe("456");
+    expect(output.data.record.data.propertiesWithHistory.lifecyclestage[0].value).toBe("lead");
+    expect(output.data.coverage.limits[0]).toContain("does not expose the full CRM record activity feed");
+  });
+
   it("rejects path traversal-like id segments", async () => {
     const home = setupHomeWithToken();
     process.env.HOME = home;
