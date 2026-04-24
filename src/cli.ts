@@ -67,6 +67,7 @@ import {
 } from "./commands/legacy-v1/index.js";
 import { CliError, type CliContext, printError } from "./core/output.js";
 import { loadPlugins } from "./core/plugins.js";
+import { normalizeApiBaseUrl, normalizeStoredHublet, resolveApiDomain } from "./core/auth.js";
 import pkg from "../package.json" with { type: "json" };
 
 export function createProgram(): { program: Command; getCtx: () => CliContext } {
@@ -94,9 +95,13 @@ export function createProgram(): { program: Command; getCtx: () => CliContext } 
     .option("--policy-file <path>", "Policy file controlling write/delete permissions")
     .option("--change-ticket <id>", "Change ticket reference for guarded writes")
     .option("--telemetry-file <path>", "Append request telemetry JSON lines to a local file")
+    .option("--hublet <id>", "Override HubSpot hublet routing for this invocation (eu1, na1, na2, ap1)")
+    .option("--api-base-url <url>", "Advanced: override HubSpot API base URL (must be api*.hubapi.com)")
     .hook("preAction", (cmd) => {
       const opts = cmd.optsWithGlobals();
       const telemetryFile = opts.telemetryFile ? String(opts.telemetryFile).trim() : undefined;
+      const hublet = opts.hublet ? normalizeStoredHublet(String(opts.hublet)) : undefined;
+      const apiBaseUrl = resolveApiBaseUrlOverride(hublet, opts.apiBaseUrl ? String(opts.apiBaseUrl) : undefined);
       ctx = {
         profile: opts.profile ?? "default",
         json: Boolean(opts.json),
@@ -108,11 +113,15 @@ export function createProgram(): { program: Command; getCtx: () => CliContext } 
         changeTicket: opts.changeTicket ? String(opts.changeTicket).trim() : undefined,
         runId,
         telemetryFile,
+        hublet,
+        apiBaseUrl,
       };
       process.env.HSCLI_PROFILE = ctx.profile;
       process.env.HSCLI_STRICT_CAPABILITIES = ctx.strictCapabilities ? "1" : "0";
       process.env.HSCLI_REQUEST_ID = runId;
       if (telemetryFile) process.env.HSCLI_TELEMETRY_FILE = telemetryFile;
+      if (apiBaseUrl) process.env.HSCLI_API_BASE_URL = apiBaseUrl;
+      else delete process.env.HSCLI_API_BASE_URL;
       // CLI is single-invocation per process, so env is safe here (no
       // concurrency). emitTelemetry() reads this as a fallback when the
       // AsyncLocalStorage changeTicket isn't set — which is the CLI case,
@@ -220,6 +229,8 @@ export async function run(argv = process.argv): Promise<void> {
       changeTicket: opts.changeTicket ? String(opts.changeTicket).trim() : undefined,
       runId: process.env.HSCLI_REQUEST_ID,
       telemetryFile: opts.telemetryFile ? String(opts.telemetryFile).trim() : undefined,
+      hublet: opts.hublet ? String(opts.hublet).trim() : undefined,
+      apiBaseUrl: opts.apiBaseUrl ? String(opts.apiBaseUrl).trim() : undefined,
     };
     printError(ctx, err);
     process.exitCode = 1;
@@ -244,6 +255,15 @@ try {
   }
 } catch {
   // If realpath fails (e.g. imported as ESM for testing), silently skip.
+}
+
+function resolveApiBaseUrlOverride(hublet: string | undefined, rawApiBaseUrl: string | undefined): string | undefined {
+  if (hublet && rawApiBaseUrl?.trim()) {
+    throw new CliError("API_ROUTING_CONFLICT", "Use either --hublet or --api-base-url, not both.");
+  }
+  if (rawApiBaseUrl?.trim()) return normalizeApiBaseUrl(rawApiBaseUrl);
+  if (hublet) return `https://${resolveApiDomain(hublet)}`;
+  return undefined;
 }
 
 function resolveOutputFormat(raw: unknown, jsonFlag: boolean): "json" | "table" | "csv" | "yaml" {

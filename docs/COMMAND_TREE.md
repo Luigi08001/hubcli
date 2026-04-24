@@ -15,15 +15,19 @@ High-level map of every hscli command. For detailed args and examples per comman
 - `--change-ticket <id>` — Change-ticket enforcement (when policy demands it)
 - `--strict-capabilities` — Fail fast on unsupported endpoints
 - `--telemetry-file <path>` — JSONL request audit trail
+- `--hublet <id>` — Override API routing for one invocation (`eu1`, `na1`, `na2`, `ap1`)
+- `--api-base-url <url>` — Advanced API routing override (`https://api*.hubapi.com`)
 - `--verbose` — Print request/response details
 
 ## Auth
 
-- `hscli auth login --token-stdin` | `--token <token>`
+- `hscli auth login --token-stdin` | `--token <token>` `[--hublet eu1|na1|na2|ap1]`
 - `hscli auth logout [--profile <name>]`
 - `hscli auth profiles` — list profiles
 - `hscli auth profile-show [--profile <name>]`
 - `hscli auth token-info`
+- `hscli auth set-mode <profile> read-only|read-write`
+- `hscli auth set-hublet <profile> <hublet>` — persist hublet-aware API routing
 - `hscli auth oauth-url --client-id <id> --redirect-uri <uri> --scope <scopes>`
 - `hscli auth oauth-exchange --client-id <id> --client-secret <secret> --redirect-uri <uri> --code <code>`
 - `hscli auth vault-encrypt` | `vault-decrypt` | `vault-rotate` — encrypted token vault
@@ -35,7 +39,12 @@ High-level map of every hscli command. For detailed args and examples per comman
 
 ## Guide
 
-- `hscli guide [--goal portal-migration|property-preflight|audit-trace|explore]` — guided workflows for common operator tasks
+- `hscli guide [--goal portal-migration|setup|read|write|guardrails|property-preflight|audit-trace|explore]` — guided workflows for common operator tasks
+- `hscli /migration` — portal/schema migration workflow
+- `hscli /setup` — auth, hublet routing, scopes, and capability setup
+- `hscli /read` — safe source-portal read workflow
+- `hscli /write` — target-portal write workflow with dry-run + trace
+- `hscli /guardrails` — policy, read-only, trace, and scope checks
 
 ## CRM (23 sub-command files)
 

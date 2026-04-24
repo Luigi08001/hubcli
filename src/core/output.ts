@@ -15,6 +15,8 @@ export interface CliContext {
   changeTicket?: string;
   runId?: string;
   telemetryFile?: string;
+  hublet?: string;
+  apiBaseUrl?: string;
 }
 
 export class CliError extends Error {

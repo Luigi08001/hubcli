@@ -26,6 +26,7 @@ describe("hscli", () => {
     delete process.env.HSCLI_STRICT_CAPABILITIES;
     delete process.env.HSCLI_REQUEST_ID;
     delete process.env.HSCLI_TELEMETRY_FILE;
+    delete process.env.HSCLI_API_BASE_URL;
     delete process.env.HSCLI_PORTAL_ID;
     delete process.env.HSCLI_HUBSPOT_COOKIE;
     delete process.env.HSCLI_HUBSPOT_COOKIE_FILE;
@@ -1136,6 +1137,22 @@ describe("hscli", () => {
     expect(output.data.goal).toBe("portal-migration");
     expect(output.data.nextCommands).toContain("hscli crm migration export-metadata --out migration-metadata.json");
     expect(output.data.capturedByMigrationExport).toContain("deal/ticket pipelines with stage detail");
+  });
+
+  it("slash guide commands expose migration and guardrail modes", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const fetchSpy = vi.spyOn(global, "fetch" as never);
+
+    const { run } = await import("../src/cli.js");
+    await run(["node", "hscli", "--json", "/migration"]);
+    await run(["node", "hscli", "--json", "/guardrails"]);
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    const migration = JSON.parse(String(logSpy.mock.calls[0][0]));
+    const guardrails = JSON.parse(String(logSpy.mock.calls[1][0]));
+    expect(migration.data.goal).toBe("portal-migration");
+    expect(guardrails.data.goal).toBe("guardrails");
+    expect(guardrails.data.nextCommands).toContain("hscli auth set-mode live read-only");
   });
 
   it("exports recoverable CRM activities for one record", async () => {

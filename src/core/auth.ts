@@ -11,28 +11,67 @@ export interface AuthProfile {
   scopes?: string[];
   portalId?: string;
   uiDomain?: string;
+  dataHostingLocation?: string;
   apiDomain?: string;
   hublet?: string;
   mode?: "read-only" | "read-write";
 }
 
+export function normalizeHublet(value: string | undefined): string | undefined {
+  const normalized = value?.trim().toLowerCase();
+  if (!normalized || normalized === "na" || normalized === "na1" || normalized === "global" || normalized === "prod") return undefined;
+  if (!/^[a-z][a-z0-9]*\d+$/.test(normalized)) {
+    throw new CliError("INVALID_HUBLET", `Invalid hublet '${value}'. Expected values like eu1, na1, na2, ap1.`);
+  }
+  return normalized;
+}
+
+export function normalizeStoredHublet(value: string): string {
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) throw new CliError("INVALID_HUBLET", "Hublet cannot be empty.");
+  if (normalized === "na" || normalized === "global" || normalized === "prod") return "na1";
+  if (!/^[a-z][a-z0-9]*\d+$/.test(normalized)) {
+    throw new CliError("INVALID_HUBLET", `Invalid hublet '${value}'. Expected values like eu1, na1, na2, ap1.`);
+  }
+  return normalized;
+}
+
+export function normalizeApiDomain(value: string): string {
+  const normalized = value
+    .trim()
+    .replace(/^https?:\/\//i, "")
+    .replace(/\/+$/, "")
+    .toLowerCase();
+  if (!/^api(?:-[a-z0-9]+)?\.hubapi\.com$/.test(normalized)) {
+    throw new CliError("INVALID_API_DOMAIN", "API domain must be api.hubapi.com or api-<hublet>.hubapi.com.");
+  }
+  return normalized;
+}
+
+export function normalizeApiBaseUrl(value: string): string {
+  return `https://${normalizeApiDomain(value)}`;
+}
+
 /**
  * Detect the hublet from available profile data.
- * Priority: explicit hublet field > uiDomain > token prefix.
+ * Priority: explicit hublet field > dataHostingLocation > uiDomain > token prefix.
+ * NA1 resolves to undefined because public API calls use api.hubapi.com.
  */
 export function detectHublet(profile: Partial<AuthProfile>): string | undefined {
-  if (profile.hublet) return profile.hublet;
+  if (profile.hublet) return normalizeHublet(profile.hublet);
+
+  if (profile.dataHostingLocation) return normalizeHublet(profile.dataHostingLocation);
 
   // Detect from uiDomain (e.g. "app-eu1.hubspot.com" → "eu1")
   if (profile.uiDomain) {
     const match = profile.uiDomain.match(/^app-([a-z0-9]+)\./);
-    if (match) return match[1];
+    if (match) return normalizeHublet(match[1]);
   }
 
   // Detect from token prefix (e.g. "pat-eu1-..." → "eu1")
   if (profile.token) {
     const tokenMatch = profile.token.match(/^pat-([a-z0-9]+)-/);
-    if (tokenMatch && tokenMatch[1] !== "na1") return tokenMatch[1];
+    if (tokenMatch) return normalizeHublet(tokenMatch[1]);
   }
 
   return undefined;
@@ -43,8 +82,9 @@ export function detectHublet(profile: Partial<AuthProfile>): string | undefined 
  * NA/default → "api.hubapi.com", EU1 → "api-eu1.hubapi.com", etc.
  */
 export function resolveApiDomain(hublet?: string): string {
-  if (!hublet) return "api.hubapi.com";
-  return `api-${hublet}.hubapi.com`;
+  const normalized = normalizeHublet(hublet);
+  if (!normalized) return "api.hubapi.com";
+  return `api-${normalized}.hubapi.com`;
 }
 
 /**

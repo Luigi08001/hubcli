@@ -66,7 +66,7 @@ function redactTokenPath(path: string): string {
  */
 export function createClient(profile: string, options: Omit<HubSpotClientOptions, "apiBaseUrl"> = {}): HubSpotClient {
   const token = getToken(profile);
-  const apiBaseUrl = getApiBaseUrl(profile);
+  const apiBaseUrl = process.env.HSCLI_API_BASE_URL?.trim() || getApiBaseUrl(profile);
   return new HubSpotClient(token, { ...options, apiBaseUrl, profile });
 }
 

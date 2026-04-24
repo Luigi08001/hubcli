@@ -15,6 +15,13 @@ hscli auth login --token "pat-eu1-a1b2c3d4-5678-9abc-def0-1234567890ab"
 ```
 
 Hublet is auto-detected from the token prefix (e.g. `pat-eu1-...` routes to `api-eu1.hubapi.com`).
+If the token does not expose enough metadata, force routing explicitly:
+
+```bash
+hscli auth login --profile live --token-stdin --hublet eu1
+hscli auth set-hublet live eu1
+hscli --hublet eu1 --profile live account info
+```
 
 ### Login via stdin (CI pipelines)
 
@@ -792,6 +799,18 @@ The MCP server exposes the same operations as the CLI with the same safety model
 ---
 
 ## 15. Doctor / Diagnostics
+
+### Start from an operator workflow
+
+Use Claude-style slash commands when you want the CLI to tell you the next safe sequence:
+
+```bash
+hscli /setup
+hscli /migration
+hscli /read
+hscli /write
+hscli /guardrails
+```
 
 ### Check hublet configuration consistency
 

@@ -25,6 +25,7 @@ describe("hublet detection and routing", () => {
     delete process.env.HSCLI_STRICT_CAPABILITIES;
     delete process.env.HSCLI_REQUEST_ID;
     delete process.env.HSCLI_TELEMETRY_FILE;
+    delete process.env.HSCLI_API_BASE_URL;
   });
 
   // -----------------------------------------------------------------------
@@ -49,6 +50,12 @@ describe("hublet detection and routing", () => {
     it("returns undefined for NA token (pat-na1-...)", async () => {
       const { detectHublet } = await import("../src/core/auth.js");
       expect(detectHublet({ token: "pat-na1-abc-def-123" })).toBeUndefined();
+    });
+
+    it("treats explicit NA1 hosting as global API routing", async () => {
+      const { detectHublet } = await import("../src/core/auth.js");
+      expect(detectHublet({ hublet: "na1" })).toBeUndefined();
+      expect(detectHublet({ dataHostingLocation: "na1" })).toBeUndefined();
     });
 
     it("returns undefined for standard uiDomain (app.hubspot.com)", async () => {
@@ -89,6 +96,11 @@ describe("hublet detection and routing", () => {
     it("returns api-ap1.hubapi.com for ap1", async () => {
       const { resolveApiDomain } = await import("../src/core/auth.js");
       expect(resolveApiDomain("ap1")).toBe("api-ap1.hubapi.com");
+    });
+
+    it("returns api.hubapi.com for explicit na1", async () => {
+      const { resolveApiDomain } = await import("../src/core/auth.js");
+      expect(resolveApiDomain("na1")).toBe("api.hubapi.com");
     });
   });
 
@@ -198,6 +210,24 @@ describe("hublet detection and routing", () => {
     expect(String(url)).toContain("https://api-eu1.hubapi.com/");
   });
 
+  it("CLI --hublet overrides routing for a single invocation", async () => {
+    setupHomeWithToken("default", "pat-na1-test-token");
+
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    const fetchSpy = vi.spyOn(global, "fetch" as never).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ results: [] }),
+      headers: new Headers(),
+    } as never);
+
+    const { run } = await import("../src/cli.js");
+    await run(["node", "hscli", "--json", "--hublet", "eu1", "crm", "contacts", "list", "--limit", "1"]);
+
+    const [url] = fetchSpy.mock.calls[0];
+    expect(String(url)).toContain("https://api-eu1.hubapi.com/");
+  });
+
   // -----------------------------------------------------------------------
   // auth login saves hublet + apiDomain
   // -----------------------------------------------------------------------
@@ -236,6 +266,26 @@ describe("hublet detection and routing", () => {
     const profile = getProfile("default");
     expect(profile.hublet).toBe("eu1");
     expect(profile.apiDomain).toBe("api-eu1.hubapi.com");
+  });
+
+  it("auth set-hublet persists explicit routing metadata", async () => {
+    const home = setupHomeWithToken("prod", "pat-na1-test-token");
+    process.env.HOME = home;
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    const { run } = await import("../src/cli.js");
+    await run(["node", "hscli", "--json", "auth", "set-hublet", "prod", "eu1"]);
+
+    const output = JSON.parse(String(logSpy.mock.calls[0][0]));
+    expect(output.data).toMatchObject({
+      profile: "prod",
+      hublet: "eu1",
+      apiDomain: "api-eu1.hubapi.com",
+    });
+
+    const { getProfile } = await import("../src/core/auth.js");
+    expect(getProfile("prod").hublet).toBe("eu1");
+    expect(getProfile("prod").apiDomain).toBe("api-eu1.hubapi.com");
   });
 
   // -----------------------------------------------------------------------
