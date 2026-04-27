@@ -243,6 +243,45 @@ describe("hscli", () => {
     });
   });
 
+  it("settings business-units capture uses the internal browser-session endpoint", async () => {
+    const home = setupHomeWithToken("default", "test-token", {
+      uiDomain: "app.hubspot.com",
+    });
+    process.env.HOME = home;
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const fetchSpy = vi.spyOn(global, "fetch" as never).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ results: [{ id: "101", name: "North America" }] }),
+      headers: new Headers(),
+    } as never);
+
+    const { run } = await import("../src/cli.js");
+    await run([
+      "node",
+      "hscli",
+      "--json",
+      "settings",
+      "business-units",
+      "capture",
+      "--cookie",
+      "hubspotutk=abc; csrf.app=csrf-from-cookie",
+      "--include-id-map-seed",
+    ]);
+
+    const [url, init] = fetchSpy.mock.calls[0] as [URL | string, RequestInit];
+    expect(String(url)).toBe("https://app.hubspot.com/api/business-units/v1/business-units");
+    expect(init.method).toBe("GET");
+    expect((init.headers as Record<string, string>).Cookie).toBe("hubspotutk=abc; csrf.app=csrf-from-cookie");
+    expect((init.headers as Record<string, string>)["x-hubspot-csrf-hubspotapi"]).toBe("csrf-from-cookie");
+    expect((init.headers as Record<string, string>).Authorization).toBeUndefined();
+
+    const output = JSON.parse(String(logSpy.mock.calls[0][0]));
+    expect(output.data.idMapSeed).toMatchObject({
+      "101": { sourceName: "North America", target_id: "" },
+    });
+  });
+
   it("settings permission-sets create retries once after stripping unknown roles", async () => {
     const home = setupHomeWithToken();
     process.env.HOME = home;

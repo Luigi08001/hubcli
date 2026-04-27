@@ -27,10 +27,27 @@ function resolvePermissionSetSession(
   ctx: CliContext,
   opts: BrowserSessionOptions,
 ): { client: HubSpotClient; portalId: string } {
+  const session = resolveBrowserSession(ctx, opts, "Permission-set commands", true);
+  return { client: session.client, portalId: session.portalId! };
+}
+
+function resolveBusinessUnitSession(
+  ctx: CliContext,
+  opts: BrowserSessionOptions,
+): { client: HubSpotClient; portalId?: string } {
+  return resolveBrowserSession(ctx, opts, "Business-unit capture commands", false);
+}
+
+function resolveBrowserSession(
+  ctx: CliContext,
+  opts: BrowserSessionOptions,
+  featureLabel: string,
+  requirePortalId: boolean,
+): { client: HubSpotClient; portalId?: string } {
   const profile = safeProfile(ctx.profile);
   const portalId = firstString(opts.portalId, process.env.HSCLI_PORTAL_ID, profile?.portalId);
-  if (!portalId) {
-    throw new CliError("SESSION_PORTAL_ID_REQUIRED", "Permission-set commands require --portal-id, HSCLI_PORTAL_ID, or profile.portalId.");
+  if (requirePortalId && !portalId) {
+    throw new CliError("SESSION_PORTAL_ID_REQUIRED", `${featureLabel} require --portal-id, HSCLI_PORTAL_ID, or profile.portalId.`);
   }
 
   const uiDomain = normalizeUiDomain(firstString(
@@ -46,7 +63,7 @@ function resolvePermissionSetSession(
   if (!cookie) {
     throw new CliError(
       "SESSION_COOKIE_REQUIRED",
-      "Permission-set commands require --cookie, --cookie-file, HSCLI_HUBSPOT_COOKIE, or HSCLI_HUBSPOT_COOKIE_FILE.",
+      `${featureLabel} require --cookie, --cookie-file, HSCLI_HUBSPOT_COOKIE, or HSCLI_HUBSPOT_COOKIE_FILE.`,
     );
   }
 
@@ -54,7 +71,7 @@ function resolvePermissionSetSession(
   if (!csrfToken) {
     throw new CliError(
       "SESSION_CSRF_REQUIRED",
-      "Permission-set commands require --csrf or HSCLI_HUBSPOT_CSRF. A csrf.app cookie is also accepted when present.",
+      `${featureLabel} require --csrf or HSCLI_HUBSPOT_CSRF. A csrf.app cookie is also accepted when present.`,
     );
   }
 
@@ -76,6 +93,10 @@ function permissionSetsPath(portalId: string): string {
 
 function permissionSetPath(portalId: string, id: string): string {
   return `/api/app-users/v1/permission-sets/${encodePathSegment(id, "permissionSetId")}?portalId=${encodeURIComponent(portalId)}`;
+}
+
+function businessUnitsInternalPath(): string {
+  return "/api/business-units/v1/business-units";
 }
 
 async function maybeWritePermissionSetWithRoleRetry(
@@ -118,6 +139,46 @@ function extractPermissionSets(response: unknown): Array<Record<string, unknown>
     if (Array.isArray(value)) return value.filter(isRecord);
   }
   return [];
+}
+
+function buildBusinessUnitIdMapSeed(response: unknown): Record<string, Record<string, unknown>> {
+  const seed: Record<string, Record<string, unknown>> = {};
+  for (const unit of extractBusinessUnits(response)) {
+    const id = firstString(
+      stringFromUnknown(unit.id),
+      stringFromUnknown(unit.businessUnitId),
+      stringFromUnknown(unit.unitId),
+    );
+    if (!id) continue;
+    seed[id] = {
+      sourceName: firstString(stringFromUnknown(unit.name), stringFromUnknown(unit.label)),
+      target_id: "",
+    };
+  }
+  return seed;
+}
+
+function extractBusinessUnits(response: unknown): Array<Record<string, unknown>> {
+  if (Array.isArray(response)) return response.filter(isRecord);
+  if (!isRecord(response)) return [];
+  for (const key of ["results", "businessUnits", "items"]) {
+    const value = response[key];
+    if (Array.isArray(value)) return value.filter(isRecord);
+  }
+  const data = isRecord(response.data) ? response.data : undefined;
+  if (data) {
+    for (const key of ["results", "businessUnits", "items"]) {
+      const value = data[key];
+      if (Array.isArray(value)) return value.filter(isRecord);
+    }
+  }
+  return [];
+}
+
+function stringFromUnknown(value: unknown): string | undefined {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  return undefined;
 }
 
 function extractMissingRoles(error: unknown): string[] {
@@ -306,6 +367,18 @@ export function registerSettings(program: Command, getCtx: () => CliContext): vo
       const res = await client.request(`/settings/v3/business-units/?${params.toString()}`);
       printResult(ctx, res);
     });
+
+  addBrowserSessionOptions(
+    businessUnits
+      .command("capture")
+      .description("Capture full business-unit metadata via internal HubSpot session-auth endpoint")
+      .option("--include-id-map-seed", "Include a source-ID keyed business-unit map seed"),
+  ).action(async (opts) => {
+    const ctx = getCtx();
+    const { client } = resolveBusinessUnitSession(ctx, opts);
+    const res = await client.request(businessUnitsInternalPath());
+    printResult(ctx, opts.includeIdMapSeed ? { result: res, idMapSeed: buildBusinessUnitIdMapSeed(res) } : res);
+  });
 
   // Teams
   const teams = settings.command("teams").description("Team management");

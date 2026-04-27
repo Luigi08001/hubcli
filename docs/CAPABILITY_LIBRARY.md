@@ -395,7 +395,8 @@ BRANCH example:
 
 ### Business units
 
-- `hscli settings business-units list|create|update|delete` 🔒 — Marketing Hub Enterprise gated. Verified 404 on `/business-units/v3/` + `/settings/v3/business-units` on this (non-Enterprise) portal.
+- `hscli settings business-units list` 🔒 — public `/settings/v3/business-units` surface is Marketing Hub Enterprise gated on many portals.
+- `hscli settings business-units capture` ✅ — internal `/api/business-units/v1/business-units` browser-session endpoint for full BU metadata capture; requires cookie + `x-hubspot-csrf-hubspotapi`, not bearer-token auth.
 
 ### Multi-currency
 

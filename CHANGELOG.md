@@ -27,6 +27,9 @@ top of 0.8.11's operator surface.
 - `communication-preferences definitions list|create` can replay subscription
   definitions with business-unit remapping (`--business-unit-map`,
   `--business-unit-mode strict|drop|preserve`) and `--skip-existing`.
+- `settings business-units capture` reads the internal
+  `/api/business-units/v1/business-units` browser-session endpoint and can emit
+  a source-ID keyed id-map seed for subscription-definition BU remapping.
 - `workflows preflight` checks workflow exports against migration id-maps before
   replay, including actions, enrollment criteria, suppression lists, custom
   objects, association labels, users/owners, sequences, lists, subscriptions,

@@ -130,7 +130,7 @@ Imports + sync + introspection:
 - `hscli settings users list|get|create|update|delete` + `roles list`
 - `hscli settings teams list`
 - `hscli settings permission-sets list|get|create|update|delete` — internal session-auth endpoint
-- `hscli settings business-units list`
+- `hscli settings business-units list|capture` — public list plus internal session-auth capture for full BU metadata
 - `hscli settings currencies list`
 - `hscli settings gdpr delete-contact <id>`
 - `hscli settings audit-logs list [--filters]`
