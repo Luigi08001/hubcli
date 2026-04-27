@@ -1,6 +1,12 @@
+import type { FlatIdMap } from "../../core/id-maps.js";
 import { CliError } from "../../core/output.js";
 
 export type FormPayloadFormat = "auto" | "v2" | "v3";
+
+export interface FormTranslationOptions {
+  subscriptionTypeMap?: FlatIdMap;
+  allowUnmappedSubscriptionTypes?: boolean;
+}
 
 const LEGAL_CONSENT_TYPES = new Set([
   "none",
@@ -74,10 +80,11 @@ export function parseFormPayloadFormat(raw: string | undefined): FormPayloadForm
 export function normalizeFormPayloadForV3(
   input: Record<string, unknown>,
   format: FormPayloadFormat = "auto",
+  opts: FormTranslationOptions = {},
 ): Record<string, unknown> {
   if (format === "v3") return input;
   if (format === "auto" && !isLegacyFormV2Payload(input)) return input;
-  return translateLegacyFormV2ToV3(input);
+  return translateLegacyFormV2ToV3(input, opts);
 }
 
 export function isLegacyFormV2Payload(input: Record<string, unknown>): boolean {
@@ -98,7 +105,10 @@ export function legacyFormFieldPropertyObjectType(field: Record<string, unknown>
   return "contacts";
 }
 
-export function translateLegacyFormV2ToV3(input: Record<string, unknown>): Record<string, unknown> {
+export function translateLegacyFormV2ToV3(
+  input: Record<string, unknown>,
+  opts: FormTranslationOptions = {},
+): Record<string, unknown> {
   const name = stringValue(input.name) ?? stringValue(input.title);
   if (!name) {
     throw new CliError("INVALID_FORM_PAYLOAD", "Legacy forms/v2 payload is missing a form name");
@@ -117,7 +127,7 @@ export function translateLegacyFormV2ToV3(input: Record<string, unknown>): Recor
     fieldGroups,
     configuration: mapConfiguration(input),
     displayOptions: mapDisplayOptions(input),
-    legalConsentOptions: mapLegalConsentOptions(input),
+    legalConsentOptions: mapLegalConsentOptions(input, opts),
   });
 }
 
@@ -301,17 +311,125 @@ function mapPostSubmitAction(input: Record<string, unknown>): Record<string, unk
 function mapDisplayOptions(input: Record<string, unknown>): Record<string, unknown> {
   return cleanRecord({
     renderRawHtml: booleanValue(input.renderRawHtml, false),
-    submitButtonText: stringValue(input.submitText) ?? "Submit",
+    submitButtonText: stringValue(input.submitButtonText) ?? stringValue(input.submitText) ?? "Submit",
     theme: stringValue(input.theme) ?? "canvas",
     cssClass: stringValue(input.cssClass),
   });
 }
 
-function mapLegalConsentOptions(input: Record<string, unknown>): Record<string, unknown> {
-  const legacy = record(input.legalConsentOptions);
+function mapLegalConsentOptions(input: Record<string, unknown>, opts: FormTranslationOptions): Record<string, unknown> {
+  const legacy = extractLegalConsentOptions(input);
   const type = stringValue(legacy?.type);
   if (legacy && type && LEGAL_CONSENT_TYPES.has(type)) return legacy;
+  if (legacy) return translateLegacyConsentOptions(legacy, opts);
   return { type: "none" };
+}
+
+function extractLegalConsentOptions(input: Record<string, unknown>): Record<string, unknown> | undefined {
+  const direct = record(input.legalConsentOptions);
+  if (direct) return direct;
+
+  for (const item of records(input.metaData)) {
+    const name = stringValue(item.name)?.toLowerCase();
+    if (name !== "legalconsentoptions") continue;
+    const value = item.value;
+    if (typeof value === "string") {
+      try {
+        return record(JSON.parse(value));
+      } catch {
+        throw new CliError("INVALID_FORM_CONSENT_METADATA", "forms/v2 metaData legalConsentOptions is not valid JSON");
+      }
+    }
+    return record(value);
+  }
+  return undefined;
+}
+
+function translateLegacyConsentOptions(legacy: Record<string, unknown>, opts: FormTranslationOptions): Record<string, unknown> {
+  const privacyText = stringValue(legacy.privacyPolicyText) ?? stringValue(legacy.privacyText);
+  const communicationConsentText = stringValue(legacy.communicationConsentText);
+
+  if (legacy.isLegitimateInterest === true) {
+    return cleanRecord({
+      type: "legitimate_interest",
+      lawfulBasis: stringValue(legacy.legitimateInterestLegalBasis) ?? "LEGITIMATE_INTEREST_PQL",
+      subscriptionTypeIds: mapConsentIdArray(
+        legacy.legitimateInterestSubscriptionTypes,
+        opts,
+        "legalConsentOptions.legitimateInterestSubscriptionTypes",
+      ),
+      privacyText,
+    });
+  }
+
+  const communicationConsentCheckboxes = mapLegacyConsentCheckboxes(
+    legacy.communicationConsentCheckboxes ?? legacy.communicationConsentCheckboxesMetadata,
+    opts,
+    "legalConsentOptions.communicationConsentCheckboxes",
+  );
+  const processingConsentType = stringValue(legacy.processingConsentType);
+  if (processingConsentType === "REQUIRED_CHECKBOX") {
+    return cleanRecord({
+      type: "explicit_consent_to_process",
+      consentToProcessCheckboxLabel: stringValue(legacy.consentToProcessCheckboxLabel)
+        ?? stringValue(legacy.processingConsentCheckboxLabel),
+      consentToProcessFooterText: stringValue(legacy.consentToProcessFooterText)
+        ?? stringValue(legacy.processingConsentFooterText),
+      communicationConsentText,
+      communicationConsentCheckboxes,
+      privacyText,
+    });
+  }
+
+  return cleanRecord({
+    type: "implicit_consent_to_process",
+    consentToProcessText: stringValue(legacy.consentToProcessText) ?? stringValue(legacy.processingConsentText),
+    communicationConsentText,
+    communicationConsentCheckboxes,
+    privacyText,
+  });
+}
+
+function mapLegacyConsentCheckboxes(
+  raw: unknown,
+  opts: FormTranslationOptions,
+  path: string,
+): Array<Record<string, unknown>> | undefined {
+  const checkboxes = records(raw).map((checkbox, index) => {
+    const sourceId = checkbox.subscriptionTypeId ?? checkbox.communicationTypeId;
+    const mappedId = mapConsentSubscriptionId(sourceId, opts, `${path}[${index}].subscriptionTypeId`);
+    return cleanRecord({
+      subscriptionTypeId: mappedId,
+      label: stringValue(checkbox.label) ?? stringValue(checkbox.text),
+      required: booleanValue(checkbox.required, false),
+      checkedByDefault: booleanValue(checkbox.checkedByDefault, false),
+    });
+  });
+  return checkboxes.length > 0 ? checkboxes : undefined;
+}
+
+function mapConsentIdArray(raw: unknown, opts: FormTranslationOptions, path: string): Array<string | number> | undefined {
+  const values = Array.isArray(raw) ? raw : raw === undefined || raw === null ? [] : [raw];
+  const mapped = values
+    .map((value, index) => mapConsentSubscriptionId(value, opts, `${path}[${index}]`))
+    .filter((value): value is string | number => value !== undefined);
+  return mapped.length > 0 ? mapped : undefined;
+}
+
+function mapConsentSubscriptionId(raw: unknown, opts: FormTranslationOptions, path: string): string | number | undefined {
+  const source = idValue(raw);
+  if (!source) return undefined;
+
+  const mapped = opts.subscriptionTypeMap?.[source];
+  if (mapped !== undefined) return toHubSpotIdValue(mapped);
+
+  if (opts.allowUnmappedSubscriptionTypes) return toHubSpotIdValue(source);
+  throw new CliError(
+    "FORM_CONSENT_SUBSCRIPTION_REMAP_REQUIRED",
+    `Legacy form consent references source subscriptionTypeId ${source} at ${path}. Provide --subscription-type-map or pass --allow-unmapped-consent to preserve source IDs.`,
+    undefined,
+    { sourceSubscriptionTypeId: source, path },
+  );
 }
 
 function parseRecipients(raw: unknown): string[] {
@@ -360,6 +478,16 @@ function numberValue(raw: unknown): number | undefined {
     if (Number.isFinite(value)) return value;
   }
   return undefined;
+}
+
+function idValue(raw: unknown): string | undefined {
+  if (typeof raw === "number" && Number.isFinite(raw)) return String(raw);
+  return stringValue(raw);
+}
+
+function toHubSpotIdValue(raw: string): string | number {
+  const numeric = Number(raw);
+  return Number.isSafeInteger(numeric) && String(numeric) === raw ? numeric : raw;
 }
 
 function cleanRecord(input: Record<string, unknown>): Record<string, unknown> {

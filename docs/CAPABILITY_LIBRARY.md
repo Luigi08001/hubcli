@@ -123,7 +123,7 @@ All readable + writable via standard CRM endpoints:
 ### Forms
 
 - `hscli forms create|get|list|update|translate-v2` ✅
-- Legacy `/forms/v2/forms` exports can be translated to `/marketing/v3/forms` payloads during create/update, with target-property preflight and automatic 3-field group splitting ✅
+- Legacy `/forms/v2/forms` exports can be translated to `/marketing/v3/forms` payloads during create/update, with target-property preflight, automatic 3-field group splitting, `metaData[].legalConsentOptions` extraction, and consent subscription ID remapping via `--subscription-type-map` ✅
 - `hscli submissions list <formGuid>` ✅
 - `hscli submissions search <portalId> <formGuid>` ✅
 - Embed codes: generated client-side from form id ✅
@@ -261,6 +261,7 @@ HubSpot exposes TWO public workflow APIs:
 | **Populate `actions[]` on v4** | POST / PATCH `/automation/v4/flows` | ❌ | **Re-verified.** POST with `actions:[...]` → 500. PATCH → 405. Action schema is internal-only. **Workaround: create via v3 instead** — the same workflow surfaces on v4 (`migrationStatus.flowId`) with all actions intact. |
 | **Enable / disable a v4 flow** | `hscli workflows flows enable|disable <flowId>` | ✅ | `PUT /automation/v4/flows/{id}` with full flow body including `revisionId` and `isEnabled`. Verified live 2026-04-23. PATCH returns 405 (why we missed it first time) — PUT is the correct verb. |
 | **Resolve v3↔v4 workflow id pair** | `hscli workflows id-map <idV3OrV4>` | ✅ | No dedicated endpoint; wrapper reads `migrationStatus.flowId` / `migrationStatus.workflowId` from the v3 or v4 GET response. Useful for migration tooling + when you need to jump from one API to the other. |
+| **Preflight replay IDs** | `hscli workflows preflight --id-map-dir ./id-maps --data '{...}'` | ✅ | Checks actions, enrollment criteria, suppression lists, custom object IDs, association labels, users/owners, sequences, marketing emails, lists, subscriptions, campaigns, pipeline/stage refs, and suspicious ID-shaped action fields before replay. |
 | Re-enroll contacts | `shouldReEnroll: true` in v4 flow; `allowContactToTriggerMultipleTimes` in v3 | ✅ | |
 
 #### v3 action catalog (what you can actually ship)

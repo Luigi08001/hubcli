@@ -1,6 +1,6 @@
 # COMMAND_TREE
 
-> Updated: 2026-04-17 for 0.3.0
+> Updated: 2026-04-27 for 0.8.12
 > See also: [COMMAND_COMPATIBILITY.md](COMMAND_COMPATIBILITY.md) · [ARCHITECTURE.md](ARCHITECTURE.md) · [MCP.md](MCP.md)
 
 High-level map of every hscli command. For detailed args and examples per command, run `hscli <domain> <cmd> --help`.
@@ -144,7 +144,10 @@ Imports + sync + introspection:
 
 ## Communication preferences
 
-- `hscli communication-preferences status|definitions|update`
+- `hscli communication-preferences subscription-types` — legacy alias for definitions list
+- `hscli communication-preferences definitions list|create` — subscription definition replay with `--business-unit-map`
+- `hscli communication-preferences status|subscribe|unsubscribe`
+- `hscli communication-preferences v4 status-batch-read|status-update-batch|subscribe-batch|unsubscribe-batch|subscriptions-list|channels-list`
 
 ## Conversations
 
@@ -160,12 +163,15 @@ Imports + sync + introspection:
 
 ## Workflows
 
-- `hscli workflows flows list|get` + `actions list|get` + `sequences list|get`
+- `hscli workflows preflight --data <payload> [--id-map-dir <dir>] [--strict]` — check replay payloads for unresolved source IDs
+- `hscli workflows flows list|get|create|update|enable|disable`
+- `hscli workflows v3 list|get|create|delete|enroll|unenroll|enrollments`
+- `hscli workflows id-map <id>` — resolve v3 workflowId ↔ v4 flowId
 
 ## Files + Forms + Domains + Site-search + Timeline
 
 - `hscli files list|get|upload|delete`
-- `hscli forms list|get|create|update|translate-v2|submissions list`
+- `hscli forms list|get|create|update|translate-v2|submissions list` — legacy v2 translator supports property preflight, group splitting, and `--subscription-type-map`
 - `hscli domains list|get`
 - `hscli site-search list --type <type>`
 - `hscli timeline events list|create`

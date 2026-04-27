@@ -227,9 +227,12 @@ hscli forms create --source-format v2 --data '{"name":"Legacy form","submitText"
 
 # Real legacy writes preflight target CRM properties and skip missing fields; add --strict to fail instead
 hscli forms create --source-format v2 --strict --data '{"name":"Legacy form","formFieldGroups":[{"fields":[{"name":"email","label":"Email","fieldType":"email","required":true}]}]}' --dry-run
+
+# Legacy consent checkboxes must use target subscription definition IDs
+hscli forms create --source-format v2 --subscription-type-map ./id-maps/subscription-types.json --data '{"name":"Legacy form","formFieldGroups":[{"fields":[{"name":"email","label":"Email","fieldType":"email"}]}]}' --dry-run
 ```
 
-> **API:** `forms` scope. Full CRUD on forms including field configuration. Legacy forms/v2 payloads are auto-translated on create/update when detected; use `hscli forms translate-v2` to inspect the v3 payload before replay. During real writes, hscli preflights target CRM properties, skips missing fields by default, and auto-splits field groups to HubSpot's 3-field v3 limit.
+> **API:** `forms` scope. Full CRUD on forms including field configuration. Legacy forms/v2 payloads are auto-translated on create/update when detected; use `hscli forms translate-v2` to inspect the v3 payload before replay. During real writes, hscli preflights target CRM properties, skips missing fields by default, auto-splits field groups to HubSpot's 3-field v3 limit, and requires `--subscription-type-map` when legacy consent metadata references source subscription IDs.
 
 ---
 

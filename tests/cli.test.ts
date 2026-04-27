@@ -32,6 +32,7 @@ describe("hscli", () => {
     delete process.env.HSCLI_HUBSPOT_COOKIE_FILE;
     delete process.env.HSCLI_HUBSPOT_CSRF;
     delete process.env.HSCLI_HUBSPOT_UI_DOMAIN;
+    process.exitCode = undefined;
   });
 
   it("parses global flags", async () => {
@@ -557,6 +558,220 @@ describe("hscli", () => {
     const output = String(errSpy.mock.calls[0][0]);
     expect(output).toContain("FORM_PROPERTY_PREFLIGHT_FAILED");
     expect(output).toContain("missing_field");
+  });
+
+  it("translates forms/v2 legal consent metadata and remaps subscription IDs", async () => {
+    const home = setupHomeWithToken();
+    process.env.HOME = home;
+    const mapPath = join(home, "subscription-types.json");
+    writeFileSync(mapPath, JSON.stringify({ "108084638": "9001" }));
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const fetchSpy = vi.spyOn(global, "fetch" as never);
+
+    const { run } = await import("../src/cli.js");
+    await run([
+      "node",
+      "hscli",
+      "--json",
+      "forms",
+      "translate-v2",
+      "--subscription-type-map",
+      mapPath,
+      "--data",
+      JSON.stringify({
+        name: "Consent form",
+        submitButtonText: "Download now",
+        metaData: [{
+          name: "legalConsentOptions",
+          value: JSON.stringify({
+            communicationConsentText: "I agree to receive email.",
+            communicationConsentCheckboxes: [{
+              communicationTypeId: 108084638,
+              label: "Newsletter",
+              required: true,
+            }],
+            privacyPolicyText: "Privacy policy",
+          }),
+        }],
+        formFieldGroups: [{ fields: [{ name: "email", label: "Email", fieldType: "email" }] }],
+      }),
+    ]);
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    const output = JSON.parse(String(logSpy.mock.calls[0][0]));
+    expect(output.data.displayOptions.submitButtonText).toBe("Download now");
+    expect(output.data.legalConsentOptions).toMatchObject({
+      type: "implicit_consent_to_process",
+      communicationConsentText: "I agree to receive email.",
+      communicationConsentCheckboxes: [{
+        subscriptionTypeId: 9001,
+        label: "Newsletter",
+        required: true,
+      }],
+      privacyText: "Privacy policy",
+    });
+  });
+
+  it("blocks forms/v2 consent translation when subscription IDs are not remapped", async () => {
+    const home = setupHomeWithToken();
+    process.env.HOME = home;
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const fetchSpy = vi.spyOn(global, "fetch" as never);
+
+    const { run } = await import("../src/cli.js");
+    await run([
+      "node",
+      "hscli",
+      "--json",
+      "forms",
+      "translate-v2",
+      "--data",
+      JSON.stringify({
+        name: "Consent form",
+        legalConsentOptions: {
+          communicationConsentCheckboxes: [{ communicationTypeId: 108084638, label: "Newsletter" }],
+        },
+        formFieldGroups: [{ fields: [{ name: "email", label: "Email", fieldType: "email" }] }],
+      }),
+    ]);
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    const output = String(errSpy.mock.calls[0][0]);
+    expect(output).toContain("FORM_CONSENT_SUBSCRIPTION_REMAP_REQUIRED");
+    expect(output).toContain("108084638");
+  });
+
+  it("can dry-run subscription definitions with business-unit remapping", async () => {
+    const home = setupHomeWithToken();
+    process.env.HOME = home;
+    const mapPath = join(home, "business-units.json");
+    writeFileSync(mapPath, JSON.stringify({ "123": "456" }));
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const fetchSpy = vi.spyOn(global, "fetch" as never);
+
+    const { run } = await import("../src/cli.js");
+    await run([
+      "node",
+      "hscli",
+      "--json",
+      "--dry-run",
+      "communication-preferences",
+      "definitions",
+      "create",
+      "--business-unit-map",
+      mapPath,
+      "--data",
+      JSON.stringify({
+        id: "source-id",
+        name: "Newsletter",
+        purpose: "Marketing",
+        communicationMethod: "Email",
+        businessUnitId: 123,
+      }),
+    ]);
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    const output = JSON.parse(String(logSpy.mock.calls[0][0]));
+    expect(output.data).toMatchObject({
+      dryRun: true,
+      method: "POST",
+      path: "/communication-preferences/v3/definitions",
+      body: {
+        name: "Newsletter",
+        purpose: "Marketing",
+        communicationMethod: "Email",
+        businessUnitId: 456,
+      },
+    });
+    expect(output.data.body.id).toBeUndefined();
+  });
+
+  it("skips existing subscription definitions by name", async () => {
+    const home = setupHomeWithToken();
+    process.env.HOME = home;
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const fetchSpy = vi.spyOn(global, "fetch" as never).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ results: [{ id: "def-1", name: "Newsletter" }] }),
+      headers: new Headers(),
+    } as never);
+
+    const { run } = await import("../src/cli.js");
+    await run([
+      "node",
+      "hscli",
+      "--json",
+      "--force",
+      "communication-preferences",
+      "definitions",
+      "create",
+      "--skip-existing",
+      "--data",
+      JSON.stringify({ name: "Newsletter", purpose: "Marketing", communicationMethod: "Email" }),
+    ]);
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    const output = JSON.parse(String(logSpy.mock.calls[0][0]));
+    expect(output.data).toMatchObject({
+      skipped: true,
+      reason: "subscription-definition-exists",
+      existing: { id: "def-1", name: "Newsletter" },
+    });
+  });
+
+  it("preflights workflow exports for unresolved source IDs", async () => {
+    const home = setupHomeWithToken();
+    process.env.HOME = home;
+    const idMapDir = join(home, "id-maps");
+    mkdirSync(idMapDir, { recursive: true });
+    writeFileSync(join(idMapDir, "marketing-emails.json"), JSON.stringify({ "111": "999" }));
+    writeFileSync(join(idMapDir, "lists.json"), JSON.stringify({ "5": "6" }));
+    writeFileSync(join(idMapDir, "users.json"), JSON.stringify({ "77": "88" }));
+    writeFileSync(join(idMapDir, "associations.json"), JSON.stringify({ "44": "55" }));
+    writeFileSync(join(idMapDir, "custom-objects.json"), JSON.stringify({
+      mapping: [{ source_objectTypeId: "2-1", target_objectTypeId: "2-9" }],
+    }));
+    writeFileSync(join(idMapDir, "pipelines.json"), JSON.stringify({
+      deals: [{ src_pipelineId: "pipe1", target_pipelineId: "pipe9", stageMap: { stage1: "stage9" } }],
+    }));
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    const { run } = await import("../src/cli.js");
+    await run([
+      "node",
+      "hscli",
+      "--json",
+      "workflows",
+      "preflight",
+      "--id-map-dir",
+      idMapDir,
+      "--data",
+      JSON.stringify({
+        id: "wf-1",
+        name: "Replay workflow",
+        actions: [
+          { type: "0-4", fields: { content_id: 111 } },
+          { type: "0-46510720", sequenceId: "123", userId: "77" },
+          {
+            type: "0-14",
+            object_type_id: "2-1",
+            fields: [{ propertyName: "dealstage", staticValue: "stage1" }],
+          },
+          { type: "0-73444249", fromObjectType: "0-1", toObjectType: "2-1", labelToApply: "44" },
+        ],
+        enrollmentCriteria: { listFilterBranch: { filters: [{ listId: "5" }] } },
+        suppressionListIds: ["888"],
+      }),
+    ]);
+
+    const output = JSON.parse(String(logSpy.mock.calls[0][0]));
+    expect(output.data.ok).toBe(false);
+    expect(output.data.brokenRefCount).toBe(2);
+    expect(output.data.workflows[0].brokenRefs.map((ref: { kind: string }) => ref.kind)).toEqual([
+      "sequence",
+      "suppressionList",
+    ]);
   });
 
   it("strict capabilities mode fails fast when capability status is unknown", async () => {

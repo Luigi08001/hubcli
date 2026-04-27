@@ -3,6 +3,7 @@
  */
 import { Command } from "commander";
 import { createClient } from "../../core/http.js";
+import { loadFlatIdMapFile } from "../../core/id-maps.js";
 import type { CliContext } from "../../core/output.js";
 import { printResult } from "../../core/output.js";
 import { encodePathSegment, maybeWrite, parseJsonPayload, parseNumberFlag } from "../crm/shared.js";
@@ -20,6 +21,8 @@ interface FormWriteOptions {
   sourceFormat?: string;
   propertyPreflight?: string;
   strict?: boolean;
+  subscriptionTypeMap?: string;
+  allowUnmappedConsent?: boolean;
 }
 
 async function prepareFormBody(
@@ -43,7 +46,10 @@ async function prepareFormBody(
   }
 
   return {
-    body: normalizeFormPayloadForV3(payload, format),
+    body: normalizeFormPayloadForV3(payload, format, {
+      subscriptionTypeMap: opts.subscriptionTypeMap ? loadFlatIdMapFile(opts.subscriptionTypeMap) : undefined,
+      allowUnmappedSubscriptionTypes: opts.allowUnmappedConsent,
+    }),
     skippedFields,
   };
 }
@@ -77,6 +83,8 @@ export function registerForms(program: Command, getCtx: () => CliContext): void 
     .requiredOption("--data <payload>", "JSON payload")
     .option("--source-format <format>", "Payload shape: auto|v2|v3", "auto")
     .option("--property-preflight <mode>", "Target property preflight for legacy forms: auto|skip|strict", "auto")
+    .option("--subscription-type-map <file>", "ID map JSON for legacy consent subscriptionTypeId remapping")
+    .option("--allow-unmapped-consent", "Preserve source subscriptionTypeIds when no remap is provided")
     .option("--strict", "Fail when target-property preflight finds missing form fields")
     .action(async (opts) => {
       const ctx = getCtx();
@@ -91,6 +99,8 @@ export function registerForms(program: Command, getCtx: () => CliContext): void 
     .requiredOption("--data <payload>", "JSON payload")
     .option("--source-format <format>", "Payload shape: auto|v2|v3", "auto")
     .option("--property-preflight <mode>", "Target property preflight for legacy forms: auto|skip|strict", "auto")
+    .option("--subscription-type-map <file>", "ID map JSON for legacy consent subscriptionTypeId remapping")
+    .option("--allow-unmapped-consent", "Preserve source subscriptionTypeIds when no remap is provided")
     .option("--strict", "Fail when target-property preflight finds missing form fields")
     .action(async (id, opts) => {
       const ctx = getCtx();
@@ -103,9 +113,14 @@ export function registerForms(program: Command, getCtx: () => CliContext): void 
   forms.command("translate-v2")
     .description("Convert a legacy /forms/v2/forms payload into /marketing/v3/forms shape")
     .requiredOption("--data <payload>", "Legacy forms/v2 JSON payload")
+    .option("--subscription-type-map <file>", "ID map JSON for legacy consent subscriptionTypeId remapping")
+    .option("--allow-unmapped-consent", "Preserve source subscriptionTypeIds when no remap is provided")
     .action(async (opts) => {
       const ctx = getCtx();
-      const body = normalizeFormPayloadForV3(parseJsonPayload(opts.data), "v2");
+      const body = normalizeFormPayloadForV3(parseJsonPayload(opts.data), "v2", {
+        subscriptionTypeMap: opts.subscriptionTypeMap ? loadFlatIdMapFile(opts.subscriptionTypeMap) : undefined,
+        allowUnmappedSubscriptionTypes: opts.allowUnmappedConsent,
+      });
       printResult(ctx, body);
     });
 }

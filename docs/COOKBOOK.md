@@ -505,6 +505,9 @@ hscli forms create --source-format v2 --strict --dry-run \
 
 hscli forms translate-v2 --data '{"name":"Legacy Webinar Signup","submitText":"Register","formFieldGroups":[{"fields":[{"name":"email","label":"Email","fieldType":"email","required":true}]}]}'
 
+hscli forms create --source-format v2 --subscription-type-map ./id-maps/subscription-types.json --dry-run \
+  --data '{"name":"Legacy Webinar Signup","formFieldGroups":[{"fields":[{"name":"email","label":"Email","fieldType":"email"}]}]}'
+
 hscli forms update "f47ac10b-58cc-4372-a567-0e02b2c3d479" --force \
   --data '{"name":"Q2 Webinar Signup (Updated)"}'
 ```
@@ -540,6 +543,9 @@ hscli workflows flows get 39172845
 
 hscli workflows flows create --dry-run \
   --data '{"name":"New Lead Nurture Sequence","type":"PLATFORM_FLOW"}'
+
+hscli workflows preflight --id-map-dir ./id-maps --strict \
+  --data '{"name":"Workflow export","actions":[],"suppressionListIds":[]}'
 ```
 
 ### Service conversations and feedback

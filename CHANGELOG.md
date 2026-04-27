@@ -19,7 +19,20 @@ top of 0.8.11's operator surface.
   over read-shaped commands so agents can pick up HubSpot records
   with the same grammar they use to read vault state.
 
-One new test (308 total passing).
+### Added — migration replay hardening
+
+- Legacy forms/v2 consent replay now extracts `metaData[].legalConsentOptions`,
+  preserves `submitButtonText`, and requires target subscription remaps via
+  `--subscription-type-map` unless `--allow-unmapped-consent` is passed.
+- `communication-preferences definitions list|create` can replay subscription
+  definitions with business-unit remapping (`--business-unit-map`,
+  `--business-unit-mode strict|drop|preserve`) and `--skip-existing`.
+- `workflows preflight` checks workflow exports against migration id-maps before
+  replay, including actions, enrollment criteria, suppression lists, custom
+  objects, association labels, users/owners, sequences, lists, subscriptions,
+  campaigns, marketing emails, and pipeline/stage IDs.
+
+Migration replay regression tests added.
 
 ## 0.8.11 - 2026-04-24
 

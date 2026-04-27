@@ -25,9 +25,11 @@ import { createClient } from "../../core/http.js";
 import { printResult } from "../../core/output.js";
 import { registerResource } from "../domains/shared.js";
 import { encodePathSegment, maybeWrite, parseJsonPayload, parseNumberFlag } from "../crm/shared.js";
+import { registerWorkflowPreflight } from "./preflight.js";
 
 export function registerWorkflows(program: Command, getCtx: () => CliContext): void {
   const workflows = program.command("workflows").description("HubSpot Workflow Automation APIs");
+  registerWorkflowPreflight(workflows, getCtx);
 
   registerResource(workflows, getCtx, {
     name: "flows",
