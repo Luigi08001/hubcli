@@ -82,13 +82,14 @@ export function registerCommunicationPreferences(program: Command, getCtx: () =>
       .option("--skip-existing", "Skip create when a target definition with the same composite key already exists"),
   ).action(async (opts) => {
     const ctx = getCtx();
-    const session = resolveBrowserSession(ctx, opts, "Internal subscription-definition commands", true);
-    const publicClient = createClient(ctx.profile);
     const payload = normalizeSubscriptionDefinitionPayload(
       parseJsonPayload(opts.data),
       opts.businessUnitMap ? loadFlatIdMapFile(opts.businessUnitMap) : {},
       parseBusinessUnitMode(opts.businessUnitMode),
     );
+    assertEmailSubscriptionDefinition(payload);
+    const session = resolveBrowserSession(ctx, opts, "Internal subscription-definition commands", true);
+    const publicClient = createClient(ctx.profile);
     const internalPayload = buildInternalSubscriptionDefinitionPayload(payload, session.portalId!);
 
     if (opts.skipExisting) {
@@ -317,6 +318,23 @@ function buildInternalSubscriptionDefinitionPayload(input: Record<string, unknow
     operation: valueOrEmpty(input.operation),
     ...(input.businessUnitId !== undefined ? { businessUnitId: toHubSpotIdValue(String(input.businessUnitId)) } : {}),
   };
+}
+
+function assertEmailSubscriptionDefinition(input: Record<string, unknown>): void {
+  const rawChannel = firstString(
+    typeof input.communicationMethod === "string" ? input.communicationMethod : undefined,
+    typeof input.channel === "string" ? input.channel : undefined,
+    typeof input.method === "string" ? input.method : undefined,
+  );
+  if (!rawChannel) return;
+  const channel = rawChannel.toUpperCase();
+  if (channel === "EMAIL") return;
+  throw new CliError(
+    "UNSUPPORTED_INTERNAL_SUBSCRIPTION_CHANNEL",
+    `create-internal uses HubSpot's Email > Subscription Types endpoint and cannot safely create ${rawChannel} definitions. Probe/add a dedicated internal adapter for that channel.`,
+    undefined,
+    { channel: rawChannel },
+  );
 }
 
 async function findExistingDefinition(

@@ -246,6 +246,9 @@ hscli forms create --source-format v2 --subscription-type-map ./id-maps/subscrip
 > hscli exposes this as an explicit migration adapter:
 > `hscli communication-preferences definitions create-internal --portal-id <id>
 > --cookie-file <cookies> --data '{...}' --business-unit-map ./id-maps/business-units.json`.
+> The adapter is Email-only and rejects non-Email `communicationMethod`,
+> `channel`, or `method` values; Chat/Call/Post definitions need separately
+> probed adapters.
 > There is intentionally no generic internal API passthrough.
 
 ---
