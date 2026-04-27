@@ -22,6 +22,11 @@
   by name alone, and remap business-unit IDs before write.
 - `communication-preferences definitions create --skip-existing` now uses that
   composite match instead of skipping by name alone.
+- Added `communication-preferences definitions create-internal`, an explicit
+  browser-session migration adapter for Email > Subscription Types creation via
+  `/api/subscriptions/v1/definitions?portalId=<id>`.
+- Added `doctor internal-adapters` to list supported/planned internal
+  setup/migration adapters and keep them separate from generic raw API access.
 
 ## 0.8.12 - 2026-04-24
 

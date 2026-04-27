@@ -377,4 +377,57 @@ export function registerDoctor(program: Command, getCtx: () => CliContext): void
         checks,
       });
     });
+
+  doctor
+    .command("internal-adapters")
+    .description("List allowlisted browser-session/internal migration adapters")
+    .action(() => {
+      const ctx = getCtx();
+      printResult(ctx, {
+        warning: "Internal adapters are explicit migration/setup commands, not a generic internal API passthrough. They require browser-session auth and normal hscli dry-run/force guardrails for writes.",
+        adapters: [
+          {
+            kind: "setup",
+            command: "settings business-units capture",
+            endpoint: "/api/business-units/v1/business-units",
+            auth: "browser-session",
+            access: "read",
+            status: "supported",
+          },
+          {
+            kind: "setup",
+            command: "settings permission-sets list|get|create|update|delete",
+            endpoint: "/api/app-users/v1/permission-sets",
+            auth: "browser-session",
+            access: "read/write",
+            status: "supported",
+          },
+          {
+            kind: "migration",
+            command: "communication-preferences definitions create-internal",
+            endpoint: "/api/subscriptions/v1/definitions",
+            auth: "browser-session",
+            access: "write",
+            status: "supported",
+            notes: "Email > Subscription Types creation; use composite idempotency and business-unit remapping.",
+          },
+          {
+            kind: "migration",
+            command: "reports capture --session",
+            endpoint: "/reports/v2/reports",
+            auth: "browser-session",
+            access: "read",
+            status: "planned",
+          },
+          {
+            kind: "migration",
+            command: "dashboards capture --session",
+            endpoint: "/dashboard/v2",
+            auth: "browser-session",
+            access: "read",
+            status: "planned",
+          },
+        ],
+      });
+    });
 }

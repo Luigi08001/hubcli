@@ -142,10 +142,15 @@ Imports + sync + introspection:
 - `hscli account private-apps` — **list private apps installed (integration audit)**
 - `hscli account api-usage` — daily API usage totals
 
+## Internal Adapters
+
+- `hscli doctor internal-adapters` — list allowlisted browser-session setup/migration adapters. hscli intentionally does not expose a generic internal API passthrough.
+
 ## Communication preferences
 
 - `hscli communication-preferences subscription-types` — legacy alias for definitions list
 - `hscli communication-preferences definitions list|create` — public read + guarded replay helper with `--business-unit-map`; public definition create may return HTTP 405 on real portals
+- `hscli communication-preferences definitions create-internal` — browser-session migration adapter for Email > Subscription Types creation
 - `hscli communication-preferences status|subscribe|unsubscribe`
 - `hscli communication-preferences v4 status-batch-read|status-update-batch|subscribe-batch|unsubscribe-batch|subscriptions-list|channels-list`; `subscriptions-list` reads `/communication-preferences/v4/definitions`
 

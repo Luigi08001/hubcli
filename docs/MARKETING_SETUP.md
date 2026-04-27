@@ -242,6 +242,11 @@ hscli forms create --source-format v2 --subscription-type-map ./id-maps/subscrip
 > using a browser-session migration helper, match by
 > `name + purpose/process + communicationMethod/channel + businessUnitId` and
 > remap business units before write.
+>
+> hscli exposes this as an explicit migration adapter:
+> `hscli communication-preferences definitions create-internal --portal-id <id>
+> --cookie-file <cookies> --data '{...}' --business-unit-map ./id-maps/business-units.json`.
+> There is intentionally no generic internal API passthrough.
 
 ---
 
