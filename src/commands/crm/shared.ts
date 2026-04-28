@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { readFileSync } from "node:fs";
 import { createClient, HubSpotClient } from "../../core/http.js";
 import { enforceWritePolicy } from "../../core/policy.js";
 import type { CliContext } from "../../core/output.js";
@@ -14,7 +15,8 @@ const ENGAGEMENT_OBJECT_TYPES = ["notes", "calls", "tasks", "emails", "meetings"
 
 function parseJsonPayload(raw: string): Record<string, unknown> {
   try {
-    return JSON.parse(raw) as Record<string, unknown>;
+    const source = raw.startsWith("@") ? readFileSync(raw.slice(1), "utf8") : raw;
+    return JSON.parse(source) as Record<string, unknown>;
   } catch {
     throw new CliError("INVALID_JSON", "Invalid JSON payload");
   }

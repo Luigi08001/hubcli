@@ -1583,6 +1583,49 @@ describe("hscli", () => {
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
+  it("automation workflows create accepts @file payloads", async () => {
+    const home = setupHomeWithToken();
+    process.env.HOME = home;
+    const payloadPath = join(home, "workflow.json");
+    writeFileSync(payloadPath, JSON.stringify({ name: "Replay draft", flowType: "WORKFLOW", isEnabled: false }));
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    const fetchSpy = vi.spyOn(global, "fetch" as never).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ id: "wf-1" }),
+      headers: new Headers(),
+    } as never);
+
+    const { run } = await import("../src/cli.js");
+    await run(["node", "hscli", "--force", "automation", "workflows", "create", "--data", `@${payloadPath}`]);
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    expect(String(url)).toContain("/automation/v4/flows");
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(String(init.body))).toMatchObject({ name: "Replay draft", isEnabled: false });
+  });
+
+  it("automation workflows update uses PUT /automation/v4/flows/{id}", async () => {
+    const home = setupHomeWithToken();
+    process.env.HOME = home;
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    const fetchSpy = vi.spyOn(global, "fetch" as never).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ id: "wf-1" }),
+      headers: new Headers(),
+    } as never);
+
+    const { run } = await import("../src/cli.js");
+    await run(["node", "hscli", "--force", "automation", "workflows", "update", "wf-1", "--data", '{"name":"Replay draft"}']);
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    expect(String(url)).toContain("/automation/v4/flows/wf-1");
+    expect(init.method).toBe("PUT");
+  });
+
   it("api request write defaults to dry-run when --dry-run is set", async () => {
     const home = setupHomeWithToken();
     process.env.HOME = home;

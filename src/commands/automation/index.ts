@@ -33,6 +33,39 @@ export function registerAutomation(program: Command, getCtx: () => CliContext): 
       printResult(ctx, res);
     });
 
+  workflows
+    .command("create")
+    .requiredOption("--data <payload>", "Workflow payload JSON, or @file")
+    .action(async (opts) => {
+      const ctx = getCtx();
+      const client = createClient(ctx.profile);
+      const res = await maybeWrite(ctx, client, "POST", "/automation/v4/flows", parseJsonPayload(opts.data));
+      printResult(ctx, res);
+    });
+
+  workflows
+    .command("update")
+    .argument("<flowId>")
+    .requiredOption("--data <payload>", "Workflow payload JSON, or @file")
+    .action(async (flowId, opts) => {
+      const ctx = getCtx();
+      const client = createClient(ctx.profile);
+      const id = encodePathSegment(flowId, "flowId");
+      const res = await maybeWrite(ctx, client, "PUT", `/automation/v4/flows/${id}`, parseJsonPayload(opts.data));
+      printResult(ctx, res);
+    });
+
+  workflows
+    .command("delete")
+    .argument("<flowId>")
+    .action(async (flowId) => {
+      const ctx = getCtx();
+      const client = createClient(ctx.profile);
+      const id = encodePathSegment(flowId, "flowId");
+      const res = await maybeWrite(ctx, client, "DELETE", `/automation/v4/flows/${id}`);
+      printResult(ctx, res);
+    });
+
   // Custom Workflow Actions (app-defined code actions)
   const actions = automation.command("actions").description("Custom workflow actions (app-developer defined code blocks)");
   actions.command("list").argument("<appId>").option("--limit <n>", "Max records", "50").option("--after <cursor>", "Paging cursor").action(async (appId, o) => {
