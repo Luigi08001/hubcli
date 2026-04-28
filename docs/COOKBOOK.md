@@ -310,6 +310,22 @@ hscli crm migration export-metadata \
 
 This captures property groups with their real labels/displayOrder, property definitions, deal/ticket pipelines with per-stage detail, custom object schemas, owners, teams, business units, currencies, and standard association labels. Use it before building replay payloads so pipeline IDs/stage IDs and owner/team mappings are explicit.
 
+### Apply migration ID maps to local payloads
+
+```bash
+hscli crm migration id-map apply \
+  --data @contacts-upsert.json \
+  --field hubspot_owner_id=./id-maps/owners.json \
+  --field sales_owner=./id-maps/owners.json \
+  --field hs_owning_teams=./id-maps/teams.json \
+  --field hs_all_assigned_business_unit_ids=./id-maps/business-units.json \
+  --on-unmapped error \
+  --out contacts-upsert.remapped.json \
+  --report-out contacts-upsert.remap-report.json
+```
+
+`id-map apply` rewrites local JSON only; it never calls HubSpot. It supports `{ inputs: [...] }` batch payloads, arrays, and single records. Use `--on-unmapped error` for final migrations. Use `--on-unmapped drop` only after documenting an explicit policy, for example dropping out-of-scope teams while preserving all mapped NA/GLO teams.
+
 ### Export recoverable record activities
 
 ```bash
