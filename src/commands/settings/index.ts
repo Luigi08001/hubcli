@@ -34,8 +34,9 @@ function resolvePermissionSetSession(
 function resolveBusinessUnitSession(
   ctx: CliContext,
   opts: BrowserSessionOptions,
+  requirePortalId = false,
 ): { client: HubSpotClient; portalId?: string } {
-  return resolveBrowserSession(ctx, opts, "Business-unit capture commands", false);
+  return resolveBrowserSession(ctx, opts, "Business-unit internal commands", requirePortalId);
 }
 
 function resolveBrowserSession(
@@ -95,8 +96,9 @@ function permissionSetPath(portalId: string, id: string): string {
   return `/api/app-users/v1/permission-sets/${encodePathSegment(id, "permissionSetId")}?portalId=${encodeURIComponent(portalId)}`;
 }
 
-function businessUnitsInternalPath(): string {
-  return "/api/business-units/v1/business-units";
+function businessUnitsInternalPath(portalId?: string): string {
+  const query = portalId ? `?portalId=${encodeURIComponent(portalId)}` : "";
+  return `/api/business-units/v1/business-units${query}`;
 }
 
 async function maybeWritePermissionSetWithRoleRetry(
@@ -173,6 +175,29 @@ function extractBusinessUnits(response: unknown): Array<Record<string, unknown>>
     }
   }
   return [];
+}
+
+async function findExistingBusinessUnitByName(
+  client: HubSpotClient,
+  name: string,
+): Promise<Record<string, unknown> | undefined> {
+  const response = await client.request(businessUnitsInternalPath());
+  return extractBusinessUnits(response).find((unit) => unit.name === name);
+}
+
+function normalizeBusinessUnitCreatePayload(raw: unknown): Record<string, unknown> {
+  if (!isRecord(raw)) {
+    throw new CliError("INVALID_BUSINESS_UNIT_PAYLOAD", "Business-unit create payload must be a JSON object.");
+  }
+  const name = typeof raw.name === "string" ? raw.name.trim() : "";
+  if (!name) {
+    throw new CliError("BUSINESS_UNIT_NAME_REQUIRED", "Business-unit create payload requires a non-empty name.");
+  }
+  const payload: Record<string, unknown> = { name };
+  for (const key of ["label", "description", "logoMetadata"]) {
+    if (raw[key] !== undefined && raw[key] !== null && raw[key] !== "") payload[key] = raw[key];
+  }
+  return payload;
 }
 
 function stringFromUnknown(value: unknown): string | undefined {
@@ -281,6 +306,29 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
+function normalizeUserCreatePayload(raw: unknown, allowInviteEmail: boolean): Record<string, unknown> {
+  if (!isRecord(raw)) {
+    throw new CliError("INVALID_USER_PAYLOAD", "User create payload must be a JSON object.");
+  }
+  const payload = { ...raw };
+  const inviteFields = [
+    payload.sendWelcomeEmail === true ? "sendWelcomeEmail=true" : undefined,
+    payload.sendInviteEmail === true ? "sendInviteEmail=true" : undefined,
+    payload.skipInviteEmail === false ? "skipInviteEmail=false" : undefined,
+  ].filter(Boolean);
+
+  if (!allowInviteEmail && inviteFields.length > 0) {
+    throw new CliError(
+      "USER_INVITE_EMAIL_BLOCKED",
+      `User invite email blocked by default (${inviteFields.join(", ")}). Set sendWelcomeEmail:false or pass --allow-invite-email.`,
+    );
+  }
+  if (!allowInviteEmail) {
+    payload.sendWelcomeEmail = false;
+  }
+  return payload;
+}
+
 export function registerSettings(program: Command, getCtx: () => CliContext): void {
   const settings = program.command("settings").description("HubSpot Settings APIs");
 
@@ -311,10 +359,11 @@ export function registerSettings(program: Command, getCtx: () => CliContext): vo
   users
     .command("create")
     .requiredOption("--data <payload>", "User creation payload JSON")
+    .option("--allow-invite-email", "Allow the create payload to send welcome/invite email")
     .action(async (opts) => {
       const ctx = getCtx();
       const client = createClient(ctx.profile);
-      const payload = parseJsonPayload(opts.data);
+      const payload = normalizeUserCreatePayload(parseJsonPayload(opts.data), Boolean(opts.allowInviteEmail));
       const res = await maybeWrite(ctx, client, "POST", "/settings/v3/users/", payload);
       printResult(ctx, res);
     });
@@ -378,6 +427,29 @@ export function registerSettings(program: Command, getCtx: () => CliContext): vo
     const { client } = resolveBusinessUnitSession(ctx, opts);
     const res = await client.request(businessUnitsInternalPath());
     printResult(ctx, opts.includeIdMapSeed ? { result: res, idMapSeed: buildBusinessUnitIdMapSeed(res) } : res);
+  });
+
+  addBrowserSessionOptions(
+    businessUnits
+      .command("create-internal")
+      .description("Create a business unit via the internal browser-session endpoint")
+      .requiredOption("--data <payload>", "Business-unit payload JSON: { name, label?, description?, logoMetadata? }")
+      .option("--skip-existing", "Skip create when a target business unit with the same name already exists"),
+  ).action(async (opts) => {
+    const ctx = getCtx();
+    const { client, portalId } = resolveBusinessUnitSession(ctx, opts, true);
+    const payload = normalizeBusinessUnitCreatePayload(parseJsonPayload(opts.data));
+
+    if (!ctx.dryRun && opts.skipExisting) {
+      const existing = await findExistingBusinessUnitByName(client, String(payload.name));
+      if (existing) {
+        printResult(ctx, { skipped: true, reason: "business-unit-exists", matchKey: "name", existing });
+        return;
+      }
+    }
+
+    const res = await maybeWrite(ctx, client, "POST", businessUnitsInternalPath(portalId), payload);
+    printResult(ctx, res);
   });
 
   // Teams

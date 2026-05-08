@@ -24,8 +24,14 @@ portal mirror and how hscli should handle them in future runs.
   subscription type IDs.
 - Business units can be captured through the internal browser-session endpoint
   when the public settings endpoint is unavailable.
+- Business units can be created through the internal browser-session endpoint
+  with `--skip-existing`, which removes the need for DevTools snippets in the
+  common sandbox replay path.
 - Permission sets can be listed/created/updated/deleted through the internal
   browser-session endpoint.
+- User creates suppress invite/welcome emails by default. Passing
+  `--allow-invite-email` is required before hscli will allow payloads such as
+  `sendWelcomeEmail:true`.
 - `crm migration id-map apply` remaps local batch payload fields without making
   HubSpot calls, which is the default path for owners, teams, business units,
   custom object type IDs, and other source-to-target IDs.
@@ -36,8 +42,10 @@ These surfaces are supported by migration-specific adapters or manual review
 until their endpoint behavior is stable enough to promote to first-class CLI
 commands:
 
-- User invite and permission-set assignment flows, especially when invite email
-  delivery must be disabled and super admins must be left untouched.
+- Permission-set assignment and team-assignment flows, especially when super
+  admins must be left untouched.
+- Team creation/update. The public team API is read-only on many portals, so
+  creation stays adapter-first until the internal endpoint contract is proven.
 - Workflow full replay and activation. hscli has workflow preflight and raw
   create/update commands, but a safe migration still needs an adapter that
   remaps action references, strips/replaces send-email actions for sandbox

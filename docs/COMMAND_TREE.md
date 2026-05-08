@@ -127,10 +127,10 @@ Imports + sync + introspection:
 
 ## Settings
 
-- `hscli settings users list|get|create|update|delete` + `roles list`
+- `hscli settings users list|get|create|update|delete` + `roles list` — `create` suppresses invite emails unless `--allow-invite-email` is passed
 - `hscli settings teams list`
 - `hscli settings permission-sets list|get|create|update|delete` — internal session-auth endpoint
-- `hscli settings business-units list|capture` — public list plus internal session-auth capture for full BU metadata
+- `hscli settings business-units list|capture|create-internal` — public list plus internal session-auth capture/create for full BU metadata
 - `hscli settings currencies list`
 - `hscli settings gdpr delete-contact <id>`
 - `hscli settings audit-logs list [--filters]`

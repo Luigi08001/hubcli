@@ -392,14 +392,15 @@ BRANCH example:
 
 ### Users + teams
 
-- `hscli settings users list|create|update|delete` ✅
-- `hscli settings teams list|create|update|delete` ✅
+- `hscli settings users list|create|update|delete` ✅ — user creates suppress invite emails by default; pass `--allow-invite-email` only when explicitly intended.
+- `hscli settings teams list` ✅ — team creation/update remains UI/internal-adapter only until the internal endpoint contract is proven.
 - `hscli settings permission-sets list|get|create|update|delete` ✅ — internal `/api/app-users/v1/permission-sets` endpoint; requires browser session cookie + `x-hubspot-csrf-hubspotapi`, not bearer-token auth.
 
 ### Business units
 
 - `hscli settings business-units list` 🔒 — public `/settings/v3/business-units` surface is Marketing Hub Enterprise gated on many portals.
 - `hscli settings business-units capture` ✅ — internal `/api/business-units/v1/business-units` browser-session endpoint for full BU metadata capture; requires cookie + `x-hubspot-csrf-hubspotapi`, not bearer-token auth.
+- `hscli settings business-units create-internal` ✅ — internal browser-session create path for sandbox/migration BU replay; supports `--skip-existing`.
 
 ### Multi-currency
 
