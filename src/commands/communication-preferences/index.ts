@@ -149,7 +149,10 @@ export function registerCommunicationPreferences(program: Command, getCtx: () =>
       const ctx = getCtx();
       const client = createClient(ctx.profile);
       const payload = parseJsonPayload(opts.data);
-      const res = await client.request("/communication-preferences/v4/statuses/batch/read", { method: "POST", body: payload });
+      const res = await client.request(
+        "/communication-preferences/v4/statuses/batch/read",
+        { method: "POST", body: payload, permissionMode: "read" },
+      );
       printResult(ctx, res);
     });
   v4.command("status-update-batch")

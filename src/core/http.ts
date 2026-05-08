@@ -94,6 +94,11 @@ export interface RequestOptions {
   body?: unknown;
   idempotencyKey?: string;
   /**
+   * Some HubSpot read endpoints use POST for batch payloads. Keep the
+   * actual HTTP method, but evaluate local permission profiles as a read.
+   */
+  permissionMode?: "read" | "write";
+  /**
    * Override the default `Content-Type: application/json`. Used when
    * HubSpot endpoints expect `text/plain`, `text/html`, or
    * `multipart/form-data` — e.g. `/cms/v3/source-code/*` template
@@ -303,7 +308,7 @@ export class HubSpotClient {
 
   async request(path: string, options: RequestOptions = {}, attempt = 0): Promise<unknown> {
     const method = options.method ?? "GET";
-    enforcePermissionProfile(this.profile, method);
+    enforcePermissionProfile(this.profile, options.permissionMode === "read" ? "GET" : method);
     const url = this.resolveUrl(path);
     const pathname = new URL(url).pathname;
     const idempotencyKey = resolveIdempotencyKey(method, options.idempotencyKey);

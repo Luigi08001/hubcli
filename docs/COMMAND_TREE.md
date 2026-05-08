@@ -55,14 +55,14 @@ Objects:
 - `hscli crm quotes|products|line-items|goals list|get|search|create|update|delete [...]`
 - `hscli crm payments|invoices|subscriptions list|get [...]` — commerce
 - `hscli crm custom-objects schemas list|get|create|update|delete`
-- `hscli crm custom-objects records list|get|search|create|update|delete`
+- `hscli crm custom-objects records list|get|search|create|update|delete|batch-read|batch-create|batch-update|batch-archive`
 - `hscli crm engagements (notes|calls|tasks|emails|meetings) list|get|create|update|delete`
 - `hscli crm activities export <objectType> <recordId>` — export recoverable record activities: engagements, memberships, selected property history
 
 Properties + pipelines + associations:
 - `hscli crm properties list|get|create|batch-create|update|delete` + `hscli crm properties groups list|create|update|delete`
 - `hscli crm pipelines list|get|create|update|delete` + `hscli crm pipelines stages create|update|delete`
-- `hscli crm associations list|get|create|delete`
+- `hscli crm associations list|batch-read|batch-create|create|delete`
 - `hscli crm owners list|get`
 
 Imports + sync + introspection:

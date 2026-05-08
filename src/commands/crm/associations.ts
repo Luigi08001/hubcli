@@ -73,6 +73,52 @@ export function registerAssociations(crm: Command, getCtx: () => CliContext): vo
     });
 
   associations
+    .command("batch-read")
+    .description("Read associations for up to 100 source record IDs")
+    .argument("<fromObjectType>")
+    .argument("<toObjectType>")
+    .requiredOption("--data <payload>", "Batch read payload JSON: { inputs: [{ id }] }")
+    .action(async (fromObjectType, toObjectType, opts) => {
+      const ctx = getCtx();
+      const client = createClient(ctx.profile);
+      const fromObjectTypeValue = await resolveObjectType(fromObjectType, client, "fromObjectType");
+      const toObjectTypeValue = await resolveObjectType(toObjectType, client, "toObjectType");
+      const fromObjectTypeSegment = encodePathSegment(fromObjectTypeValue, "fromObjectType");
+      const toObjectTypeSegment = encodePathSegment(toObjectTypeValue, "toObjectType");
+      const payload = parseJsonPayload(opts.data);
+      const res = await client.request(`/crm/v4/associations/${fromObjectTypeSegment}/${toObjectTypeSegment}/batch/read`, {
+        method: "POST",
+        body: payload,
+        permissionMode: "read",
+      });
+      printResult(ctx, res);
+    });
+
+  associations
+    .command("batch-create")
+    .description("Create record associations with explicit v4 association types")
+    .argument("<fromObjectType>")
+    .argument("<toObjectType>")
+    .requiredOption("--data <payload>", "Batch create payload JSON: { inputs: [{ from: { id }, to: { id }, types: [...] }] }")
+    .action(async (fromObjectType, toObjectType, opts) => {
+      const ctx = getCtx();
+      const client = createClient(ctx.profile);
+      const fromObjectTypeValue = await resolveObjectType(fromObjectType, client, "fromObjectType");
+      const toObjectTypeValue = await resolveObjectType(toObjectType, client, "toObjectType");
+      const fromObjectTypeSegment = encodePathSegment(fromObjectTypeValue, "fromObjectType");
+      const toObjectTypeSegment = encodePathSegment(toObjectTypeValue, "toObjectType");
+      const payload = parseJsonPayload(opts.data);
+      const res = await maybeWrite(
+        ctx,
+        client,
+        "POST",
+        `/crm/v4/associations/${fromObjectTypeSegment}/${toObjectTypeSegment}/batch/create`,
+        payload,
+      );
+      printResult(ctx, res);
+    });
+
+  associations
     .command("create")
     .argument("<fromObjectType>")
     .argument("<fromObjectId>")

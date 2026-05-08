@@ -196,6 +196,7 @@ export function registerObjectCommands(parent: Command, objectType: string, getC
     const res = await client.request(`/crm/v3/objects/${objectType}/search`, {
       method: "POST",
       body,
+      permissionMode: "read",
     });
     parseResponse(HubSpotSearchResponse, res, `${objectType} search`);
     enrichListResponse(res, portal, objectType);
@@ -240,6 +241,7 @@ export function registerObjectCommands(parent: Command, objectType: string, getC
       const res = await client.request(`/crm/v3/objects/${objectType}/search`, {
         method: "POST",
         body,
+        permissionMode: "read",
       });
       parseResponse(HubSpotSearchResponse, res, `${objectType} filter`);
 
@@ -275,6 +277,7 @@ export function registerObjectCommands(parent: Command, objectType: string, getC
       const res = await client.request(`/crm/v3/objects/${objectType}/search`, {
         method: "POST",
         body,
+        permissionMode: "read",
       });
       parseResponse(HubSpotSearchResponse, res, `${objectType} count`);
       const searchRes = res as { total: number };
@@ -322,7 +325,23 @@ export function registerObjectCommands(parent: Command, objectType: string, getC
     const ctx = getCtx();
     const client = createClient(ctx.profile);
     const payload = parseJsonPayload(opts.data);
-    const res = await client.request(`/crm/v3/objects/${objectType}/batch/read`, { method: "POST", body: payload });
+    const res = await client.request(`/crm/v3/objects/${objectType}/batch/read`, { method: "POST", body: payload, permissionMode: "read" });
+    printResult(ctx, res);
+  });
+
+  cmd.command("batch-create").requiredOption("--data <payload>", "Batch create payload JSON").action(async (opts) => {
+    const ctx = getCtx();
+    const client = createClient(ctx.profile);
+    const payload = parseJsonPayload(opts.data);
+    const res = await maybeWrite(ctx, client, "POST", `/crm/v3/objects/${objectType}/batch/create`, payload);
+    printResult(ctx, res);
+  });
+
+  cmd.command("batch-update").requiredOption("--data <payload>", "Batch update payload JSON").action(async (opts) => {
+    const ctx = getCtx();
+    const client = createClient(ctx.profile);
+    const payload = parseJsonPayload(opts.data);
+    const res = await maybeWrite(ctx, client, "POST", `/crm/v3/objects/${objectType}/batch/update`, payload);
     printResult(ctx, res);
   });
 

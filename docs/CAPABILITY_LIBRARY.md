@@ -48,7 +48,7 @@ All five types: `hscli crm engagements {type} create|get|update|delete|list` plu
 | Schema description | `hscli crm describe <objectType>` | ✅ |
 | Pre-flight payload validation | `hscli crm validate <objectType> --data '{...}'` | ✅ |
 | Pipelines + stages | `hscli crm pipelines create|update|list + pipelines stages …` | ✅ |
-| Associations + labels (v4) | `hscli crm associations + associations labels` | ✅ |
+| Associations + labels (v4) | `hscli crm associations list|batch-read|batch-create + associations labels` | ✅ |
 | Owners | `hscli crm owners list|get` | ✅ |
 
 ### Custom objects
@@ -56,7 +56,7 @@ All five types: `hscli crm engagements {type} create|get|update|delete|list` plu
 | Job | Command | Status |
 |---|---|---|
 | Define / update schemas | `hscli crm custom-objects schemas create|update|list|get` | ✅ |
-| CRUD records | `hscli crm custom-objects records create|get|list|update|delete` | ✅ |
+| CRUD records | `hscli crm custom-objects records create|get|list|update|delete|batch-read|batch-create|batch-update|batch-archive` | ✅ |
 
 ### Commerce + Sales-Hub objects
 

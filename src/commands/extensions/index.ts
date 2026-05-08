@@ -88,7 +88,10 @@ export function registerExtensions(program: Command, getCtx: () => CliContext): 
   acc.command("search-invoices").requiredOption("--data <payload>", "Search payload JSON").action(async (o) => {
     const ctx = getCtx();
     const client = createClient(ctx.profile);
-    const res = await client.request(`/crm/v3/extensions/accounting/invoice/search`, { method: "POST", body: parseJsonPayload(o.data) });
+    const res = await client.request(
+      `/crm/v3/extensions/accounting/invoice/search`,
+      { method: "POST", body: parseJsonPayload(o.data), permissionMode: "read" },
+    );
     printResult(ctx, res);
   });
   acc.command("invoice-update").argument("<invoiceId>").requiredOption("--data <payload>", "Invoice patch JSON").action(async (invoiceId, o) => {

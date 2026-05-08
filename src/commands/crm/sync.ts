@@ -90,7 +90,10 @@ export function registerSync(crm: Command, getCtx: () => CliContext): void {
             sorts: [{ propertyName: "hs_lastmodifieddate", direction: "ASCENDING" }],
           };
           if (after) body.after = Number(after);
-          response = await client.request(`/crm/v3/objects/${objectTypeSegment}/search`, { method: "POST", body });
+          response = await client.request(
+            `/crm/v3/objects/${objectTypeSegment}/search`,
+            { method: "POST", body, permissionMode: "read" },
+          );
         } else {
           const params = new URLSearchParams();
           params.set("limit", String(limit));

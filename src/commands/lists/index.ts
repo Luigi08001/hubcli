@@ -20,7 +20,7 @@ export function registerLists(program: Command, getCtx: () => CliContext): void 
       };
       if (opts.after) body.offset = Number(opts.after);
       if (opts.query) body.query = opts.query;
-      const res = await client.request("/crm/v3/lists/search", { method: "POST", body });
+      const res = await client.request("/crm/v3/lists/search", { method: "POST", body, permissionMode: "read" });
       printResult(ctx, res);
     });
 

@@ -49,7 +49,7 @@ export function registerProperties(crm: Command, getCtx: () => CliContext): void
     .option("--skip-existing", "Fetch existing sandbox properties and skip matching names")
     .option("--skip-label-collisions", "Fetch existing sandbox properties and skip labels already used by another property")
     .option("--include-readonly", "Do not skip hubspotDefined/readOnlyDefinition properties")
-    .option("--include-reserved", "Do not skip reserved hs_* property names")
+    .option("--include-reserved", "Do not skip reserved hs_* / recurring_revenue_* property names")
     .option("--empty-enum <mode>", "How to handle enumeration properties with no valid options: skip|demote", "skip")
     .action(async (objectType, opts) => {
       const ctx = getCtx();
@@ -98,6 +98,7 @@ export function registerProperties(crm: Command, getCtx: () => CliContext): void
         skippedLabelCollisions,
         cleanedOptions: normalized.cleanedOptions,
         demotedEnums: normalized.demotedEnums,
+        externalOptionsAdded: normalized.externalOptionsAdded,
         chunkSize,
         chunks: chunks.map((chunk, index) => ({
           index: index + 1,

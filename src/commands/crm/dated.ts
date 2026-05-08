@@ -60,7 +60,10 @@ export function registerDatedApi(crm: Command, getCtx: () => CliContext): void {
     const ctx = getCtx();
     const client = createClient(ctx.profile);
     const seg = encodePathSegment(objectType, "objectType");
-    const res = await client.request(`/crm/objects/2025-09/${seg}/search`, { method: "POST", body: parseJsonPayload(o.data) });
+    const res = await client.request(
+      `/crm/objects/2025-09/${seg}/search`,
+      { method: "POST", body: parseJsonPayload(o.data), permissionMode: "read" },
+    );
     printResult(ctx, res);
   });
   for (const op of ["batch-read", "batch-create", "batch-update", "batch-upsert", "batch-archive"] as const) {
@@ -69,7 +72,10 @@ export function registerDatedApi(crm: Command, getCtx: () => CliContext): void {
       const client = createClient(ctx.profile);
       const seg = encodePathSegment(objectType, "objectType");
       const res = op === "batch-read"
-        ? await client.request(`/crm/objects/2025-09/${seg}/${op}`, { method: "POST", body: parseJsonPayload(o.data) })
+        ? await client.request(
+          `/crm/objects/2025-09/${seg}/${op}`,
+          { method: "POST", body: parseJsonPayload(o.data), permissionMode: "read" },
+        )
         : await maybeWrite(ctx, client, "POST", `/crm/objects/2025-09/${seg}/${op}`, parseJsonPayload(o.data));
       printResult(ctx, res);
     });
@@ -123,7 +129,10 @@ export function registerDatedApi(crm: Command, getCtx: () => CliContext): void {
       const fromSeg = encodePathSegment(fromObjectType, "fromObjectType");
       const toSeg = encodePathSegment(toObjectType, "toObjectType");
       const res = op === "batch-read"
-        ? await client.request(`/crm/associations/2025-09/${fromSeg}/${toSeg}/${op}`, { method: "POST", body: parseJsonPayload(o.data) })
+        ? await client.request(
+          `/crm/associations/2025-09/${fromSeg}/${toSeg}/${op}`,
+          { method: "POST", body: parseJsonPayload(o.data), permissionMode: "read" },
+        )
         : await maybeWrite(ctx, client, "POST", `/crm/associations/2025-09/${fromSeg}/${toSeg}/${op}`, parseJsonPayload(o.data));
       printResult(ctx, res);
     });

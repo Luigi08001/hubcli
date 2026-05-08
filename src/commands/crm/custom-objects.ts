@@ -4,8 +4,22 @@
 import { Command } from "commander";
 import { createClient } from "../../core/http.js";
 import type { CliContext } from "../../core/output.js";
-import { printResult } from "../../core/output.js";
+import { CliError, printResult } from "../../core/output.js";
 import { encodePathSegment, maybeWrite, parseJsonPayload, parseNumberFlag } from "./shared.js";
+
+function assertSchemaUpdateDoesNotContainProperties(payload: unknown): void {
+  if (
+    payload
+    && typeof payload === "object"
+    && !Array.isArray(payload)
+    && Array.isArray((payload as { properties?: unknown }).properties)
+  ) {
+    throw new CliError(
+      "SCHEMA_UPDATE_PROPERTIES_UNSUPPORTED",
+      "Schema PATCH does not create properties. Use `hscli crm properties batch-create <objectType> --data ...` instead.",
+    );
+  }
+}
 
 export function registerCustomObjects(crm: Command, getCtx: () => CliContext): void {
   const custom = crm.command("custom-objects").description("Custom object schemas and records");
@@ -38,6 +52,7 @@ export function registerCustomObjects(crm: Command, getCtx: () => CliContext): v
     const ctx = getCtx();
     const client = createClient(ctx.profile);
     const payload = parseJsonPayload(opts.data);
+    assertSchemaUpdateDoesNotContainProperties(payload);
     const res = await maybeWrite(ctx, client, "PATCH", `/crm/v3/schemas/${encodePathSegment(objectType, "objectType")}`, payload);
     printResult(ctx, res);
   });
@@ -70,7 +85,45 @@ export function registerCustomObjects(crm: Command, getCtx: () => CliContext): v
     const ctx = getCtx();
     const client = createClient(ctx.profile);
     const payload = parseJsonPayload(opts.data);
-    const res = await client.request(`/crm/v3/objects/${encodePathSegment(objectType, "objectType")}/search`, { method: "POST", body: payload });
+    const res = await client.request(
+      `/crm/v3/objects/${encodePathSegment(objectType, "objectType")}/search`,
+      { method: "POST", body: payload, permissionMode: "read" },
+    );
+    printResult(ctx, res);
+  });
+
+  records.command("batch-read").argument("<objectType>").requiredOption("--data <payload>", "Batch read payload JSON").action(async (objectType, opts) => {
+    const ctx = getCtx();
+    const client = createClient(ctx.profile);
+    const payload = parseJsonPayload(opts.data);
+    const res = await client.request(
+      `/crm/v3/objects/${encodePathSegment(objectType, "objectType")}/batch/read`,
+      { method: "POST", body: payload, permissionMode: "read" },
+    );
+    printResult(ctx, res);
+  });
+
+  records.command("batch-create").argument("<objectType>").requiredOption("--data <payload>", "Batch create payload JSON: { inputs: [{ properties }] }").action(async (objectType, opts) => {
+    const ctx = getCtx();
+    const client = createClient(ctx.profile);
+    const payload = parseJsonPayload(opts.data);
+    const res = await maybeWrite(ctx, client, "POST", `/crm/v3/objects/${encodePathSegment(objectType, "objectType")}/batch/create`, payload);
+    printResult(ctx, res);
+  });
+
+  records.command("batch-update").argument("<objectType>").requiredOption("--data <payload>", "Batch update payload JSON").action(async (objectType, opts) => {
+    const ctx = getCtx();
+    const client = createClient(ctx.profile);
+    const payload = parseJsonPayload(opts.data);
+    const res = await maybeWrite(ctx, client, "POST", `/crm/v3/objects/${encodePathSegment(objectType, "objectType")}/batch/update`, payload);
+    printResult(ctx, res);
+  });
+
+  records.command("batch-archive").argument("<objectType>").requiredOption("--data <payload>", "Batch archive payload JSON").action(async (objectType, opts) => {
+    const ctx = getCtx();
+    const client = createClient(ctx.profile);
+    const payload = parseJsonPayload(opts.data);
+    const res = await maybeWrite(ctx, client, "POST", `/crm/v3/objects/${encodePathSegment(objectType, "objectType")}/batch/archive`, payload);
     printResult(ctx, res);
   });
 

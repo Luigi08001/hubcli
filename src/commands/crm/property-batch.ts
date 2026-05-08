@@ -10,10 +10,19 @@ const READONLY_PROPERTY_KEYS = new Set([
   "createdUserId",
   "hubspotDefined",
   "modificationMetadata",
-  "referencedObjectType",
   "updatedAt",
   "updatedUserId",
 ]);
+
+const RESERVED_PROPERTY_EXACT_NAMES = new Set([
+  "closed_lost_reason",
+  "closed_won_reason",
+]);
+
+const RESERVED_PROPERTY_PREFIXES = [
+  "hs_",
+  "recurring_revenue_",
+];
 
 export type PropertyInput = Record<string, unknown>;
 
@@ -39,6 +48,7 @@ export interface NormalizedPropertyBatch {
   skippedInvalid: PropertyBatchIssue[];
   cleanedOptions: PropertyBatchIssue[];
   demotedEnums: PropertyBatchIssue[];
+  externalOptionsAdded: PropertyBatchIssue[];
 }
 
 export interface ExistingPropertyMetadata {
@@ -107,8 +117,9 @@ function isReadonlyProperty(input: PropertyInput): boolean {
 }
 
 function isReservedProperty(input: PropertyInput): boolean {
-  const name = propertyName(input, "");
-  return name.startsWith("hs_");
+  const name = propertyName(input, "").toLowerCase();
+  return RESERVED_PROPERTY_EXACT_NAMES.has(name)
+    || RESERVED_PROPERTY_PREFIXES.some((prefix) => name.startsWith(prefix));
 }
 
 export function propertyName(input: PropertyInput, fallback: string): string {
@@ -122,6 +133,20 @@ function normalizePropertyInput(input: PropertyInput): PropertyInput {
     normalized[key] = value;
   }
   return normalized;
+}
+
+function addExternalOptionsForReference(input: PropertyInput): { input: PropertyInput; changed: boolean } {
+  const referencedObjectType = input.referencedObjectType;
+  if (typeof referencedObjectType !== "string" || referencedObjectType.trim() === "") {
+    return { input, changed: false };
+  }
+  if (input.externalOptions === true) {
+    return { input, changed: false };
+  }
+  return {
+    input: { ...input, externalOptions: true },
+    changed: true,
+  };
 }
 
 function isEnumerationProperty(input: PropertyInput): boolean {
@@ -168,6 +193,7 @@ export function normalizePropertyBatch(
   const skippedInvalid: PropertyBatchIssue[] = [];
   const cleanedOptions: PropertyBatchIssue[] = [];
   const demotedEnums: PropertyBatchIssue[] = [];
+  const externalOptionsAdded: PropertyBatchIssue[] = [];
   const inputs: PropertyInput[] = [];
 
   for (const [index, input] of rawInputs.entries()) {
@@ -182,7 +208,15 @@ export function normalizePropertyBatch(
     }
 
     const normalized = normalizePropertyInput(input);
-    const cleaned = cleanOptions(normalized);
+    const referenced = addExternalOptionsForReference(normalized);
+    if (referenced.changed) {
+      externalOptionsAdded.push({
+        code: "EXTERNAL_OPTIONS_ADDED",
+        name,
+        message: "Added externalOptions=true because referencedObjectType is present.",
+      });
+    }
+    const cleaned = cleanOptions(referenced.input);
     if (cleaned.removed > 0) {
       cleanedOptions.push({
         code: "BLANK_OPTION_REMOVED",
@@ -215,7 +249,16 @@ export function normalizePropertyBatch(
     inputs.push(cleaned.input);
   }
 
-  return { rawInputs, inputs, skippedReadonly, skippedReserved, skippedInvalid, cleanedOptions, demotedEnums };
+  return {
+    rawInputs,
+    inputs,
+    skippedReadonly,
+    skippedReserved,
+    skippedInvalid,
+    cleanedOptions,
+    demotedEnums,
+    externalOptionsAdded,
+  };
 }
 
 export function chunkInputs<T>(inputs: T[], chunkSize: number): T[][] {

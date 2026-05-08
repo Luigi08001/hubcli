@@ -103,7 +103,10 @@ export function registerCmsContentCommands(
       .action(async (o) => {
         const ctx = getCtx();
         const client = createClient(ctx.profile);
-        const res = await client.request(`${basePath}/batch-read`, { method: "POST", body: parseJsonPayload(o.data) });
+        const res = await client.request(
+          `${basePath}/batch-read`,
+          { method: "POST", body: parseJsonPayload(o.data), permissionMode: "read" },
+        );
         printResult(ctx, res);
       });
     batch.command("create")

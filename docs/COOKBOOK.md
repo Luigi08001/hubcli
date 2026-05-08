@@ -230,6 +230,13 @@ hscli crm custom-objects records create vehicles --force \
   --data '{"properties":{"vin":"1HGCM82633A004352","make":"Honda","model":"Accord"}}'
 ```
 
+### Batch-create custom object records
+
+```bash
+hscli crm custom-objects records batch-create vehicles --force \
+  --data '{"inputs":[{"properties":{"vin":"1HGCM82633A004352","make":"Honda","model":"Accord"}}]}'
+```
+
 ### Search custom object records
 
 ```bash
@@ -379,7 +386,7 @@ hscli --force crm properties batch-create contacts \
   --data @contacts-properties.json
 ```
 
-`batch-create` skips `hs_*` reserved names, HubSpot-defined/read-only properties, and empty enumerations by default. It also removes enum options with blank labels/values before sending. If you prefer to keep a property whose enum options cannot be recovered, demote it to a free-text property:
+`batch-create` skips HubSpot-reserved names (`hs_*`, `recurring_revenue_*`, and known reserved close-reason names), HubSpot-defined/read-only properties, and empty enumerations by default. It also removes enum options with blank labels/values before sending. Owner-reference enum properties keep `referencedObjectType` and automatically get `externalOptions: true`, which HubSpot requires for object-reference options. If you prefer to keep a property whose enum options cannot be recovered, demote it to a free-text property:
 
 ```bash
 hscli --dry-run crm properties batch-create contacts \
@@ -393,6 +400,8 @@ For custom objects, pass the object type ID directly:
 hscli --force crm properties batch-create 2-123456 \
   --data '{"inputs":[{"name":"migration_region","label":"Migration Region","type":"string","fieldType":"text","groupName":"customobjectinformation"}]}'
 ```
+
+Do not use `crm custom-objects schemas update` to add properties to an existing custom object schema. HubSpot accepts that PATCH but silently ignores the `properties` array, so hscli now fails early and points you to `crm properties batch-create <objectType>`.
 
 ### Update a property label
 
@@ -412,6 +421,16 @@ hscli crm associations list contacts 551 companies
 ```bash
 hscli crm associations create deals 18294750312 companies 9182736450 --dry-run
 hscli crm associations create deals 18294750312 companies 9182736450 --force
+```
+
+### Batch-create typed associations
+
+```bash
+hscli crm associations batch-create contacts companies --dry-run \
+  --data '{"inputs":[{"from":{"id":"101"},"to":{"id":"202"},"types":[{"associationCategory":"HUBSPOT_DEFINED","associationTypeId":279}]}]}'
+
+hscli crm associations batch-create contacts companies --force \
+  --data @contact-company-associations.json
 ```
 
 ### Remove an association

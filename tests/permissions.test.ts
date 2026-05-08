@@ -31,6 +31,23 @@ describe("permission profiles", () => {
     expect(() => enforcePermissionProfile("default", "POST")).toThrow("read-only");
   });
 
+  it("read-only profile allows read endpoints that use POST payloads", async () => {
+    setupHomeWithToken("default", "pat-na1-test", { mode: "read-only" });
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    const fetchSpy = vi.spyOn(global, "fetch" as never).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ results: [] }),
+      headers: new Headers(),
+    } as never);
+
+    const { run } = await import("../src/cli.js");
+    await run(["node", "hscli", "--json", "lists", "list", "--limit", "1"]);
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(String(fetchSpy.mock.calls[0]?.[0] ?? "")).toContain("/crm/v3/lists/search");
+  });
+
   it("read-only profile blocks PATCH", async () => {
     setupHomeWithToken("default", "pat-na1-test", { mode: "read-only" });
     const { enforcePermissionProfile } = await import("../src/core/permissions.js");
