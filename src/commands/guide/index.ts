@@ -238,7 +238,7 @@ export function registerGuide(program: Command, getCtx: () => CliContext): void 
   program
     .command("guide")
     .description("Guided workflows for migration, preflight, and audit tasks")
-    .option("--goal <goal>", "portal-migration|property-preflight|audit-trace|explore")
+    .option("--goal <goal>", "portal-migration|setup|read|fetch|write|guardrails|property-preflight|audit-trace|explore")
     .action(async (opts) => {
       const ctx = getCtx();
       const goal = opts.goal ? resolveGoal(opts.goal) : await askGoal();

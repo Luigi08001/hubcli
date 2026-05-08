@@ -67,6 +67,15 @@ hscli doctor scopes diff --required real-mirror-read
 hscli doctor scopes explain sales-email-read
 ```
 
+Migration/setup adapters stay explicit instead of becoming a generic internal
+API passthrough:
+
+```bash
+hscli settings business-units capture --portal-id 12345 --cookie-file ./session.cookie
+hscli settings business-units create-internal --portal-id 12345 --data '{"name":"Rentokil Initial Plc"}' --skip-existing
+hscli settings users create --data '{"email":"user@example.com"}'  # invite email suppressed by default
+```
+
 ## Write safely
 
 ```bash
