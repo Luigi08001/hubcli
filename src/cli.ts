@@ -20,6 +20,7 @@ import { registerAudit } from "./commands/audit/index.js";
 import { registerLists } from "./commands/lists/index.js";
 import { registerSales } from "./commands/sales/index.js";
 import { registerReporting } from "./commands/reporting/index.js";
+import { registerReports } from "./commands/reports/index.js";
 import { registerExports } from "./commands/exports/index.js";
 import { registerSiteSearch } from "./commands/site-search/index.js";
 import { registerTimeline } from "./commands/timeline/index.js";
@@ -152,6 +153,7 @@ export function createProgram(): { program: Command; getCtx: () => CliContext } 
   registerLists(program, () => ctx);
   registerSales(program, () => ctx);
   registerReporting(program, () => ctx);
+  registerReports(program, () => ctx);
   registerExports(program, () => ctx);
   registerSiteSearch(program, () => ctx);
   registerTimeline(program, () => ctx);

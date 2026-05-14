@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### Added — reusable report pulls
+
+- Added `hscli reports pull object-fill-rate` for CRM object property fill-rate
+  audits, with optional all-property schema discovery.
+- Added `hscli reports pull property-distribution` for one-property value
+  distributions and blank-rate checks.
+- Added `hscli reports pull email-recipients` for per-recipient marketing email
+  event pulls across selected campaign IDs (`SENT`, `DELIVERED`, `BOUNCE`,
+  `OPEN`, `CLICK`, `DROPPED`, `SUPPRESSED`, `DEFERRED`) with optional contact
+  property enrichment.
+- Added `hscli reports pull source-target-parity` to compare object counts
+  between source and sandbox profiles.
+
 ### Fixed — communication preferences v4 paths
 
 - Corrected `communication-preferences v4` endpoints to use HubSpot's

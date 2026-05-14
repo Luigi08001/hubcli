@@ -119,6 +119,10 @@ Imports + sync + introspection:
 
 - `hscli reporting dashboards list|get`
 - `hscli reporting reports list|get`
+- `hscli reports pull object-fill-rate --object <type> [--properties <csv>]`
+- `hscli reports pull property-distribution --object <type> --property <name>`
+- `hscli reports pull email-recipients --campaign-ids <ids> [--event-types <csv>] [--contact-properties <csv>]`
+- `hscli reports pull source-target-parity --source-profile <profile> --target-profile <profile> --objects <csv>`
 
 ## Exports
 

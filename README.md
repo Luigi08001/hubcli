@@ -67,6 +67,20 @@ hscli doctor scopes diff --required real-mirror-read
 hscli doctor scopes explain sales-email-read
 ```
 
+Reusable reporting pulls are built in for audits, migration checks, and
+matchback files:
+
+```bash
+hscli reports pull object-fill-rate --object contacts --limit 5000
+hscli reports pull property-distribution --object contacts --property lifecyclestage
+hscli reports pull email-recipients \
+  --campaign-ids 407801550,407801857 \
+  --event-types sent,delivered,bounce,open,click,dropped,suppressed,deferred \
+  --contact-properties email,firstname,lastname,company,lifecyclestage,hs_all_assigned_business_unit_ids
+hscli reports pull source-target-parity \
+  --source-profile live-readonly --target-profile sandbox-read --objects contacts,companies,deals
+```
+
 Migration/setup adapters stay explicit instead of becoming a generic internal
 API passthrough:
 
