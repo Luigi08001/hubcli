@@ -19,6 +19,9 @@
   publish endpoints behind a separate opt-in.
 - Refreshed `package-lock.json` to clear current npm/Dependabot advisories for
   `fast-uri`, `hono`, `ip-address`, and `express-rate-limit`.
+- Tightened the tracked Python demo-capture dependencies to published current
+  lower bounds (`pillow>=11.3.0`, `playwright>=1.59.0`) so GitHub does not keep
+  alerting on broad/invalid vulnerable ranges.
 
 ### Added — reusable report pulls
 

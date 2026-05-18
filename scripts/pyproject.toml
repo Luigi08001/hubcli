@@ -4,8 +4,8 @@ version = "0.1.0"
 description = "Playwright capture of the HubSpot UI for demo GIFs (paired with demo.sh)"
 requires-python = ">=3.11"
 dependencies = [
-    "pillow>=12.2.0",
-    "playwright>=1.48.0",
+    "pillow>=11.3.0",
+    "playwright>=1.59.0",
 ]
 
 [tool.uv]
