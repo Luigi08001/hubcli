@@ -121,7 +121,7 @@ Imports + sync + introspection:
 - `hscli reporting reports list|get`
 - `hscli reports pull object-fill-rate --object <type> [--properties <csv>]`
 - `hscli reports pull property-distribution --object <type> --property <name>`
-- `hscli reports pull email-recipients --campaign-ids <ids> [--event-types <csv>] [--contact-properties <csv>]`
+- `hscli reports pull email-recipients --campaign-ids <ids> [--event-types <csv>] [--contact-properties <csv>]` — uses contact `email` as an internal enrichment key, but only emits requested contact properties
 - `hscli reports pull source-target-parity --source-profile <profile> --target-profile <profile> --objects <csv>`
 
 ## Exports
@@ -149,6 +149,7 @@ Imports + sync + introspection:
 ## Internal Adapters
 
 - `hscli doctor internal-adapters` — list allowlisted browser-session setup/migration adapters. hscli intentionally does not expose a generic internal API passthrough.
+- Browser-session adapters only accept HubSpot app hosts for `--ui-domain` and filter cookie-file exports to that host before sending cookies.
 
 ## Communication preferences
 

@@ -29,6 +29,9 @@ portal mirror and how hscli should handle them in future runs.
   common sandbox replay path.
 - Permission sets can be listed/created/updated/deleted through the internal
   browser-session endpoint.
+- Browser-session adapters share one guarded resolver: `--ui-domain` must be a
+  HubSpot app host, and Netscape/JSON cookie exports are filtered to that host
+  so unrelated cookies are not forwarded.
 - User creates suppress invite/welcome emails by default. Passing
   `--allow-invite-email` is required before hscli will allow payloads such as
   `sendWelcomeEmail:true`.

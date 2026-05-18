@@ -90,6 +90,10 @@ hscli settings business-units create-internal --portal-id 12345 --data '{"name":
 hscli settings users create --data '{"email":"user@example.com"}'  # invite email suppressed by default
 ```
 
+Browser-session adapters only send cookies to allowlisted HubSpot app hosts
+(`app.hubspot.com`, `app-eu1.hubspot.com`, etc.). Netscape/JSON cookie exports
+are filtered to the selected HubSpot domain before the request is made.
+
 ## Write safely
 
 ```bash

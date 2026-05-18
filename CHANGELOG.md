@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+### Fixed — internal-adapter safety + dependency audit
+
+- Browser-session/internal adapters now share one hardened session resolver:
+  `--ui-domain` is allowlisted to HubSpot app hosts only
+  (`app.hubspot.com`, `app-eu1.hubspot.com`, etc.), and cookie exports are
+  filtered to the selected HubSpot domain before use.
+- `reports pull email-recipients` always requests `email` internally when
+  enriching recipients via contact batch-read, but only emits the contact
+  properties explicitly requested by the operator.
+- `seed` no longer revises or pushes live arbitrary existing CMS pages; CMS
+  revision/publish attempts are limited to pages created by the current seed
+  run.
+- `scripts/test-portal-writes.mjs` now requires `HSCLI_ALLOW_WRITE_PROBE=1`
+  before running, skips existing-resource mutation by default, and keeps
+  publish endpoints behind a separate opt-in.
+- Refreshed `package-lock.json` to clear current npm/Dependabot advisories for
+  `fast-uri`, `hono`, `ip-address`, and `express-rate-limit`.
+
 ### Added — reusable report pulls
 
 - Added `hscli reports pull object-fill-rate` for CRM object property fill-rate
