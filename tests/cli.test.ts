@@ -163,6 +163,75 @@ describe("hscli", () => {
     expect((init.headers as Record<string, string>).Authorization).toBeUndefined();
   });
 
+  it("rejects non-HubSpot UI domains before sending browser cookies", async () => {
+    const home = setupHomeWithToken();
+    process.env.HOME = home;
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const fetchSpy = vi.spyOn(global, "fetch" as never);
+
+    const { run } = await import("../src/cli.js");
+    await run([
+      "node",
+      "hscli",
+      "--json",
+      "settings",
+      "permission-sets",
+      "list",
+      "--portal-id",
+      "148339018",
+      "--ui-domain",
+      "app.hubspot.com.evil.test",
+      "--cookie",
+      "hubspotutk=abc; csrf.app=csrf-from-cookie",
+    ]);
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(process.exitCode).toBe(1);
+    const output = JSON.parse(String(errSpy.mock.calls[0][0]));
+    expect(output.error.code).toBe("INVALID_UI_DOMAIN");
+  });
+
+  it("filters Netscape cookie jars to the selected HubSpot UI domain", async () => {
+    const home = setupHomeWithToken();
+    process.env.HOME = home;
+    const cookiePath = join(home, "cookies.txt");
+    writeFileSync(cookiePath, [
+      "# Netscape HTTP Cookie File",
+      "#HttpOnly_.hubspot.com\tTRUE\t/\tTRUE\t0\tcsrf.app\tcsrf-from-file",
+      ".hubspot.com\tTRUE\t/\tTRUE\t0\thubspotutk\tabc",
+      ".evil.test\tTRUE\t/\tTRUE\t0\tevil\tnope",
+    ].join("\n"));
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    const fetchSpy = vi.spyOn(global, "fetch" as never).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ results: [] }),
+      headers: new Headers(),
+    } as never);
+
+    const { run } = await import("../src/cli.js");
+    await run([
+      "node",
+      "hscli",
+      "--json",
+      "settings",
+      "permission-sets",
+      "list",
+      "--portal-id",
+      "148339018",
+      "--ui-domain",
+      "app-eu1.hubspot.com",
+      "--cookie-file",
+      cookiePath,
+    ]);
+
+    const [, init] = fetchSpy.mock.calls[0] as [URL | string, RequestInit];
+    const headers = init.headers as Record<string, string>;
+    expect(headers.Cookie).toBe("csrf.app=csrf-from-file; hubspotutk=abc");
+    expect(headers.Cookie).not.toContain("evil=nope");
+    expect(headers["x-hubspot-csrf-hubspotapi"]).toBe("csrf-from-file");
+  });
+
   it("settings permission-sets create dry-run previews the internal POST without cookies in output", async () => {
     const home = setupHomeWithToken();
     process.env.HOME = home;
@@ -764,6 +833,80 @@ describe("hscli", () => {
       reason: "subscription-definition-exists",
       existing: { id: "def-1", name: "Newsletter" },
     });
+  });
+
+  it("skips internal subscription definitions by process and operation aliases", async () => {
+    const home = setupHomeWithToken();
+    process.env.HOME = home;
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const fetchSpy = vi.spyOn(global, "fetch" as never).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        results: [
+          { id: "def-1", name: "Newsletter", process: "Marketing", operation: "Email" },
+          { id: "def-2", name: "Newsletter", process: "Sales", operation: "Email" },
+        ],
+      }),
+      headers: new Headers(),
+    } as never);
+
+    const { run } = await import("../src/cli.js");
+    await run([
+      "node",
+      "hscli",
+      "--json",
+      "--force",
+      "communication-preferences",
+      "definitions",
+      "create-internal",
+      "--portal-id",
+      "148339018",
+      "--cookie",
+      "hubspotutk=abc; csrf.app=csrf-from-cookie",
+      "--skip-existing",
+      "--data",
+      JSON.stringify({ name: "Newsletter", process: "Marketing", operation: "Email" }),
+    ]);
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    const output = JSON.parse(String(logSpy.mock.calls[0][0]));
+    expect(output.data).toMatchObject({
+      skipped: true,
+      reason: "subscription-definition-exists",
+      existing: { id: "def-1", name: "Newsletter" },
+    });
+  });
+
+  it("rejects non-HubSpot UI domains for internal subscription definitions", async () => {
+    const home = setupHomeWithToken();
+    process.env.HOME = home;
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const fetchSpy = vi.spyOn(global, "fetch" as never);
+
+    const { run } = await import("../src/cli.js");
+    await run([
+      "node",
+      "hscli",
+      "--json",
+      "--force",
+      "communication-preferences",
+      "definitions",
+      "create-internal",
+      "--portal-id",
+      "148339018",
+      "--ui-domain",
+      "app.hubspot.com.evil.test",
+      "--cookie",
+      "hubspotutk=abc; csrf.app=csrf-from-cookie",
+      "--data",
+      JSON.stringify({ name: "Newsletter", process: "Marketing", operation: "Email" }),
+    ]);
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(process.exitCode).toBe(1);
+    const output = JSON.parse(String(errSpy.mock.calls[0][0]));
+    expect(output.error.code).toBe("INVALID_UI_DOMAIN");
   });
 
   it("preflights workflow exports for unresolved source IDs", async () => {

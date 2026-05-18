@@ -7,6 +7,8 @@ import type { SeedContext, SeedResult } from "./types.js";
  */
 export async function seedCms(ctx: SeedContext, result: SeedResult): Promise<void> {
   const { client, runSuffix } = ctx;
+  const seededSitePages: Array<{ id: string; name: string }> = [];
+  const seededLandingPages: Array<{ id: string; name: string }> = [];
 
   // --- URL redirect ---
   try {
@@ -39,7 +41,10 @@ export async function seedCms(ctx: SeedContext, result: SeedResult): Promise<voi
       metaDescription: "A sample site page created by hscli seed for testing.",
       language: "en",
     });
-    if (rec) result.created.push({ type: "site_page", name: pageName, id: rec.id });
+    if (rec) {
+      result.created.push({ type: "site_page", name: pageName, id: rec.id });
+      seededSitePages.push({ id: rec.id, name: pageName });
+    }
   } catch (err) {
     result.skipped.push({ type: "site_page", name: "HubCLI Seed Site Page", reason: errorReason(err) });
   }
@@ -53,7 +58,10 @@ export async function seedCms(ctx: SeedContext, result: SeedResult): Promise<voi
       htmlTitle: "HubCLI Seed Landing Page",
       language: "en",
     });
-    if (rec) result.created.push({ type: "landing_page", name: lpName, id: rec.id });
+    if (rec) {
+      result.created.push({ type: "landing_page", name: lpName, id: rec.id });
+      seededLandingPages.push({ id: rec.id, name: lpName });
+    }
   } catch (err) {
     result.skipped.push({ type: "landing_page", name: "HubCLI Seed Landing Page", reason: errorReason(err) });
   }
@@ -129,41 +137,9 @@ export async function seedCms(ctx: SeedContext, result: SeedResult): Promise<voi
     result.skipped.push({ type: "hubdb_table", name: "hscli_seed_table", reason: errorReason(err) });
   }
 
-  // --- Revisions + push-live for site-pages/landing-pages ---
-  try {
-    const sitePages = await client.request("/cms/v3/pages/site-pages?limit=5") as { results?: Array<{ id?: string; name?: string }> };
-    for (const sp of sitePages.results?.slice(0, 2) ?? []) {
-      if (!sp.id) continue;
-      try {
-        await client.request(`/cms/v3/pages/site-pages/${sp.id}/draft`, {
-          method: "PATCH",
-          body: { metaDescription: `Revised by hscli seed at ${nowIso()}` },
-        });
-        result.created.push({ type: "revision:site_page", name: sp.name || sp.id, id: sp.id });
-        try {
-          await client.request(`/cms/v3/pages/site-pages/${sp.id}/draft/push-live`, { method: "POST", body: {} });
-          result.created.push({ type: "publish:site_page", name: sp.name || sp.id, id: sp.id });
-        } catch { /* ignore publish failure */ }
-      } catch { /* ignore */ }
-    }
-  } catch { /* ignore */ }
-  try {
-    const lpList = await client.request("/cms/v3/pages/landing-pages?limit=5") as { results?: Array<{ id?: string; name?: string }> };
-    for (const lp of lpList.results?.slice(0, 2) ?? []) {
-      if (!lp.id) continue;
-      try {
-        await client.request(`/cms/v3/pages/landing-pages/${lp.id}/draft`, {
-          method: "PATCH",
-          body: { metaDescription: `Revised by hscli seed at ${nowIso()}` },
-        });
-        result.created.push({ type: "revision:landing_page", name: lp.name || lp.id, id: lp.id });
-        try {
-          await client.request(`/cms/v3/pages/landing-pages/${lp.id}/draft/push-live`, { method: "POST", body: {} });
-          result.created.push({ type: "publish:landing_page", name: lp.name || lp.id, id: lp.id });
-        } catch { /* ignore */ }
-      } catch { /* ignore */ }
-    }
-  } catch { /* ignore */ }
+  // --- Revisions + push-live only for pages created by this seed run ---
+  await reviseAndPublishSeededPages(client, result, "site_page", "/cms/v3/pages/site-pages", seededSitePages);
+  await reviseAndPublishSeededPages(client, result, "landing_page", "/cms/v3/pages/landing-pages", seededLandingPages);
 
   // --- Attempt to create a blog (requires a connected domain) ---
   try {
@@ -184,4 +160,26 @@ export async function seedCms(ctx: SeedContext, result: SeedResult): Promise<voi
       }
     }
   } catch { /* ignore */ }
+}
+
+async function reviseAndPublishSeededPages(
+  client: SeedContext["client"],
+  result: SeedResult,
+  type: "site_page" | "landing_page",
+  basePath: string,
+  pages: Array<{ id: string; name: string }>,
+): Promise<void> {
+  for (const page of pages) {
+    try {
+      await client.request(`${basePath}/${page.id}/draft`, {
+        method: "PATCH",
+        body: { metaDescription: `Revised by hscli seed at ${nowIso()}` },
+      });
+      result.created.push({ type: `revision:${type}`, name: page.name, id: page.id });
+      try {
+        await client.request(`${basePath}/${page.id}/draft/push-live`, { method: "POST", body: {} });
+        result.created.push({ type: `publish:${type}`, name: page.name, id: page.id });
+      } catch { /* ignore publish failure */ }
+    } catch { /* ignore revision failure */ }
+  }
 }

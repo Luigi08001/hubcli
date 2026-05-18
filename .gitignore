@@ -5,6 +5,8 @@ dist/
 .DS_Store
 coverage/
 *.log
+.clawpatch/
+.claude/
 
 # Local hscli credential vaults / runtime state
 .revfleet/

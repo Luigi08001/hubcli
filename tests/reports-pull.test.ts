@@ -181,6 +181,54 @@ describe("reports pull", () => {
     ]);
   });
 
+  it("uses email internally for contact enrichment without emitting it unless requested", async () => {
+    setupHomeWithProfiles();
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const fetchSpy = vi.spyOn(global, "fetch" as never).mockImplementation(async (url: unknown, init?: RequestInit) => {
+      const value = String(url);
+      if (value.includes("/email/public/v1/events")) {
+        return response({ events: [{ recipient: "ada@example.com", type: "DELIVERED", created: 1 }] });
+      }
+      if (value.includes("/crm/v3/objects/contacts/batch/read")) {
+        const body = JSON.parse(String(init?.body ?? "{}"));
+        expect(body.properties).toEqual(["email", "firstname"]);
+        return response({
+          results: [{ id: "1", properties: { email: "ada@example.com", firstname: "Ada" } }],
+        });
+      }
+      return response({});
+    });
+
+    const { run } = await import("../src/cli.js");
+    await run([
+      "node",
+      "hscli",
+      "--json",
+      "reports",
+      "pull",
+      "email-recipients",
+      "--campaign-ids",
+      "101",
+      "--event-types",
+      "delivered",
+      "--contact-properties",
+      "firstname",
+    ]);
+
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    const output = JSON.parse(String(logSpy.mock.calls[0][0]));
+    expect(output.data.results).toEqual([{
+      campaignId: "101",
+      email: "ada@example.com",
+      events: ["DELIVERED"],
+      received: true,
+      hardBounce: false,
+      softBounce: false,
+      notDeliveredReason: "",
+      contactProperties: { firstname: "Ada" },
+    }]);
+  });
+
   it("pulls source-target parity counts across profiles", async () => {
     setupHomeWithProfiles({
       source: { token: "source-token" },

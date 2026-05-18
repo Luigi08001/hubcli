@@ -1,21 +1,12 @@
 import { Command } from "commander";
-import { readFileSync } from "node:fs";
-import { getProfile } from "../../core/auth.js";
-import { createBrowserSessionClient, createClient, HubSpotClient } from "../../core/http.js";
+import { createClient } from "../../core/http.js";
 import { loadFlatIdMapFile, stringifyId, type FlatIdMap } from "../../core/id-maps.js";
 import type { CliContext } from "../../core/output.js";
 import { CliError, printResult } from "../../core/output.js";
 import { encodePathSegment, maybeWrite, parseJsonPayload } from "../crm/shared.js";
+import { addBrowserSessionOptions, resolveBrowserSession } from "../internal-session.js";
 
 type BusinessUnitMode = "strict" | "drop" | "preserve";
-
-interface BrowserSessionOptions {
-  portalId?: string;
-  uiDomain?: string;
-  cookie?: string;
-  cookieFile?: string;
-  csrf?: string;
-}
 
 export function registerCommunicationPreferences(program: Command, getCtx: () => CliContext): void {
   const commPrefs = program.command("communication-preferences").description("HubSpot communication preferences / subscription management");
@@ -209,64 +200,6 @@ function parseBusinessUnitMode(raw: string | undefined): BusinessUnitMode {
   throw new CliError("INVALID_FLAG", "--business-unit-mode must be one of: strict, drop, preserve");
 }
 
-function addBrowserSessionOptions(command: Command): Command {
-  return command
-    .option("--portal-id <id>", "HubSpot portal ID (or HSCLI_PORTAL_ID / profile.portalId)")
-    .option("--ui-domain <domain>", "HubSpot app domain, e.g. app.hubspot.com or app-eu1.hubspot.com")
-    .option("--cookie <header>", "Browser Cookie header for app.hubspot.com")
-    .option("--cookie-file <path>", "Cookie header, Netscape cookie jar, or JSON cookie export")
-    .option("--csrf <token>", "x-hubspot-csrf-hubspotapi header value");
-}
-
-function resolveBrowserSession(
-  ctx: CliContext,
-  opts: BrowserSessionOptions,
-  featureLabel: string,
-  requirePortalId: boolean,
-): { client: HubSpotClient; portalId?: string } {
-  const profile = safeProfile(ctx.profile);
-  const portalId = firstString(opts.portalId, process.env.HSCLI_PORTAL_ID, profile?.portalId);
-  if (requirePortalId && !portalId) {
-    throw new CliError("SESSION_PORTAL_ID_REQUIRED", `${featureLabel} require --portal-id, HSCLI_PORTAL_ID, or profile.portalId.`);
-  }
-
-  const uiDomain = normalizeUiDomain(firstString(
-    opts.uiDomain,
-    process.env.HSCLI_HUBSPOT_UI_DOMAIN,
-    profile?.uiDomain,
-    "app.hubspot.com",
-  ) ?? "app.hubspot.com");
-  const cookie = firstString(
-    opts.cookie,
-    process.env.HSCLI_HUBSPOT_COOKIE,
-  ) ?? readCookieFile(firstString(opts.cookieFile, process.env.HSCLI_HUBSPOT_COOKIE_FILE));
-  if (!cookie) {
-    throw new CliError(
-      "SESSION_COOKIE_REQUIRED",
-      `${featureLabel} require --cookie, --cookie-file, HSCLI_HUBSPOT_COOKIE, or HSCLI_HUBSPOT_COOKIE_FILE.`,
-    );
-  }
-
-  const csrfToken = firstString(opts.csrf, process.env.HSCLI_HUBSPOT_CSRF, extractCsrfToken(cookie));
-  if (!csrfToken) {
-    throw new CliError(
-      "SESSION_CSRF_REQUIRED",
-      `${featureLabel} require --csrf or HSCLI_HUBSPOT_CSRF. A csrf.app cookie is also accepted when present.`,
-    );
-  }
-
-  return {
-    portalId,
-    client: createBrowserSessionClient(ctx.profile, {
-      apiBaseUrl: `https://${uiDomain}`,
-      cookie,
-      csrfToken,
-      telemetryFile: ctx.telemetryFile,
-      strictCapabilities: ctx.strictCapabilities,
-    }),
-  };
-}
-
 function normalizeSubscriptionDefinitionPayload(
   input: Record<string, unknown>,
   businessUnitMap: FlatIdMap,
@@ -380,78 +313,10 @@ function toHubSpotIdValue(raw: string): string | number {
   return Number.isSafeInteger(numeric) && String(numeric) === raw ? numeric : raw;
 }
 
-function safeProfile(profile: string): ReturnType<typeof getProfile> | undefined {
-  try {
-    return getProfile(profile);
-  } catch {
-    return undefined;
-  }
-}
-
 function firstString(...values: Array<string | undefined>): string | undefined {
   for (const value of values) {
     const trimmed = value?.trim();
     if (trimmed) return trimmed;
-  }
-  return undefined;
-}
-
-function normalizeUiDomain(raw: string): string {
-  return raw.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
-}
-
-function readCookieFile(path: string | undefined): string | undefined {
-  if (!path) return undefined;
-  const raw = readFileSync(path, "utf8").trim();
-  if (!raw) return undefined;
-  return normalizeCookieFile(raw);
-}
-
-function normalizeCookieFile(raw: string): string {
-  const parsed = parseCookieJson(raw);
-  if (parsed) return parsed;
-
-  const lines = raw.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-  const netscapeCookies = lines
-    .filter((line) => !line.startsWith("#"))
-    .map((line) => line.split(/\t+/))
-    .filter((parts) => parts.length >= 7)
-    .map((parts) => `${parts[5]}=${parts.slice(6).join("\t")}`);
-  if (netscapeCookies.length > 0) return netscapeCookies.join("; ");
-
-  return lines.filter((line) => !line.startsWith("#")).join("; ");
-}
-
-function parseCookieJson(raw: string): string | undefined {
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    if (typeof parsed === "string") return parsed;
-    if (isRecord(parsed) && typeof parsed.cookie === "string") return parsed.cookie;
-    const cookies = Array.isArray(parsed) ? parsed : isRecord(parsed) && Array.isArray(parsed.cookies) ? parsed.cookies : undefined;
-    if (!cookies) return undefined;
-    const pairs = cookies
-      .filter(isRecord)
-      .map((cookie) => {
-        const name = typeof cookie.name === "string" ? cookie.name.trim() : "";
-        const value = typeof cookie.value === "string" ? cookie.value : "";
-        return name ? `${name}=${value}` : "";
-      })
-      .filter(Boolean);
-    return pairs.length > 0 ? pairs.join("; ") : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-function extractCsrfToken(cookieHeader: string): string | undefined {
-  const candidates = new Set(["csrf.app", "csrf", "hubspotapi-csrf", "hs-csrf"]);
-  for (const part of cookieHeader.split(";")) {
-    const [rawName, ...rawValue] = part.trim().split("=");
-    if (!rawName || rawValue.length === 0) continue;
-    if (candidates.has(rawName.trim().toLowerCase())) {
-      const value = rawValue.join("=").trim();
-      return value ? decodeURIComponent(value) : undefined;
-    }
   }
   return undefined;
 }
@@ -463,23 +328,35 @@ function valueOrEmpty(value: unknown): string {
 function isSameSubscriptionDefinition(record: Record<string, unknown>, payload: Record<string, unknown>): boolean {
   if (record.name !== payload.name) return false;
   if (normalizeBusinessUnitId(record.businessUnitId) !== normalizeBusinessUnitId(payload.businessUnitId)) return false;
-  if (hasText(payload.purpose) && normalizeText(record.purpose) !== normalizeText(payload.purpose)) return false;
-  if (hasText(payload.communicationMethod) && normalizeText(record.communicationMethod) !== normalizeText(payload.communicationMethod)) return false;
+  const payloadPurpose = firstDefinitionText(payload, ["purpose", "process"]);
+  if (payloadPurpose && normalizeText(firstDefinitionText(record, ["purpose", "process"])) !== normalizeText(payloadPurpose)) return false;
+  const payloadMethod = firstDefinitionText(payload, ["communicationMethod", "operation", "channel", "method"]);
+  if (payloadMethod && normalizeText(firstDefinitionText(record, ["communicationMethod", "operation", "channel", "method"])) !== normalizeText(payloadMethod)) return false;
   return true;
 }
 
 function hasSubscriptionDisambiguators(payload: Record<string, unknown>): boolean {
-  return payload.businessUnitId !== undefined || hasText(payload.purpose) || hasText(payload.communicationMethod);
+  return payload.businessUnitId !== undefined
+    || Boolean(firstDefinitionText(payload, ["purpose", "process"]))
+    || Boolean(firstDefinitionText(payload, ["communicationMethod", "operation", "channel", "method"]));
 }
 
 function normalizeBusinessUnitId(value: unknown): string {
   return stringifyId(value) ?? "0";
 }
 
-function hasText(value: unknown): boolean {
+function hasText(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
 function normalizeText(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function firstDefinitionText(record: Record<string, unknown>, keys: string[]): string | undefined {
+  for (const key of keys) {
+    const value = record[key];
+    if (hasText(value)) return value.trim();
+  }
+  return undefined;
 }

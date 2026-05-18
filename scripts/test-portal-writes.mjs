@@ -36,6 +36,14 @@ const TIMEOUT_MS = 20_000;
 const ENDPOINTS_JSON = process.env.HSCLI_ENDPOINTS_JSON || `${homedir()}/Desktop/vault/HubSpot Audit/api-mapping/endpoints.json`;
 const DEV_APP_ID = process.env.HSCLI_DEV_APP_ID || "0";
 const RUN_SUFFIX = Date.now().toString(36).slice(-5);
+const ALLOW_WRITE_PROBE = process.env.HSCLI_ALLOW_WRITE_PROBE === "1";
+const ALLOW_EXISTING_MUTATION = process.env.HSCLI_WRITE_PROBE_ALLOW_EXISTING_MUTATION === "1";
+const ALLOW_PUBLISH = process.env.HSCLI_WRITE_PROBE_ALLOW_PUBLISH === "1";
+
+if (!ALLOW_WRITE_PROBE) {
+  console.error("[write-probe] refusing to run: set HSCLI_ALLOW_WRITE_PROBE=1 to acknowledge this script can write to the selected portal.");
+  process.exit(2);
+}
 
 const authPath = `${homedir()}/.hscli/auth.json`;
 const auth = JSON.parse(fs.readFileSync(authPath, "utf8"));
@@ -318,8 +326,17 @@ function classify(status, bodyText) {
 function shouldSkip(ep) {
   // Skip mass deletes / portal-wide destructive ops
   if (/\/portal-delete|\/gdpr-delete.*\/ALL/.test(ep.path)) return true;
+  // Deletes and in-place updates against discovered IDs mutate real portal data.
+  if (ep.method === "DELETE" && !ALLOW_EXISTING_MUTATION) return true;
+  if ((ep.method === "PATCH" || ep.method === "PUT") && hasExistingResourcePlaceholder(ep.path) && !ALLOW_EXISTING_MUTATION) return true;
+  // Publishing endpoints can make CMS/email assets live. Keep them behind a separate explicit gate.
+  if (/\/(?:draft\/)?(?:push-live|publish)\b/i.test(ep.path) && !ALLOW_PUBLISH) return true;
   // Skip if our token can't do anything with it (legacy settings write)
   return false;
+}
+
+function hasExistingResourcePlaceholder(p) {
+  return /\{(?:contactId|companyId|dealId|ticketId|ownerId|pipelineId|emailId|fileId|folderId|userId|formGuid|formId|domainId|topicId|tableId|tableIdOrName|pageId|sitePageId|landingPageId|authorId|tagId|flowId|workflowId|noteId|taskId|callId|meetingId|quoteId|productId|lineItemId|leadId|redirectId|objectId|id)\}/.test(p);
 }
 
 async function hitOnce(method, url, body) {

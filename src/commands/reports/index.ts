@@ -426,16 +426,22 @@ async function enrichRecipientsWithContacts(
 ): Promise<void> {
   const emails = [...new Set(recipients.map((recipient) => recipient.email))];
   const byEmail = new Map<string, Record<string, unknown>>();
+  const requestedProperties = new Set(properties);
+  const readProperties = [...new Set(["email", ...properties])];
   for (let i = 0; i < emails.length; i += MAX_BATCH_READ_SIZE) {
     const inputs = emails.slice(i, i + MAX_BATCH_READ_SIZE).map((email) => ({ id: email }));
     const res = await client.request("/crm/v3/objects/contacts/batch/read", {
       method: "POST",
       permissionMode: "read",
-      body: { idProperty: "email", properties, inputs },
+      body: { idProperty: "email", properties: readProperties, inputs },
     }) as HubSpotListPage;
     for (const row of res.results ?? []) {
       const email = normalizeEmail(row.properties?.email);
-      if (email) byEmail.set(email, row.properties ?? {});
+      if (!email) continue;
+      const emitted = Object.fromEntries(
+        Object.entries(row.properties ?? {}).filter(([key]) => requestedProperties.has(key)),
+      );
+      byEmail.set(email, emitted);
     }
   }
   for (const recipient of recipients) {
